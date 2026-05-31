@@ -1,0 +1,16 @@
+# NAVIS V3 Git Exclusions
+# Excludes local developer overrides, API keys, build logs, and environment configurations.
+
+config.js
+.env
+.env.local
+*.log
+.system_generated/
+node_modules/
+dist/
+build/
+.vscode/
+.idea/
+CVS/
+.DS_Store
+Thumbs.db
