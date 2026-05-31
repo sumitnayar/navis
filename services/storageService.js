@@ -73,7 +73,7 @@ export class StorageService {
             risk_fragilities(*),
             assurance_mappings(*),
             risk_to_objectives(objective_id),
-            risk_relationships(child_id, relation_type)
+            risk_relationships!risk_relationships_parent_id_fkey(child_id, relation_type)
           `);
 
         if (error) throw error;
