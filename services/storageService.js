@@ -544,6 +544,8 @@ export class StorageService {
           // Fetch locations and BUs in parallel
           const buData = await supabaseClient.from('settings_business_units').select('unit_name');
           const locData = await supabaseClient.from('settings_locations').select('location_name');
+          
+          const localKey = localStorage.getItem('navis_v3_gemini_api_key') || '';
 
           return {
             brandName: s.brand_name,
@@ -553,7 +555,8 @@ export class StorageService {
             soc2Status: s.soc2_status,
             businessUnits: buData.data ? buData.data.map(bu => bu.unit_name) : [],
             locations: locData.data ? locData.data.map(loc => loc.location_name) : [],
-            activeUserRole: s.active_user_role
+            activeUserRole: s.active_user_role,
+            geminiApiKey: localKey
           };
         }
       } catch (e) {
@@ -569,12 +572,18 @@ export class StorageService {
       parsed.brandName = 'NAVIS';
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
     }
+    parsed.geminiApiKey = localStorage.getItem('navis_v3_gemini_api_key') || parsed.geminiApiKey || '';
     return parsed;
   }
 
   static async saveSettings(settings) {
     const current = await this.getSettings();
     const updated = { ...current, ...settings };
+
+    // Always securely save the Gemini Key in local browser cache only
+    if (settings.geminiApiKey !== undefined) {
+      localStorage.setItem('navis_v3_gemini_api_key', settings.geminiApiKey);
+    }
 
     if (isCloudMode) {
       try {
