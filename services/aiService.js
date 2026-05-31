@@ -223,7 +223,9 @@ To restore risk posture within acceptable appetite levels, the executive committ
 1.  **Governance Restructure:** Appoint the nominated Independent Directors within the next **15 business days** to close the SEBI audit gap.
 2.  **Revenue De-risking:** Mandate a minimum **24-month contract term lock-in** with strict early exit penalties on all account expansions exceeding ₹50L.
 3.  **Comp-Grid Adjustment:** Allocate 1.5% of the upcoming VC expansion round towards an **ESOP liquidity pool** to immediately stem regretted senior developer attrition.`;
-   // --- DIRECT BOARD QUESTIONS ASSISTANT ---
+  }
+
+  // --- DIRECT BOARD QUESTIONS ASSISTANT ---
   static async answerBoardQuestion(questionId, customText, risks, settings) {
     let questionText = customText || "";
     if (questionId === 'q-1') questionText = "What are our biggest risks and above appetite items?";
