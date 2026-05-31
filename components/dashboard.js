@@ -71,13 +71,14 @@ export class DashboardComponent {
   }
 
   render(container) {
+    const risks = this.state.risks;
     const metrics = this.calculateMetrics();
     const matrix = this.getHeatmapMatrix();
     const settings = this.state.settings;
 
     // Top worsening/improving lists
-    const worseningRisks = this.state.risks.filter(r => r.trend === 'Deteriorating').slice(0, 3);
-    const improvingRisks = this.state.risks.filter(r => r.trend === 'Improving').slice(0, 3);
+    const worseningRisks = risks.filter(r => r.trend === 'Deteriorating').slice(0, 3);
+    const improvingRisks = risks.filter(r => r.trend === 'Improving').slice(0, 3);
 
     container.innerHTML = `
       <div class="page-header">
