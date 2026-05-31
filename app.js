@@ -13,6 +13,7 @@ import { ControlsComponent } from './components/controls.js';
 import { ActionsComponent } from './components/actions.js';
 import { CultureComponent } from './components/culture.js';
 import { SettingsComponent } from './components/settings.js';
+import { BoardQAComponent } from './components/boardQA.js';
 
 class RiskOSApplication {
   constructor() {
@@ -48,6 +49,7 @@ class RiskOSApplication {
     // 3. Register routing components (All V3 modules)
     this.components = {
       'dashboard': DashboardComponent,
+      'boardQA': BoardQAComponent,
       'objectives': ObjectivesComponent,
       'scenario': ScenarioComponent,
       'portfolio': PortfolioComponent,
@@ -98,7 +100,7 @@ class RiskOSApplication {
   renderSidebar() {
     // We statically bind sidebar items in index.html and update active classes.
     const tabs = [
-      'dashboard', 'objectives', 'scenario', 'portfolio', 'network',
+      'dashboard', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
       'register', 'taxonomy', 'assurance', 'controls', 'actions',
       'culture', 'settings'
     ];
@@ -151,7 +153,7 @@ class RiskOSApplication {
 
   bindSidebarEvents() {
     const tabs = [
-      'dashboard', 'objectives', 'scenario', 'portfolio', 'network',
+      'dashboard', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
       'register', 'taxonomy', 'assurance', 'controls', 'actions',
       'culture', 'settings'
     ];
