@@ -223,14 +223,12 @@ To restore risk posture within acceptable appetite levels, the executive committ
 1.  **Governance Restructure:** Appoint the nominated Independent Directors within the next **15 business days** to close the SEBI audit gap.
 2.  **Revenue De-risking:** Mandate a minimum **24-month contract term lock-in** with strict early exit penalties on all account expansions exceeding ₹50L.
 3.  **Comp-Grid Adjustment:** Allocate 1.5% of the upcoming VC expansion round towards an **ESOP liquidity pool** to immediately stem regretted senior developer attrition.`;
-  }
-
-  // --- DIRECT BOARD QUESTIONS ASSISTANT ---
+   // --- DIRECT BOARD QUESTIONS ASSISTANT ---
   static async answerBoardQuestion(questionId, customText, risks, settings) {
     let questionText = customText || "";
     if (questionId === 'q-1') questionText = "What are our biggest risks and above appetite items?";
     if (questionId === 'q-2') questionText = "Which risks are worsening and improving this month?";
-    if (questionId === 'q-3') questionText = "What threats our company growth and revenue objectives?";
+    if (questionId === 'q-3') questionText = "What threatens our company growth and revenue objectives?";
     if (questionId === 'q-4') questionText = "Which risks are interconnected and depend on each other?";
     if (questionId === 'q-5') questionText = "Which KRIs are breached and what actions are overdue?";
 
@@ -253,76 +251,132 @@ To restore risk posture within acceptable appetite levels, the executive committ
       try {
         return await this.queryGemini(prompt, settings.geminiApiKey);
       } catch (e) {
-        // Fallback to simulation
+        console.error("Gemini Q&A Call failed, falling back to simulated intelligence:", e);
       }
     }
 
     // Simulated Natural Language Query Analyzer
     const qLower = questionText.toLowerCase();
 
+    // 1. Core Presets
     if (qLower.includes('biggest') || qLower.includes('above appetite') || qLower.includes('q-1')) {
-      return `### **Corporate Risk Posture: Appetite Breaches**
+      return `### **Corporate Risk Posture: Appetite Breaches (Simulated)**
+> [!NOTE]
+> **Simulation Mode Active:** This response is compiled locally from active risk ledger parameters because no valid Gemini API Key is configured.
+
 Based on our active register of ${risks.length} risks, the following **${aboveAppetite.length} critical items** are currently operating **Above Appetite** and require immediate strategic attention:
 
-*   **IPO Governance & Readiness Gaps (Score: 60):** Currently our highest risk item. Stalled due to an outstanding SEBI independent director vacancy, which directly threatens our listing timeline (**${settings.ipoTimeline}**).
-*   **Enterprise Customer Concentration (Score: 48):** Top 3 clients represent **48% of total ARR** (Appetite Limit: 35%). Highly fragile; any account churn heavily impacts cash reserves.
-*   **Pricing Structure Vulnerability (Score: 48):** Increased margin compression due to flat contract formats failing to offset rising customer support SLAs.
+${aboveAppetite.map(r => `*   **${r.title} (Score: ${r.residualScore}):** Mapped in the *${r.category}* category. Owner: ${r.owner || 'Unassigned'}. ${r.description || ''}`).join('\n')}
 
-*Executive Directive:* Immediate audit controls have been drafted to enforce account sponsorship programs and fast-track the independent director nomination.`;
+*Executive Directive:* Immediate audit controls have been drafted to enforce account sponsorship programs and governance compliance.`;
     }
 
     if (qLower.includes('worsening') || qLower.includes('improving') || qLower.includes('trend') || qLower.includes('q-2')) {
-      return `### **Risk Posture Dynamics & Movement Trends**
+      return `### **Risk Posture Dynamics & Movement Trends (Simulated)**
+> [!NOTE]
+> **Simulation Mode Active:** This response is compiled locally from active risk ledger parameters because no valid Gemini API Key is configured.
+
 Tracked monthly snapshots indicate active structural shifts across our operations:
 
-*   **Top Worsening Risk (Deteriorating):** **Customer Concentration** and **Generative AI IP Liability**. High engineering attrition and un-scrubbed API pipelines are accelerating exposure risks in our product labs.
-*   **Stable Posture:** **Founder Dependency** remains elevated but flat. Governance matrices are helping delegate commercial deal closures, but core product designs still bottleneck at the executive level.
-*   **Top Improving Risk (Improving):** **Platform & API Dependency** and **DPDPA Compliance**. The deploy of multi-region AWS cloud failovers and database column PII encryption has successfully reduced operational fragility metrics.`;
+*   **Top Worsening Risk (Deteriorating):** ${worsening.length > 0 ? worsening.map(r => `**${r.title}** (Score: ${r.residualScore})`).join(', ') : 'None currently deteriorating'}.
+*   **Top Improving Risk (Improving):** ${improving.length > 0 ? improving.map(r => `**${r.title}** (Score: ${r.residualScore})`).join(', ') : 'None currently reporting improvements'}.
+*   **Stable Posture:** Other key risks remain within stable, historical tolerances.
+
+*Operational Directive:* Focus mitigation resources on deteriorating vectors to return scores within bounds.`;
     }
 
     if (qLower.includes('growth') || qLower.includes('revenue') || qLower.includes('threat') || qLower.includes('q-3')) {
-      const growthRisks = risks.filter(r => (r.fragility?.growth >= 4 || r.fragility?.revenue >= 4));
-      return `### **Strategic Growth & Revenue Vulnerabilities**
+      const growthRisks = risks.filter(r => (r.category === 'Financial' || r.category === 'Strategic' || r.residualScore >= 12));
+      return `### **Strategic Growth & Revenue Vulnerabilities (Simulated)**
+> [!NOTE]
+> **Simulation Mode Active:** This response is compiled locally from active risk ledger parameters because no valid Gemini API Key is configured.
+
 Strategic objectives are actively exposed to several critical threat vectors in the register:
 
-*   **Revenue Growth Compression:** **Top-Tier Account Concentration (48% ARR)** represents our largest single point of revenue vulnerability. A single client departure will directly halt our cash break-even runway.
-*   **Scale Friction:** **Founder Technical Dependency** limits the velocity of our engineering pipeline, directly delaying our SaaS roadmap expansion and R&D release commits.
-*   **Certification Blockers:** **SOC 2 Gaps** are preventing sales teams from closing key global mid-market enterprise deals, constraining international acquisition streams.`;
+${growthRisks.slice(0, 3).map(r => `*   **${r.title} (Score: ${r.residualScore}):** Directly threatens strategic objectives. ${r.description}`).join('\n')}
+
+*Growth Impact:* These operational friction points directly impact international acquisition streams and ARR growth velocity.`;
     }
 
     if (qLower.includes('interconnect') || qLower.includes('relation') || qLower.includes('network') || qLower.includes('q-4')) {
-      return `### **Risk Interdependency & Cascade Network**
+      const parentChild = risks.filter(r => r.parentRiskId);
+      return `### **Risk Interdependency & Cascade Network (Simulated)**
+> [!NOTE]
+> **Simulation Mode Active:** This response is compiled locally from active risk ledger parameters because no valid Gemini API Key is configured.
+
 Enterprise risks do not operate in isolation. Our system maps several compounding threat chains:
 
-*   **The Governance Chain:** 
-    \`Governance Gaps (IPO Block)\` $\\rightarrow$ \`Founder Technical Dependency\` $\\rightarrow$ \`Senior Engineering Attrition\`
-    *Impact:* Delays in professionalizing the board lock founders into micro-management, causing regretted talent attrition and slowing down roadmap releases.
-*   **The Client Risk Chain:**
-    \`Customer Concentration\` $\\rightarrow$ \`Pricing Structure Vulnerability\` $\\rightarrow$ \`Revenue Atrophy\`
-    *Impact:* Pricing flat-rates squeeze customer-success SLAs, compounding client churn pressure and destabilizing cash-flow predictability.`;
+*   **The Parent-Child Dependency Map:** 
+    ${parentChild.length > 0 ? parentChild.map(r => `*   \`${r.title}\` is a child dependency of Parent Risk ID: \`${r.parentRiskId}\`.`).join('\n') : '*   No active parent-child relations registered. Add relationships in the Risk Ledger to map cascade chains.'}
+*   **Compounding Cascade Effect:** Escalated operational risks cascade directly into financial and valuation metrics. Failure to implement active controls will dilute IPO multiples.`;
     }
 
     if (qLower.includes('kri') || qLower.includes('breach') || qLower.includes('action') || qLower.includes('overdue') || qLower.includes('q-5')) {
       const breachedKRIs = risks.flatMap(r => r.kris || []).filter(k => k.status === 'BREACHED');
       const overdueActions = actions.filter(a => new Date(a.dueDate) < new Date());
-      return `### **Operational Accountability: KRIs & Overdue Actions**
+      return `### **Operational Accountability: KRIs & Overdue Actions (Simulated)**
+> [!NOTE]
+> **Simulation Mode Active:** This response is compiled locally from active risk ledger parameters because no valid Gemini API Key is configured.
+
 Active breaches and task slippages require immediate leadership resolution:
 
 *   **Breached KRIs:** **${breachedKRIs.length} indicators** are currently red, including:
-    *   *Top 3 Accounts revenue share* operating at **48%** (Appetite: 35%).
-    *   *Bangalore R&D developer attrition* at **14%** (Appetite: 8%).
-    *   *Independent Director vacancy* extending to **90 Days** (Appetite: 60 Days).
-*   **Pending Actions:** **${actions.length} strategic mitigations** are outstanding, with **${overdueActions.length} operating past due**, notably:
-    *   *Independent Director nominations* (Due: 2026-06-30, Status: In Progress, Owner: CEO).
-    *   *Regex PII Scrubber deploy on LLMs* (Due: 2026-06-12, Status: In Progress, Owner: SecOps Architect).`;
+    ${breachedKRIs.length > 0 ? breachedKRIs.map(k => `*   *${k.name || k.title}* operating in BREACHED status (Value: ${k.value || 'N/A'}).`).join('\n') : '*   No breached KRIs registered.'}
+*   **Overdue Actions:** **${overdueActions.length} strategic mitigations** are outstanding, including:
+    ${overdueActions.length > 0 ? overdueActions.map(a => `*   *${a.title}* (Due: ${a.dueDate}, Owner: ${a.owner || 'Unassigned'}).`).join('\n') : '*   No overdue actions registered.'}
+
+*Directive:* Immediate prioritization of overdue actions is required to close the security and governance gap.`;
     }
 
-    // Generic response fallback
-    return `### **Board Advisory Brief**
-*Responding to: "${questionText}"*
+    // 2. Smart Custom Query Semantic Mapper
+    let matchedRisks = [];
+    let matchedCategory = "";
 
-1.  **Strategic Focus:** The executive committee is actively monitoring all registered risks, concentrating efforts on the **${aboveAppetite.length} Above Appetite** items that impact corporate valuation.
+    if (qLower.includes('cyber') || qLower.includes('security') || qLower.includes('breach') || qLower.includes('hack') || qLower.includes('leak') || qLower.includes('database') || qLower.includes('vulnerability') || qLower.includes('firewall') || qLower.includes('encryption')) {
+      matchedCategory = "Cyber Security & Data Integrity";
+      matchedRisks = risks.filter(r => r.category === 'Cyber' || r.category === 'Technology' || r.title.toLowerCase().includes('cyber') || r.description.toLowerCase().includes('security'));
+    } else if (qLower.includes('privacy') || qLower.includes('dpdpa') || qLower.includes('consent') || qLower.includes('pii') || qLower.includes('gdpr') || qLower.includes('compliance') || qLower.includes('legal') || qLower.includes('sebi')) {
+      matchedCategory = "Privacy & Legal Compliance";
+      matchedRisks = risks.filter(r => r.category === 'Privacy' || r.category === 'Compliance' || r.title.toLowerCase().includes('privacy') || r.title.toLowerCase().includes('compliance') || r.title.toLowerCase().includes('sebi'));
+    } else if (qLower.includes('revenue') || qLower.includes('financial') || qLower.includes('pricing') || qLower.includes('arr') || qLower.includes('mrr') || qLower.includes('cost') || qLower.includes('valuation') || qLower.includes('discount') || qLower.includes('margin') || qLower.includes('pricing')) {
+      matchedCategory = "Financial Operations & Pricing Stability";
+      matchedRisks = risks.filter(r => r.category === 'Financial' || r.title.toLowerCase().includes('revenue') || r.title.toLowerCase().includes('pricing') || r.title.toLowerCase().includes('concentration'));
+    } else if (qLower.includes('talent') || qLower.includes('attrition') || qLower.includes('hr') || qLower.includes('team') || qLower.includes('employee') || qLower.includes('people') || qLower.includes('engineer') || qLower.includes('staff')) {
+      matchedCategory = "Talent Retention & Human Capital";
+      matchedRisks = risks.filter(r => r.title.toLowerCase().includes('talent') || r.description.toLowerCase().includes('attrition') || r.title.toLowerCase().includes('people') || r.description.toLowerCase().includes('employee'));
+    } else if (qLower.includes('founder') || qLower.includes('dependency') || qLower.includes('key person') || qLower.includes('ceo') || qLower.includes('cto') || qLower.includes('decision')) {
+      matchedCategory = "Key Person & Founder Dependency";
+      matchedRisks = risks.filter(r => r.title.toLowerCase().includes('founder') || r.description.toLowerCase().includes('founder') || r.title.toLowerCase().includes('dependency') || r.title.toLowerCase().includes('key person'));
+    } else if (qLower.includes('ipo') || qLower.includes('listing') || qLower.includes('governance') || qLower.includes('board') || qLower.includes('director')) {
+      matchedCategory = "SEBI Governance & Corporate Readiness";
+      matchedRisks = risks.filter(r => r.title.toLowerCase().includes('ipo') || r.title.toLowerCase().includes('governance') || r.description.toLowerCase().includes('director') || r.title.toLowerCase().includes('readiness'));
+    }
+
+    if (matchedRisks.length > 0) {
+      return `### **Corporate Risk Assessment: ${matchedCategory} (Simulated)**
+> [!NOTE]
+> **Simulation Mode Active:** This response is compiled locally from active risk ledger parameters because no valid Gemini API Key is configured.
+
+We detected keywords related to **${matchedCategory}** in your query. Here is the active risk ledger analysis:
+
+${matchedRisks.map(r => `*   **${r.title} (Score: ${r.residualScore} - ${r.appetiteStatus}):** ${r.description}
+    *Controls Mapped:* ${r.controls && r.controls.length > 0 ? r.controls.map(c => `\`${c.name || c.title || c}\``).join(', ') : '_No active controls mapped._'}
+    *Trend Indicator:* ${r.trend === 'Deteriorating' ? '⚠️ Deteriorating' : r.trend === 'Improving' ? '✅ Improving' : 'Stable'}.`).join('\n\n')}
+
+*Executive Insight:* These profiles directly impact corporate valuations and audit readiness. Ensure all mapped controls are fully operational.`;
+    }
+
+    // 3. Smart Default Fallback (Not entirely static anymore!)
+    return `### **Board Advisory Brief (Simulated)**
+> [!NOTE]
+> **Simulation Mode Active:** This response is compiled locally from active risk ledger parameters because no valid Gemini API Key is configured.
+
+Responding to custom query: *"${questionText}"*
+
+1.  **Strategic Focus:** The executive committee is actively monitoring all registered risks, concentrating efforts on the **${aboveAppetite.length} Above Appetite** items (specifically *${aboveAppetite.map(r => r.title).slice(0,2).join(', ')}*) that impact corporate valuation.
 2.  **Mitigation Velocity:** Active controls are mapped to 85% of critical operational areas. The transition to a Big 4 auditor is successfully completed.
-3.  **Governance Alignment:** All critical regulatory indices under the DPDPA privacy frameworks are operational and verified.`;
+3.  **Governance Alignment:** All critical regulatory indices under the DPDPA privacy frameworks are operational and verified.
+
+*Note:* To get fully customized generative answers to your specific queries, configure a valid Gemini API Key in [Platform Settings](/settings).`;
   }
 }

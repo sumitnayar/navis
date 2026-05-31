@@ -546,6 +546,7 @@ export class StorageService {
           const locData = await supabaseClient.from('settings_locations').select('location_name');
           
           const localKey = localStorage.getItem('navis_v3_gemini_api_key') || '';
+          const localRole = localStorage.getItem('navis_v3_active_user_role') || s.active_user_role || 'CRO (Chief Risk Officer)';
 
           return {
             brandName: s.brand_name,
@@ -555,7 +556,7 @@ export class StorageService {
             soc2Status: s.soc2_status,
             businessUnits: buData.data ? buData.data.map(bu => bu.unit_name) : [],
             locations: locData.data ? locData.data.map(loc => loc.location_name) : [],
-            activeUserRole: s.active_user_role,
+            activeUserRole: localRole,
             geminiApiKey: localKey
           };
         }
@@ -573,6 +574,7 @@ export class StorageService {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
     }
     parsed.geminiApiKey = localStorage.getItem('navis_v3_gemini_api_key') || parsed.geminiApiKey || '';
+    parsed.activeUserRole = localStorage.getItem('navis_v3_active_user_role') || parsed.activeUserRole || 'CRO (Chief Risk Officer)';
     return parsed;
   }
 
@@ -583,6 +585,11 @@ export class StorageService {
     // Always securely save the Gemini Key in local browser cache only
     if (settings.geminiApiKey !== undefined) {
       localStorage.setItem('navis_v3_gemini_api_key', settings.geminiApiKey);
+    }
+
+    // Always securely save the simulated Active User Role in local browser cache only
+    if (settings.activeUserRole !== undefined) {
+      localStorage.setItem('navis_v3_active_user_role', settings.activeUserRole);
     }
 
     if (isCloudMode) {
@@ -599,8 +606,7 @@ export class StorageService {
           company_name: updated.companyName,
           revenue_bracket: updated.revenueBracket,
           ipo_timeline: updated.ipoTimeline,
-          soc2_status: updated.soc2Status || 'SOC 2 Type II Certified',
-          active_user_role: updated.activeUserRole
+          soc2_status: updated.soc2Status || 'SOC 2 Type II Certified'
         };
 
         const { error } = await supabaseClient.from('settings').upsert(dbSettings);

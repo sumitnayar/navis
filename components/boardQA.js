@@ -39,6 +39,9 @@ Please select one of the core board questions on the left, or type a custom quer
   }
 
   render(container) {
+    const settings = this.state.settings;
+    const isApiConnected = Boolean(settings.geminiApiKey);
+
     // Preset Boardroom questions
     const presets = [
       { id: 'q-1', text: "What are our biggest risks and above appetite items?" },
@@ -80,9 +83,12 @@ Please select one of the core board questions on the left, or type a custom quer
         <!-- RIGHT: CHAT PORTAL -->
         <div class="chat-window">
           <div class="chat-header">
-            <span class="chat-header-dot"></span>
-            <div style="font-family:var(--font-header);font-weight:600;font-size:13px;color:var(--text-primary);">
-              RiskOS Director Copilot
+            <span class="chat-header-dot" style="background-color: ${isApiConnected ? 'var(--color-within-appetite)' : 'var(--color-near-appetite)'};"></span>
+            <div style="font-family:var(--font-header);font-weight:600;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+              <span>Navis Director Copilot</span>
+              <span class="status-badge ${isApiConnected ? 'within' : 'near'}" style="font-size:9px;padding:2px 6px;">
+                ${isApiConnected ? 'Live Gemini AI' : 'Simulation Mode'}
+              </span>
             </div>
           </div>
 

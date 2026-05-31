@@ -258,8 +258,13 @@ export class DashboardComponent {
 
           <!-- ONE-CLICK BOARD NARRATIVE BRIEF -->
           <div class="glass-panel">
-            <h3 class="dashboard-card-title">
-              <span>AI Board Narrative Brief</span>
+            <h3 class="dashboard-card-title" style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="display:flex;align-items:center;gap:8px;">
+                AI Board Narrative Brief
+                <span class="status-badge ${settings.geminiApiKey ? 'within' : 'near'}" style="font-size:9px;padding:2px 6px;font-weight:normal;">
+                  ${settings.geminiApiKey ? 'Live Gemini AI' : 'Simulation Mode'}
+                </span>
+              </span>
               <button class="btn btn-primary btn-small no-print" id="btn-generate-brief">
                 ${this.isGeneratingBrief ? 'Analyzing...' : 'Generate Brief'}
               </button>
