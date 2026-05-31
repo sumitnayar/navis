@@ -17,7 +17,9 @@
 </head>
 <body>
 
-  <div class="app-container">
+  <div id="public-route-container" class="public-route-container"></div>
+
+  <div class="app-container is-hidden" id="app-container" aria-hidden="true">
     
     <!-- STICKY SIDEBAR NAVIGATION -->
     <aside class="sidebar no-print">
@@ -152,13 +154,17 @@
           </svg>
         </div>
         <div class="profile-company" id="profile-active-company">ScaleFlow Technologies</div>
+        <button class="btn btn-secondary btn-small sign-out-button" id="btn-sign-out" type="button">Sign Out</button>
       </div>
 
     </aside>
 
     <!-- MAIN VIEWPORT DISPLAY AREA -->
-    <main class="main-content" id="page-render-container">
-      <!-- Dynamic modules inject content here -->
+    <main class="main-content">
+      <div id="page-render-container">
+        <!-- Dynamic modules inject content here -->
+      </div>
+      <footer class="private-preview-footer no-print">Navis MVP v0.3 &mdash; Private Preview</footer>
     </main>
 
   </div>

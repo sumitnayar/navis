@@ -9,6 +9,7 @@ import {
   seededScenarios, 
   seededCultureMetrics 
 } from './riskUniverse.js';
+import { isSupabaseConfigured, supabaseClient } from './supabaseClient.js';
 
 const STORAGE_KEYS = {
   RISKS: 'navis_v3_risks',
@@ -21,28 +22,7 @@ const STORAGE_KEYS = {
   SEEDED: 'navis_v3_seeded_flag_v3'
 };
 
-// ------------------------------------------
-// 1. SUPABASE CLIENT DUAL-MODE INITIALIZATION
-// ------------------------------------------
-let supabaseClient = null;
-const supabaseUrl = window.ENV?.SUPABASE_URL || '';
-const supabaseKey = window.ENV?.SUPABASE_KEY || '';
-
-const isSupabaseActive = (
-  supabaseUrl && 
-  supabaseKey && 
-  supabaseUrl !== '__SUPABASE_URL__' && 
-  supabaseKey !== '__SUPABASE_KEY__'
-);
-
-if (isSupabaseActive) {
-  try {
-    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-    console.log("NAVIS Cloud Demo Active: Connected to Supabase Cluster ebevtxhjngoxvrgprqyk.");
-  } catch (e) {
-    console.error("Failed to initialize Supabase client, falling back to Local Demo Mode:", e);
-  }
-}
+const isCloudMode = isSupabaseConfigured && supabaseClient;
 
 export class StorageService {
   static init() {
@@ -81,7 +61,7 @@ export class StorageService {
     this.init();
 
     // A. CLOUD DEMO / SAAS PRODUCTION MODE (Supabase fetch with joins)
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         const { data, error } = await supabaseClient
           .from('risks')
@@ -179,7 +159,7 @@ export class StorageService {
     const activeUser = settings.activeUserRole || "CRO";
 
     // A. CLOUD DEMO / PRODUCTION MODE (Supabase write RLS protected)
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         if (settings.activeUserRole && settings.activeUserRole.includes('Viewer')) {
           alert("Supabase Security Alert: Reviewer accounts hold read-only privileges. Writes are blocked at the database layer (RLS).");
@@ -313,7 +293,7 @@ export class StorageService {
     const settings = await this.getSettings();
 
     // A. CLOUD DEMO MODE (Supabase delete RLS protected)
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         if (settings.activeUserRole && settings.activeUserRole.includes('Viewer')) {
           alert("Supabase Security Alert: Reviewer accounts hold read-only privileges. Deletions are blocked by RLS.");
@@ -357,7 +337,7 @@ export class StorageService {
   // --- TREND LOGS ENGINE QUERY ---
   
   static async getTrendLogs() {
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         const { data, error } = await supabaseClient.from('trend_logs').select('*').order('timestamp', { ascending: false });
         if (error) throw error;
@@ -383,7 +363,7 @@ export class StorageService {
   // --- STRATEGIC OBJECTIVES CRUD (F1) ---
 
   static async getObjectives() {
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         const { data, error } = await supabaseClient.from('strategic_objectives').select('*');
         if (error) throw error;
@@ -408,7 +388,7 @@ export class StorageService {
   static async saveObjective(objective) {
     const settings = await this.getSettings();
 
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         if (settings.activeUserRole && settings.activeUserRole.includes('Viewer')) {
           alert("Supabase Security Alert: Reviewer accounts hold read-only privileges.");
@@ -454,7 +434,7 @@ export class StorageService {
   // --- SCENARIOS (F4) ---
 
   static async getScenarios() {
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         const { data, error } = await supabaseClient.from('scenarios').select('*');
         if (error) throw error;
@@ -492,7 +472,7 @@ export class StorageService {
   // --- CULTURE METRICS CRUD (F9) ---
 
   static async getCultureMetrics() {
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         const { data, error } = await supabaseClient.from('culture_metrics').select('*').order('recorded_at', { ascending: false }).limit(1);
         if (error) throw error;
@@ -520,7 +500,7 @@ export class StorageService {
   static async saveCultureMetrics(metrics) {
     const settings = await this.getSettings();
 
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         if (settings.activeUserRole && settings.activeUserRole.includes('Viewer')) {
           alert("Supabase Security Alert: Reviewer accounts hold read-only privileges.");
@@ -554,7 +534,7 @@ export class StorageService {
   // --- SETTINGS CLIENT ---
 
   static async getSettings() {
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         const { data, error } = await supabaseClient.from('settings').select('*').eq('id', 'default_config');
         if (error) throw error;
@@ -596,7 +576,7 @@ export class StorageService {
     const current = await this.getSettings();
     const updated = { ...current, ...settings };
 
-    if (supabaseClient) {
+    if (isCloudMode) {
       try {
         if (current.activeUserRole && current.activeUserRole.includes('Viewer')) {
           alert("Supabase Security Alert: Reviewer accounts hold read-only privileges.");

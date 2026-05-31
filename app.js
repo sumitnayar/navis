@@ -1,5 +1,6 @@
-// Core Application Shell & Tab Router Coordinate Layer for NAVIS V3
+// Core Application Shell, Auth Boundary, and Route Coordinator for NAVIS V3
 
+import { AuthService } from './services/authService.js';
 import { StorageService } from './services/storageService.js';
 import { DashboardComponent } from './components/dashboard.js';
 import { ObjectivesComponent } from './components/objectives.js';
@@ -15,6 +16,51 @@ import { CultureComponent } from './components/culture.js';
 import { SettingsComponent } from './components/settings.js';
 import { BoardQAComponent } from './components/boardQA.js';
 
+const TAB_ROUTES = {
+  dashboard: '/dashboard',
+  boardQA: '/ai',
+  objectives: '/objectives',
+  scenario: '/scenario',
+  portfolio: '/portfolio',
+  network: '/network',
+  register: '/risks',
+  taxonomy: '/taxonomy',
+  assurance: '/assurance',
+  controls: '/controls',
+  actions: '/actions',
+  culture: '/culture',
+  settings: '/settings'
+};
+
+const PROTECTED_ROUTES = {
+  '/dashboard': 'dashboard',
+  '/board-qa': 'boardQA',
+  '/ai': 'boardQA',
+  '/objectives': 'objectives',
+  '/scenario': 'scenario',
+  '/scenarios': 'scenario',
+  '/portfolio': 'portfolio',
+  '/network': 'network',
+  '/risks': 'register',
+  '/risk-register': 'register',
+  '/register': 'register',
+  '/incidents': 'register',
+  '/reports': 'dashboard',
+  '/taxonomy': 'taxonomy',
+  '/assurance': 'assurance',
+  '/controls': 'controls',
+  '/actions': 'actions',
+  '/culture': 'culture',
+  '/settings': 'settings'
+};
+
+const PUBLIC_ROUTES = new Set(['/', '/login', '/contact']);
+
+function getCurrentPath() {
+  const path = window.location.pathname.replace(/\/+$/, '');
+  return path || '/';
+}
+
 class RiskOSApplication {
   constructor() {
     this.state = {
@@ -23,73 +69,416 @@ class RiskOSApplication {
       objectives: [],
       scenarios: [],
       cultureMetrics: {},
-      activeTab: 'dashboard', // default board first landing page
-      editingRiskId: null // used to deep-link node selection to forms
+      activeTab: 'dashboard',
+      editingRiskId: null
     };
 
     this.components = {};
     this.activeComponentInstance = null;
+    this.appHasInitialized = false;
+    this.sidebarEventsBound = false;
+    this.appContainer = document.querySelector('#app-container');
+    this.publicContainer = document.querySelector('#public-route-container');
   }
 
   async initialize() {
-    // 1. Seed database if first load, fetch active register
+    window.addEventListener('popstate', () => {
+      this.handleRoute();
+    });
+
+    AuthService.onAuthStateChange((session) => {
+      const path = getCurrentPath();
+      if (!session && !PUBLIC_ROUTES.has(path)) {
+        this.resetAuthenticatedState();
+        this.navigate('/login', { replace: true });
+      }
+    });
+
+    await this.handleRoute();
+  }
+
+  async handleRoute() {
+    const path = getCurrentPath();
+    const session = await this.getSessionSafely();
+
+    if (path === '/') {
+      this.renderHome(session);
+      return;
+    }
+
+    if (path === '/contact') {
+      this.renderContact(session);
+      return;
+    }
+
+    if (path === '/login') {
+      if (session) {
+        this.navigate('/dashboard', { replace: true });
+        return;
+      }
+
+      this.renderLogin();
+      return;
+    }
+
+    const tabId = PROTECTED_ROUTES[path];
+    if (!tabId) {
+      this.navigate(session ? '/dashboard' : '/login', { replace: true });
+      return;
+    }
+
+    if (!session) {
+      this.navigate('/login', { replace: true });
+      return;
+    }
+
+    await this.renderAuthenticatedApp(tabId);
+  }
+
+  async getSessionSafely() {
+    try {
+      return await AuthService.getSession();
+    } catch (error) {
+      console.warn('Unable to read auth session:', error.message);
+      return null;
+    }
+  }
+
+  navigate(path, options = {}) {
+    if (getCurrentPath() !== path) {
+      const update = options.replace ? 'replaceState' : 'pushState';
+      window.history[update]({}, '', path);
+    }
+
+    this.handleRoute();
+  }
+
+  showPublicRoute() {
+    document.body.classList.add('public-page');
+    document.body.classList.remove('app-page');
+    this.publicContainer.classList.remove('is-hidden');
+    this.appContainer.classList.add('is-hidden');
+    this.appContainer.setAttribute('aria-hidden', 'true');
+  }
+
+  showAuthenticatedApp() {
+    document.body.classList.add('app-page');
+    document.body.classList.remove('public-page');
+    this.publicContainer.classList.add('is-hidden');
+    this.appContainer.classList.remove('is-hidden');
+    this.appContainer.removeAttribute('aria-hidden');
+  }
+
+  renderHome(session) {
+    this.showPublicRoute();
+    document.title = 'Navis | Navigate Risk. Enable Growth.';
+
+    const primaryPath = session ? '/dashboard' : '/login';
+    const primaryLabel = session ? 'Open Dashboard' : 'Sign In';
+
+    this.publicContainer.innerHTML = `
+      <div class="public-page-shell">
+        <header class="public-nav">
+          <a class="public-brand" href="/" data-route="/">
+            <span class="public-brand-mark">NV</span>
+            <span>Navis</span>
+          </a>
+          <nav class="public-nav-actions" aria-label="Primary">
+            <a href="${primaryPath}" data-route="${primaryPath}">${primaryLabel}</a>
+            <a class="btn btn-primary btn-small" href="/contact" data-route="/contact">Request Demo</a>
+          </nav>
+        </header>
+
+        <main class="public-home">
+          <section class="public-hero">
+            <div class="hero-copy">
+              <span class="public-kicker">Private Preview</span>
+              <h1>Navis</h1>
+              <p class="hero-tagline">Navigate Risk. Enable Growth.</p>
+              <p class="hero-description">Navis is an AI-enabled Enterprise Risk Management platform designed for boards, leadership teams, risk professionals, and growing organizations.</p>
+              <p class="hero-support">Navis helps organizations move beyond static spreadsheets and fragmented risk registers by bringing risks, controls, incidents, actions, compliance oversight, and board reporting into one intelligent operating layer.</p>
+              <div class="hero-actions">
+                <a class="btn btn-primary" href="${primaryPath}" data-route="${primaryPath}">${primaryLabel} &rarr;</a>
+                <a class="btn btn-secondary" href="/contact" data-route="/contact">Request Demo</a>
+              </div>
+            </div>
+            <div class="hero-signal-panel" aria-label="Risk intelligence preview">
+              <div class="signal-header">
+                <span>Board Risk Intelligence</span>
+                <span class="status-badge within">Live</span>
+              </div>
+              <div class="signal-metric-row">
+                <span>Enterprise Risk Posture</span>
+                <strong>Elevated</strong>
+              </div>
+              <div class="signal-bars">
+                <span style="height: 72%;"></span>
+                <span style="height: 46%;"></span>
+                <span style="height: 84%;"></span>
+                <span style="height: 38%;"></span>
+                <span style="height: 61%;"></span>
+              </div>
+              <div class="signal-grid">
+                <div>
+                  <span>Controls</span>
+                  <strong>82%</strong>
+                </div>
+                <div>
+                  <span>Actions</span>
+                  <strong>14</strong>
+                </div>
+                <div>
+                  <span>Reports</span>
+                  <strong>Ready</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="public-section">
+            <div class="section-copy">
+              <span class="public-kicker">Built for Modern Governance</span>
+              <h2>Built for Modern Governance</h2>
+              <p>Modern organizations need more than risk documentation. They need risk intelligence. Navis helps teams identify, assess, monitor, and respond to risks while aligning enterprise risk management with strategic objectives, compliance expectations, and board-level oversight.</p>
+            </div>
+            <div class="capability-grid">
+              ${this.renderCapabilityCards([
+                'Enterprise Risk Management',
+                'Control Monitoring',
+                'Incident Management',
+                'Compliance Intelligence',
+                'AI-Assisted Risk Analysis',
+                'Board-Ready Reporting'
+              ])}
+            </div>
+          </section>
+
+          <section class="public-section public-section-split">
+            <div class="section-copy">
+              <span class="public-kicker">Operating Layer</span>
+              <h2>From Risk Visibility to Risk Intelligence</h2>
+              <p>Navis combines structured governance workflows with AI-powered insights to help organizations strengthen resilience, improve accountability, and make better decisions.</p>
+            </div>
+            <div class="intelligence-list">
+              <span>Risk identification and assessment</span>
+              <span>Control and KRI monitoring</span>
+              <span>Incident and action accountability</span>
+              <span>Board-ready reporting cadence</span>
+            </div>
+          </section>
+        </main>
+
+        <footer class="public-footer">
+          <span>Navis &copy; 2026</span>
+          <span>Private Preview</span>
+        </footer>
+      </div>
+    `;
+
+    this.bindPublicRouteLinks();
+  }
+
+  renderCapabilityCards(labels) {
+    return labels.map((label) => `
+      <article class="capability-card">
+        <span class="capability-dot"></span>
+        <h3>${label}</h3>
+      </article>
+    `).join('');
+  }
+
+  renderLogin() {
+    this.showPublicRoute();
+    document.title = 'Sign In | Navis';
+
+    const authWarning = AuthService.isConfigured()
+      ? ''
+      : '<div class="auth-message error">Supabase authentication is not configured for this deployment.</div>';
+
+    this.publicContainer.innerHTML = `
+      <div class="auth-page-shell">
+        <a class="public-brand auth-brand" href="/" data-route="/">
+          <span class="public-brand-mark">NV</span>
+          <span>Navis</span>
+        </a>
+
+        <section class="auth-card">
+          <span class="public-kicker">Private Preview</span>
+          <h1>Sign in to Navis</h1>
+          <p>Access the board risk intelligence console.</p>
+          ${authWarning}
+          <form id="login-form" class="auth-form">
+            <div class="form-group">
+              <label for="login-email">Email</label>
+              <input id="login-email" class="form-control" type="email" autocomplete="email" required />
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <input id="login-password" class="form-control" type="password" autocomplete="current-password" required />
+            </div>
+            <div id="login-error" class="auth-message error is-hidden"></div>
+            <button id="login-submit" class="btn btn-primary auth-submit" type="submit">Sign In</button>
+          </form>
+        </section>
+      </div>
+    `;
+
+    this.bindPublicRouteLinks();
+    this.bindLoginForm();
+  }
+
+  bindLoginForm() {
+    const form = document.querySelector('#login-form');
+    const errorEl = document.querySelector('#login-error');
+    const submitBtn = document.querySelector('#login-submit');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorEl.classList.add('is-hidden');
+      errorEl.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in...';
+
+      try {
+        const email = form.querySelector('#login-email').value.trim();
+        const password = form.querySelector('#login-password').value;
+        await AuthService.signIn(email, password);
+        this.navigate('/dashboard', { replace: true });
+      } catch (error) {
+        errorEl.textContent = error.message || 'Unable to sign in. Check your email and password.';
+        errorEl.classList.remove('is-hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+      }
+    });
+  }
+
+  renderContact(session) {
+    this.showPublicRoute();
+    document.title = 'Request Demo | Navis';
+
+    const primaryPath = session ? '/dashboard' : '/login';
+    const primaryLabel = session ? 'Open Dashboard' : 'Sign In';
+
+    this.publicContainer.innerHTML = `
+      <div class="auth-page-shell contact-shell">
+        <header class="public-nav contact-nav">
+          <a class="public-brand" href="/" data-route="/">
+            <span class="public-brand-mark">NV</span>
+            <span>Navis</span>
+          </a>
+          <a href="${primaryPath}" data-route="${primaryPath}">${primaryLabel}</a>
+        </header>
+
+        <section class="auth-card contact-card">
+          <span class="public-kicker">Request Demo</span>
+          <h1>See Navis in private preview</h1>
+          <p>Share a few details and the Navis team will follow up.</p>
+          <form id="contact-form" class="auth-form">
+            <div class="form-group">
+              <label for="contact-name">Name</label>
+              <input id="contact-name" class="form-control" type="text" autocomplete="name" required />
+            </div>
+            <div class="form-group">
+              <label for="contact-email">Email</label>
+              <input id="contact-email" class="form-control" type="email" autocomplete="email" required />
+            </div>
+            <div class="form-group">
+              <label for="contact-company">Company</label>
+              <input id="contact-company" class="form-control" type="text" autocomplete="organization" />
+            </div>
+            <div class="form-group">
+              <label for="contact-message">Message</label>
+              <textarea id="contact-message" class="form-control" rows="5"></textarea>
+            </div>
+            <div id="contact-success" class="auth-message success is-hidden">Request received. The preview team will follow up shortly.</div>
+            <button class="btn btn-primary auth-submit" type="submit">Request Demo</button>
+          </form>
+        </section>
+      </div>
+    `;
+
+    this.bindPublicRouteLinks();
+    this.bindContactForm();
+  }
+
+  bindContactForm() {
+    const form = document.querySelector('#contact-form');
+    const successEl = document.querySelector('#contact-success');
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      form.reset();
+      successEl.classList.remove('is-hidden');
+    });
+  }
+
+  bindPublicRouteLinks() {
+    this.publicContainer.querySelectorAll('[data-route]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        this.navigate(link.getAttribute('data-route'));
+      });
+    });
+  }
+
+  async renderAuthenticatedApp(tabId) {
+    this.showAuthenticatedApp();
+
+    if (!this.appHasInitialized) {
+      await this.initializeAuthenticatedState();
+    }
+
+    this.routeTo(tabId, { updateUrl: false });
+  }
+
+  async initializeAuthenticatedState() {
     StorageService.init();
-    
-    // Load all relational modules (F1, F4, F9, F2)
+
     this.state.risks = await StorageService.getRisks();
     this.state.settings = await StorageService.getSettings();
     this.state.objectives = await StorageService.getObjectives();
     this.state.scenarios = await StorageService.getScenarios();
     this.state.cultureMetrics = await StorageService.getCultureMetrics();
 
-    // 2. Setup sidebar branding and session tags
-    this.updateBrandVisuals();
-    this.renderSidebar();
-
-    // 3. Register routing components (All V3 modules)
     this.components = {
-      'dashboard': DashboardComponent,
-      'boardQA': BoardQAComponent,
-      'objectives': ObjectivesComponent,
-      'scenario': ScenarioComponent,
-      'portfolio': PortfolioComponent,
-      'network': NetworkComponent,
-      'register': RegisterComponent,
-      'taxonomy': TaxonomyComponent,
-      'assurance': AssuranceComponent,
-      'controls': ControlsComponent,
-      'actions': ActionsComponent,
-      'culture': CultureComponent,
-      'settings': SettingsComponent
+      dashboard: DashboardComponent,
+      boardQA: BoardQAComponent,
+      objectives: ObjectivesComponent,
+      scenario: ScenarioComponent,
+      portfolio: PortfolioComponent,
+      network: NetworkComponent,
+      register: RegisterComponent,
+      taxonomy: TaxonomyComponent,
+      assurance: AssuranceComponent,
+      controls: ControlsComponent,
+      actions: ActionsComponent,
+      culture: CultureComponent,
+      settings: SettingsComponent
     };
 
-    // 4. Bind sidebar clicks
+    this.updateBrandVisuals();
     this.bindSidebarEvents();
-
-    // 5. Initial render of landing page
-    this.routeTo(this.state.activeTab);
+    this.appHasInitialized = true;
   }
 
   updateBrandVisuals() {
     const s = this.state.settings;
     
-    // Logo Initials
     const logoEl = document.querySelector('#sidebar-logo');
     if (logoEl && s.brandName) {
-      const letters = s.brandName.split(' ').map(w => w[0]).join('');
+      const letters = s.brandName.split(' ').map((word) => word[0]).join('');
       logoEl.textContent = letters.slice(0, 2).toUpperCase();
     }
 
-    // Logo Text
     const nameEl = document.querySelector('#sidebar-brand-name');
     if (nameEl && s.brandName) {
       nameEl.textContent = s.brandName;
     }
 
-    // Document Title
     document.title = `${s.brandName || 'NAVIS'} | Board Risk Intelligence Platform`;
 
-    // Session Context tags
     const roleEl = document.querySelector('#profile-active-role');
     if (roleEl) roleEl.textContent = s.activeUserRole;
 
@@ -98,66 +487,70 @@ class RiskOSApplication {
   }
 
   renderSidebar() {
-    // We statically bind sidebar items in index.html and update active classes.
     const tabs = [
       'dashboard', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
       'register', 'taxonomy', 'assurance', 'controls', 'actions',
       'culture', 'settings'
     ];
-    tabs.forEach(tab => {
+
+    tabs.forEach((tab) => {
       const link = document.querySelector(`#nav-${tab}`);
-      if (link) {
-        if (tab === this.state.activeTab) {
-          link.classList.add('active');
-        } else {
-          link.classList.remove('active');
-        }
+      if (!link) return;
+
+      if (tab === this.state.activeTab) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
       }
     });
   }
 
-  // Routing coordinator
-  routeTo(tabId) {
+  routeTo(tabId, options = {}) {
     if (!this.components[tabId]) return;
+
+    if (options.updateUrl !== false) {
+      const path = TAB_ROUTES[tabId] || '/dashboard';
+      if (getCurrentPath() !== path) {
+        window.history.pushState({}, '', path);
+      }
+    }
 
     this.state.activeTab = tabId;
     this.renderSidebar();
     this.updateBrandVisuals();
 
     const mainContainer = document.querySelector('#page-render-container');
-    if (mainContainer) {
-      // Clear container
-      mainContainer.innerHTML = '';
-      
-      // Instantiate and render component
-      const ComponentClass = this.components[tabId];
-      this.activeComponentInstance = new ComponentClass(this.state, (stateUpdates) => {
-        // State update reactive callback: merges updates, refreshes core components
-        if (stateUpdates) {
-          Object.assign(this.state, stateUpdates);
-          this.updateBrandVisuals();
-          
-          // If tab routing was requested during state update
-          if (stateUpdates.activeTab) {
-            this.routeTo(stateUpdates.activeTab);
-          } else {
-            // Re-render active
-            this.activeComponentInstance.render(mainContainer);
-          }
-        }
-      });
+    if (!mainContainer) return;
 
-      this.activeComponentInstance.render(mainContainer);
-    }
+    mainContainer.innerHTML = '';
+
+    const ComponentClass = this.components[tabId];
+    this.activeComponentInstance = new ComponentClass(this.state, (stateUpdates) => {
+      if (stateUpdates) {
+        Object.assign(this.state, stateUpdates);
+        this.updateBrandVisuals();
+        
+        if (stateUpdates.activeTab) {
+          this.routeTo(stateUpdates.activeTab);
+        } else {
+          this.activeComponentInstance.render(mainContainer);
+        }
+      }
+    });
+
+    this.activeComponentInstance.render(mainContainer);
   }
 
   bindSidebarEvents() {
+    if (this.sidebarEventsBound) return;
+
     const tabs = [
       'dashboard', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
       'register', 'taxonomy', 'assurance', 'controls', 'actions',
       'culture', 'settings'
     ];
-    tabs.forEach(tab => {
+
+    tabs.forEach((tab) => {
       const link = document.querySelector(`#nav-${tab}`);
       if (link) {
         link.addEventListener('click', () => {
@@ -165,10 +558,38 @@ class RiskOSApplication {
         });
       }
     });
+
+    const profileSettingsLink = document.querySelector('#nav-settings-lnk');
+    if (profileSettingsLink) {
+      profileSettingsLink.addEventListener('click', () => {
+        this.routeTo('settings');
+      });
+    }
+
+    const signOutButton = document.querySelector('#btn-sign-out');
+    if (signOutButton) {
+      signOutButton.addEventListener('click', async () => {
+        await AuthService.signOut();
+        this.resetAuthenticatedState();
+        this.navigate('/login', { replace: true });
+      });
+    }
+
+    this.sidebarEventsBound = true;
+  }
+
+  resetAuthenticatedState() {
+    this.appHasInitialized = false;
+    this.activeComponentInstance = null;
+    this.state.activeTab = 'dashboard';
+
+    const mainContainer = document.querySelector('#page-render-container');
+    if (mainContainer) {
+      mainContainer.innerHTML = '';
+    }
   }
 }
 
-// Boot application when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
   const app = new RiskOSApplication();
   app.initialize();
