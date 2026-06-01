@@ -6,6 +6,52 @@ export class AIService {
   // --- REAL GEMINI API CONNECTOR ---
   static async queryGemini(prompt, apiKey) {
     try {
+      // 1. Prioritize Secure Server-Side Bridge
+      try {
+        const response = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ prompt })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          return result.text;
+        }
+
+        // Handle specific server-side errors
+        const err = await response.json();
+        
+        // If the server explicitly complains about a missing key, check if we have a local fallback key
+        if (err.code === 'MISSING_SERVER_KEY') {
+          if (apiKey) {
+            console.log("Server environment key is missing, falling back to client-side developer key...");
+            // Proceed to the direct client fetch below
+          } else {
+            throw new Error('GEMINI_API_KEY is not configured on the server. Please set it as an environment variable in Vercel, or set a local developer key in Platform Settings.');
+          }
+        } else {
+          // General server-side errors (e.g. quota, bad prompt) should be thrown directly
+          throw new Error(err.error || 'Server bridge failed to process Gemini request');
+        }
+      } catch (serverError) {
+        // If it's a missing server key error we already handled, rethrow it
+        if (serverError.message && serverError.message.includes('not configured on the server')) {
+          throw serverError;
+        }
+        
+        // If the server route is not found or connection failed (e.g. local dev without api server),
+        // we can fallback to direct browser call if a local apiKey exists.
+        if (apiKey) {
+          console.warn("Secure server bridge failed/unreachable. Attempting direct browser call fallback:", serverError);
+        } else {
+          throw serverError;
+        }
+      }
+
+      // 2. Direct Browser Fallback (if client key is provided and server route was missing/keyless)
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
@@ -25,8 +71,9 @@ export class AIService {
 
       const result = await response.json();
       return result.candidates?.[0]?.content?.parts?.[0]?.text || "Unable to extract response from Gemini.";
+
     } catch (error) {
-      console.error("Gemini API Error, falling back to simulated intelligence:", error);
+      console.error("Gemini API Router Error:", error);
       throw error;
     }
   }
@@ -185,11 +232,12 @@ export class AIService {
     `;
 
     let apiErrorNotice = "";
-    if (settings.geminiApiKey) {
-      try {
-        return await this.queryGemini(contextPrompt, settings.geminiApiKey);
-      } catch (e) {
-        console.error("Gemini Brief Call failed, falling back to simulated intelligence:", e);
+    try {
+      const clientKey = settings.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
+      return await this.queryGemini(contextPrompt, clientKey);
+    } catch (e) {
+      console.error("Gemini Brief Call failed, falling back to simulated intelligence:", e);
+      if (e.message && !e.message.includes('not configured on the server') && !e.message.includes('Failed to fetch')) {
         apiErrorNotice = `> [!CAUTION]
 > **Gemini API Call Failed:** ${e.message || 'Unknown network error'}. Falling back to Simulation Mode.
 \n\n`;
@@ -254,11 +302,12 @@ To restore risk posture within acceptable appetite levels, the executive committ
     `;
 
     let apiErrorNotice = "";
-    if (settings.geminiApiKey) {
-      try {
-        return await this.queryGemini(prompt, settings.geminiApiKey);
-      } catch (e) {
-        console.error("Gemini Q&A Call failed, falling back to simulated intelligence:", e);
+    try {
+      const clientKey = settings.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
+      return await this.queryGemini(prompt, clientKey);
+    } catch (e) {
+      console.error("Gemini Q&A Call failed, falling back to simulated intelligence:", e);
+      if (e.message && !e.message.includes('not configured on the server') && !e.message.includes('Failed to fetch')) {
         apiErrorNotice = `> [!CAUTION]
 > **Gemini API Call Failed:** ${e.message || 'Unknown network error'}. 
 > The system has automatically fallen back to Simulation Mode. Please verify your API Key and network configurations in [Platform Settings](/settings).
@@ -805,11 +854,11 @@ Responding to custom query: *"${questionText}"*
     `;
 
     let apiErrorNotice = "";
-    if (apiKey) {
-      try {
-        return await this.queryGemini(prompt, apiKey);
-      } catch (e) {
-        console.error("Gemini Profile Generation failed, falling back to simulated intelligence:", e);
+    try {
+      return await this.queryGemini(prompt, apiKey);
+    } catch (e) {
+      console.error("Gemini Profile Generation failed, falling back to simulated intelligence:", e);
+      if (e.message && !e.message.includes('not configured on the server') && !e.message.includes('Failed to fetch')) {
         apiErrorNotice = `> [!CAUTION]
 > **Gemini API Call Failed:** ${e.message || 'Unknown network error'}. Falling back to high-fidelity Simulation Mode.
 \n\n`;

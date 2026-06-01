@@ -442,6 +442,20 @@ class RiskOSApplication {
     this.state.scenarios = await StorageService.getScenarios();
     this.state.cultureMetrics = await StorageService.getCultureMetrics();
 
+    // Check secure server-side Gemini configuration status
+    try {
+      const resp = await fetch('/api/gemini');
+      if (resp.ok) {
+        const status = await resp.json();
+        this.state.serverGeminiConfigured = !!status.configured;
+      } else {
+        this.state.serverGeminiConfigured = false;
+      }
+    } catch (e) {
+      console.warn("Could not retrieve secure Gemini status from server:", e);
+      this.state.serverGeminiConfigured = false;
+    }
+
     this.components = {
       dashboard: DashboardComponent,
       boardQA: BoardQAComponent,

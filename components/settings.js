@@ -33,18 +33,20 @@ export class SettingsComponent {
           <div class="glass-panel" style="background:rgba(99,102,241,0.03);border-color:rgba(99,102,241,0.25);">
             <h3 class="dashboard-card-title" style="color:var(--color-indigo);">
               <span>Gemini API Live Intelligence</span>
-              <span class="status-badge ${s.geminiApiKey ? 'within' : 'near'}" style="font-size:10px;">
-                ${s.geminiApiKey ? 'Connected (Live)' : 'Disconnected (Simulated)'}
+              <span class="status-badge" style="font-size:10px; background:${this.state.serverGeminiConfigured ? 'rgba(5,150,105,0.1)' : s.geminiApiKey ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'}; color:${this.state.serverGeminiConfigured ? '#059669' : s.geminiApiKey ? '#d97706' : '#ef4444'}; border:1px solid ${this.state.serverGeminiConfigured ? 'rgba(5,150,105,0.2)' : s.geminiApiKey ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)'}; padding:2px 6px; border-radius:12px; font-weight:700;">
+                ${this.state.serverGeminiConfigured ? 'Connected (Secure Server)' : s.geminiApiKey ? 'Connected (Live Dev Fallback)' : 'Disconnected (Simulated)'}
               </span>
             </h3>
             
             <div class="form-group">
-              <label>Gemini API Key</label>
+              <label>Local Developer Gemini API Key</label>
               <input type="password" class="form-control" id="settings-api-key" 
                      value="${s.geminiApiKey || ''}" 
                      placeholder="AIzaSy..." />
-              <p style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.3;">
-                *Entering a valid Gemini API Key transitions the Board Brief and Q&A engine from local simulated NLP mapping to live, dynamic LLM responses. Get a key at <a href="https://aistudio.google.com/" target="_blank" style="color:var(--color-indigo);text-decoration:none;font-weight:600;">Google AI Studio</a>.
+              <p style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.35;">
+                ${this.state.serverGeminiConfigured 
+                  ? '<strong>✓ Secure Server Key Configured:</strong> The platform is using the secure server-side environment key. Local developer configurations below are optional fallbacks.' 
+                  : '<strong>⚠ Server Key Missing:</strong> No secure server-side key detected. Enter a local developer API key below to enable live responses in local/dev mode. Get a key at <a href="https://aistudio.google.com/" target="_blank" style="color:var(--color-indigo);text-decoration:none;font-weight:600;">Google AI Studio</a>.'}
               </p>
             </div>
           </div>
