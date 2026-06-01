@@ -1565,3 +1565,18 @@ body.app-page {
     box-shadow: none !important;
   }
 }
+
+/* --- EXPANDABLE MAP SYSTEM --- */
+.register-layout.map-expanded {
+  grid-template-columns: 1fr !important;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.register-layout.map-expanded .network-container {
+  height: 580px !important;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.register-layout.map-expanded .details-panel.no-print {
+  display: none !important;
+}

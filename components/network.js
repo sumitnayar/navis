@@ -5,6 +5,7 @@ export class NetworkComponent {
     this.state = appState;
     this.onStateChange = onStateChange;
     this.selectedNodeId = null;
+    this.isExpanded = false;
     
     // Explicit hierarchical screen coordinates (width: 800, height: 380) for seed data
     // Strategic (Top) -> Operational (Middle) -> Tactical (Bottom)
@@ -105,12 +106,27 @@ export class NetworkComponent {
         </div>
       </div>
 
-      <div class="register-layout">
+      <div class="register-layout ${this.isExpanded ? 'map-expanded' : ''}">
         
         <!-- LEFT SCREEN: INTERACTIVE SVG NETWORK CONTAINER -->
         <div class="details-panel">
           <div class="glass-panel" style="padding: 10px;">
             <div class="network-container">
+              <!-- ABSOLUTE EXPAND / COLLAPSE TOGGLE BUTTON -->
+              <button id="btn-toggle-expand" class="btn btn-secondary btn-small" style="position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: var(--bg-secondary); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: var(--text-secondary);" title="${this.isExpanded ? 'Collapse Map' : 'Expand Map'}">
+                ${this.isExpanded ? `
+                  <!-- Collapse Cross-out Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ` : `
+                  <!-- Expand Arrow Icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                  </svg>
+                `}
+              </button>
+
               <svg class="network-svg" viewBox="0 0 800 360" id="risk-network-svg">
                 <!-- SVG MARKER FOR LINE ARROWS -->
                 <defs>
@@ -221,6 +237,14 @@ export class NetworkComponent {
                   const isSelected = this.selectedNodeId === r.id;
                   const isInChain = activeChainIds.has(r.id) && this.selectedNodeId !== r.id;
 
+                  // Extract cleaned 3-word descriptive label
+                  const getCleanLabel = () => {
+                    const cleanTitle = r.title.replace(/^\[DEMO\s+[^\]]+\]\s*/i, '').trim();
+                    const words = cleanTitle.split(' ');
+                    return words.slice(0, 3).join(' ') + (words.length > 3 ? '..' : '');
+                  };
+                  const nodeLabel = getCleanLabel();
+
                   return `
                     <g class="network-node ${isSelected ? 'selected' : ''} ${isInChain ? 'active-chain' : ''}" 
                        data-id="${r.id}"
@@ -234,16 +258,24 @@ export class NetworkComponent {
                               fill="${fill}" 
                               opacity="${isSelected ? 0.95 : 0.55}" />
                       
-                      <!-- Node Label (Cleaned from demo prefix for premium display) -->
-                      <text y="${radius + 15}" 
+                      <!-- Text Background Halo Outline (For ultimate 100% readability) -->
+                      <text y="${radius + 16}" 
                             text-anchor="middle" 
-                            fill="${isSelected ? 'var(--text-primary)' : 'var(--text-secondary)'}"
-                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 10.5px;">
-                        ${(() => {
-                          const cleanTitle = r.title.replace(/^\[DEMO\s+[^\]]+\]\s*/i, '').trim();
-                          const words = cleanTitle.split(' ');
-                          return words.slice(0, 2).join(' ') + (words.length > 2 ? '..' : '');
-                        })()}
+                            stroke="#FFFFFF" 
+                            stroke-width="3.5px" 
+                            stroke-linejoin="round" 
+                            fill="none" 
+                            opacity="0.95"
+                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 11px; font-family: var(--font-header);">
+                        ${nodeLabel}
+                      </text>
+
+                      <!-- Node Label Solid Text -->
+                      <text y="${radius + 16}" 
+                            text-anchor="middle" 
+                            fill="${isSelected ? 'var(--color-indigo)' : 'var(--text-primary)'}"
+                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 11px; font-family: var(--font-header);">
+                        ${nodeLabel}
                       </text>
                     </g>
                   `;
@@ -350,6 +382,15 @@ export class NetworkComponent {
         this.render(container);
       });
     });
+
+    // Toggle Expand/Collapse Map
+    const toggleExpandBtn = container.querySelector('#btn-toggle-expand');
+    if (toggleExpandBtn) {
+      toggleExpandBtn.addEventListener('click', () => {
+        this.isExpanded = !this.isExpanded;
+        this.render(container);
+      });
+    }
 
     // Inspect in Register link
     const inspectBtn = container.querySelector('#btn-inspect-register');
