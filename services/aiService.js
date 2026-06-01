@@ -800,10 +800,8 @@ Responding to custom query: *"${questionText}"*
           </table>
         </div>
 
+      Please evaluate the ledger and compile this gorgeous HTML dashboard structure. Avoid any paragraphs in headings or listings, keep text brief, and ensure it renders natively in the chat block. Do NOT attempt Bayesian modeling or forecasting.
       </div>
-    `;
-
-    Please evaluate the ledger and compile this gorgeous HTML dashboard structure. Avoid any paragraphs in headings or listings, keep text brief, and ensure it renders natively in the chat block. Do NOT attempt Bayesian modeling or forecasting.
     `;
 
     let apiErrorNotice = "";
@@ -1017,6 +1015,3 @@ Responding to custom query: *"${questionText}"*
 </div>`;
   }
 }
-  }
-}
-
