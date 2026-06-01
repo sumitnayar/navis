@@ -115,7 +115,7 @@ export class NetworkComponent {
                 <!-- SVG MARKER FOR LINE ARROWS -->
                 <defs>
                   <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(71, 85, 105, 0.75)" />
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(71, 85, 105, 0.25)" />
                   </marker>
                   <marker id="arrow-highlight" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-indigo)" />
@@ -139,15 +139,15 @@ export class NetworkComponent {
                         <!-- Glowing path behind -->
                         <line x1="${parentPos.x}" y1="${parentPos.y}" 
                               x2="${childPos.x}" y2="${childPos.y}" 
-                              stroke="rgba(0, 181, 181, 0.22)" 
-                              stroke-width="6.5" 
+                              stroke="rgba(0, 181, 181, 0.28)" 
+                              stroke-width="7" 
                               stroke-linecap="round" />
-                        <!-- Primary active path -->
+                        <!-- Primary active path (SOLID and prominent!) -->
                         <line class="network-link active-chain" 
                               x1="${parentPos.x}" y1="${parentPos.y}" 
                               x2="${childPos.x}" y2="${childPos.y}"
                               stroke="var(--color-indigo)" 
-                              stroke-width="2.8" 
+                              stroke-width="3" 
                               marker-end="url(#arrow-highlight)" />
                       `;
                     }
@@ -156,8 +156,8 @@ export class NetworkComponent {
                       <line class="network-link direct" 
                             x1="${parentPos.x}" y1="${parentPos.y}" 
                             x2="${childPos.x}" y2="${childPos.y}"
-                            stroke="rgba(71, 85, 105, 0.38)" 
-                            stroke-width="1.6" 
+                            stroke="rgba(71, 85, 105, 0.22)" 
+                            stroke-width="1.1" 
                             marker-end="url(#arrow)" />
                     `;
                   });
@@ -175,15 +175,15 @@ export class NetworkComponent {
                         <!-- Glowing path behind -->
                         <line x1="${parentPos.x}" y1="${parentPos.y}" 
                               x2="${relPos.x}" y2="${relPos.y}" 
-                              stroke="rgba(0, 181, 181, 0.15)" 
-                              stroke-width="4" 
+                              stroke="rgba(0, 181, 181, 0.2)" 
+                              stroke-width="5.5" 
                               stroke-linecap="round" />
                         <!-- Primary active dashed path -->
                         <line class="network-link related active-chain" 
                               x1="${parentPos.x}" y1="${parentPos.y}" 
                               x2="${relPos.x}" y2="${relPos.y}"
                               stroke="var(--color-indigo)" 
-                              stroke-width="2" />
+                              stroke-width="2.2" />
                       `;
                     }
 
@@ -191,8 +191,8 @@ export class NetworkComponent {
                       <line class="network-link related" 
                             x1="${parentPos.x}" y1="${parentPos.y}" 
                             x2="${relPos.x}" y2="${relPos.y}"
-                            stroke="rgba(148, 163, 184, 0.55)" 
-                            stroke-width="1.2" />
+                            stroke="rgba(148, 163, 184, 0.22)" 
+                            stroke-width="1.0" />
                     `;
                   });
 
