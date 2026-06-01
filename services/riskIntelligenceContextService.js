@@ -209,6 +209,32 @@ export class RiskIntelligenceContextService {
         postureSummary = `Risk Posture is STABLE with all critical operational and financial risks operating within approved appetite thresholds.`;
       }
 
+      // Metrics 3.11: Fragility radar averages across active risks having fragility (scaled 1-5)
+      let finSum = 0, peoSum = 0, cusSum = 0, techSum = 0, compSum = 0, opsSum = 0;
+      let fragCount = 0;
+      risks.forEach(r => {
+        if (r.fragility && typeof r.fragility === 'object') {
+          finSum += ((r.fragility.revenue || 1) + (r.fragility.valuation || 1)) / 2;
+          peoSum += (r.fragility.people || 1);
+          cusSum += (r.fragility.customerTrust || 1);
+          techSum += (r.fragility.technology || 1);
+          compSum += (r.fragility.reputation || 1);
+          opsSum += ((r.fragility.operations || 1) + (r.fragility.growth || 1)) / 2;
+          fragCount++;
+        }
+      });
+
+      const radarMetrics = {
+        financial: fragCount > 0 ? Number((finSum / fragCount).toFixed(2)) : 3.5,
+        people: fragCount > 0 ? Number((peoSum / fragCount).toFixed(2)) : 3.2,
+        customers: fragCount > 0 ? Number((cusSum / fragCount).toFixed(2)) : 4.0,
+        technology: fragCount > 0 ? Number((techSum / fragCount).toFixed(2)) : 3.0,
+        compliance: fragCount > 0 ? Number((compSum / fragCount).toFixed(2)) : 3.8,
+        operations: fragCount > 0 ? Number((opsSum / fragCount).toFixed(2)) : 3.4
+      };
+
+      const deterioratingCount = risks.filter(r => r.trend === 'Deteriorating').length;
+
       return {
         organization: settings,
         riskNodes,
@@ -227,7 +253,9 @@ export class RiskIntelligenceContextService {
           openHighRiskCount,
           relationshipDensity,
           boardPriorityRisks,
-          postureSummary
+          postureSummary,
+          radarMetrics,
+          deterioratingCount
         }
       };
     } catch (error) {

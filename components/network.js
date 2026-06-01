@@ -40,12 +40,55 @@ export class NetworkComponent {
     return chain;
   }
 
+  getGraphRisks(risks) {
+    const demoRisks = risks.filter(r => String(r.id || '').startsWith('demo-trk-risk-'));
+    return demoRisks.length ? demoRisks : risks;
+  }
+
+  getNodePositions(risks) {
+    const positions = {};
+    const useGeneratedLayout = risks.length > 16 || risks.some(r => String(r.id || '').startsWith('demo-trk-risk-'));
+
+    if (!useGeneratedLayout) {
+      risks.forEach((risk) => {
+        if (this.nodePositions[risk.id]) {
+          positions[risk.id] = this.nodePositions[risk.id];
+        }
+      });
+    }
+
+    const dynamicRisks = useGeneratedLayout ? risks : risks.filter(r => !positions[r.id]);
+    const sorted = [...dynamicRisks].sort((a, b) => {
+      const scoreDelta = (b.residualScore || 0) - (a.residualScore || 0);
+      if (scoreDelta) return scoreDelta;
+      return String(a.title).localeCompare(String(b.title));
+    });
+
+    const columns = Math.min(6, Math.max(3, Math.ceil(Math.sqrt(sorted.length || 1))));
+    const rows = Math.max(1, Math.ceil((sorted.length || 1) / columns));
+    const xStep = columns === 1 ? 0 : 660 / (columns - 1);
+    const yStep = rows === 1 ? 0 : 270 / (rows - 1);
+
+    sorted.forEach((risk, index) => {
+      const col = index % columns;
+      const row = Math.floor(index / columns);
+      positions[risk.id] = {
+        x: 70 + (col * xStep),
+        y: 44 + (row * yStep)
+      };
+    });
+
+    return positions;
+  }
+
   render(container) {
     const risks = this.state.risks;
     const settings = this.state.settings;
+    const graphRisks = this.getGraphRisks(risks);
+    const graphPositions = this.getNodePositions(graphRisks);
 
     // Filter out coordinates for any risks that have been deleted
-    const activeNodes = risks.filter(r => this.nodePositions[r.id]);
+    const activeNodes = graphRisks.filter(r => graphPositions[r.id]);
     
     // Find selected risk details
     const selectedRisk = risks.find(r => r.id === this.selectedNodeId);
@@ -81,12 +124,12 @@ export class NetworkComponent {
 
                 <!-- 1. DRAW CONNECTION LINES (LINKS) -->
                 ${activeNodes.flatMap(r => {
-                  const parentPos = this.nodePositions[r.id];
+                  const parentPos = graphPositions[r.id];
                   const childIds = r.childRiskIds || [];
                   const relatedIds = r.relatedRiskIds || [];
 
                   const childLines = childIds.map(cid => {
-                    const childPos = this.nodePositions[cid];
+                    const childPos = graphPositions[cid];
                     if (!childPos) return '';
                     
                     const isHighlighted = this.selectedNodeId === r.id && activeChainIds.has(cid);
@@ -102,7 +145,7 @@ export class NetworkComponent {
                   });
 
                   const relatedLines = relatedIds.map(rid => {
-                    const relPos = this.nodePositions[rid];
+                    const relPos = graphPositions[rid];
                     if (!relPos) return '';
                     // Prevent duplicate double lines
                     if (r.id > rid) return ''; 
@@ -124,7 +167,7 @@ export class NetworkComponent {
 
                 <!-- 2. DRAW GRAPH NODES -->
                 ${activeNodes.map(r => {
-                  const pos = this.nodePositions[r.id];
+                  const pos = graphPositions[r.id];
                   
                   // Color mapped to residual score appetite status
                   let fill = 'var(--color-within-appetite)';

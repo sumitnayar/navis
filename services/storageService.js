@@ -10,6 +10,7 @@ import {
   seededCultureMetrics 
 } from './riskUniverse.js';
 import { isSupabaseConfigured, supabaseClient } from './supabaseClient.js';
+import { DemoDataService } from './demoDataService.js';
 
 const STORAGE_KEYS = {
   RISKS: 'navis_v3_risks',
@@ -23,6 +24,22 @@ const STORAGE_KEYS = {
 };
 
 const isCloudMode = isSupabaseConfigured && supabaseClient;
+
+function normalizeControl(control) {
+  const rating = control.rating || control.effectiveness || 'Partially Effective';
+  return {
+    ...control,
+    effectiveness: control.effectiveness || (rating === 'Effective' ? 'Highly Effective' : rating),
+    status: control.status || (rating === 'Ineffective' ? 'Under Review' : 'Active')
+  };
+}
+
+function normalizeAction(action) {
+  return {
+    ...action,
+    dueDate: action.dueDate || action.due_date
+  };
+}
 
 export class StorageService {
   static init() {
@@ -103,9 +120,9 @@ export class StorageService {
           timeToRecovery: r.time_to_recovery,
           parentRiskId: r.parent_risk_id,
           
-          controls: r.controls || [],
+          controls: (r.controls || []).map(normalizeControl),
           kris: r.kris || [],
-          actions: r.actions || [],
+          actions: (r.actions || []).map(normalizeAction),
           fragility: r.risk_fragilities ? {
             revenue: r.risk_fragilities.revenue,
             growth: r.risk_fragilities.growth,
@@ -641,5 +658,17 @@ export class StorageService {
     this.init();
     const data = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
     return data ? JSON.parse(data) : {};
+  }
+
+  static getDemoDataCounts() {
+    return DemoDataService.getRecordCounts();
+  }
+
+  static async generateSaasDemoData() {
+    return DemoDataService.generate();
+  }
+
+  static async clearSaasDemoData() {
+    return DemoDataService.clear();
   }
 }

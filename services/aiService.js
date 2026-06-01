@@ -391,54 +391,419 @@ Responding to custom query: *"${questionText}"*
 *Note:* To get fully customized generative answers to your specific queries, configure a valid Gemini API Key in [Platform Settings](/settings).`;
   }
 
-  // --- UPGRADED GEMINI RISK INTELLIGENCE CONTEXT ENGINE (v0.1) ---
+  // --- UPGRADED GEMINI RISK INTELLIGENCE CONTEXT ENGINE (v2.0 - EXECUTIVE DASHBOARD MODE) ---
   static async generateRiskIntelligenceProfile(context, settings) {
     const { organization, riskNodes, riskEdges, controls, actions, kris, trendSignals, computedMetrics } = context;
     const apiKey = settings.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
+    const now = new Date();
+
+    // Standardize calculated metrics
+    const overdueCount = computedMetrics.overdueActions ? computedMetrics.overdueActions.length : 0;
+    const staleReviewsCount = computedMetrics.staleReviews ? computedMetrics.staleReviews.length : 0;
+    const breachedKRIsCount = kris ? kris.filter(k => k.status === 'BREACHED').length : 0;
+    const deterioratingCount = computedMetrics.deterioratingCount || 0;
+    const openHighCount = computedMetrics.openHighRiskCount || 0;
+    const aboveAppetiteCount = riskNodes ? riskNodes.filter(r => r.appetiteStatus === 'Above Appetite').length : 0;
+
+    // Posture mapping
+    let postureStatus = "MODERATE";
+    let postureColor = "#d97706";
+    let postureBg = "rgba(217, 119, 6, 0.08)";
+    let postureBorder = "rgba(217, 119, 6, 0.2)";
+    let postureIcon = "🟡";
+
+    if (aboveAppetiteCount > 2 || openHighCount > 3) {
+      postureStatus = "CRITICAL";
+      postureColor = "#e11d48";
+      postureBg = "rgba(225, 29, 72, 0.08)";
+      postureBorder = "rgba(225, 29, 72, 0.2)";
+      postureIcon = "🔴";
+    } else if (aboveAppetiteCount > 0 || openHighCount > 0 || overdueCount > 1) {
+      postureStatus = "ELEVATED";
+      postureColor = "#ea580c";
+      postureBg = "rgba(249, 115, 22, 0.08)";
+      postureBorder = "rgba(249, 115, 22, 0.2)";
+      postureIcon = "🟠";
+    } else if (riskNodes && riskNodes.length > 0) {
+      postureStatus = "STABLE";
+      postureColor = "#059669";
+      postureBg = "rgba(5, 150, 105, 0.08)";
+      postureBorder = "rgba(5, 150, 105, 0.2)";
+      postureIcon = "🟢";
+    }
+
+    // Top 3 Drivers mapping
+    const topDrivers = computedMetrics.topInfluenceRisks.slice(0, 3).map(r => r.title);
+    if (topDrivers.length < 3) {
+      if (overdueCount > 0) topDrivers.push("Overdue Strategic Mitigations");
+      if (breachedKRIsCount > 0) topDrivers.push("Key Risk Indicator Breaches");
+      if (staleReviewsCount > 0) topDrivers.push("Stale Review Accountability");
+    }
+    const driversList = topDrivers.slice(0, 3).map(d => `<li style="margin-left: 14px; margin-bottom: 2px;">${d}</li>`).join('');
+
+    // DNA Scores calculations (scaled 1-10)
+    const relDensity = computedMetrics.relationshipDensity || 0;
+    const dnaInfluenceVal = Math.min(10, Math.max(3, relDensity > 1.2 ? 8 : relDensity > 0.8 ? 6 : 4));
+    const dnaFragilityVal = Math.min(10, Math.max(2, Math.round((computedMetrics.fragileRisks.length / Math.max(1, riskNodes.length)) * 12)));
+    const dnaEntropyVal = Math.min(10, Math.max(2, Math.round(((overdueCount + breachedKRIsCount) / Math.max(1, riskNodes.length)) * 10)));
+    const activeControls = controls || [];
+    const dnaControlMaturityVal = activeControls.length > 0
+      ? Math.min(10, Math.max(1, Math.round((activeControls.filter(c => c.rating === 'Effective').length / activeControls.length) * 10)))
+      : 3;
+    const dnaAdaptabilityVal = 8;
+    const dnaBoardReadinessVal = Math.max(2, Math.min(10, 10 - Math.round((overdueCount + staleReviewsCount) / 2)));
+
+    const drawMonospaceSlider = (val) => {
+      return "█".repeat(val) + "░".repeat(10 - val);
+    };
+
+    const getMaturityLabel = (val) => {
+      if (val >= 8) return "High";
+      if (val >= 5) return "Medium-High";
+      return "Moderate";
+    };
+
+    const getControlLabel = (val) => {
+      if (val >= 8) return "Mature";
+      if (val >= 5) return "Developing";
+      return "Immature";
+    };
+
+    // Dynamic DNA slider rows
+    const sliderRows = `
+      <tr>
+        <td style="padding: 3px 0; width: 140px; font-weight: 600; color: var(--text-secondary);">Influence Concentration</td>
+        <td style="padding: 3px 0; font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #a78bfa;">${drawMonospaceSlider(dnaInfluenceVal)}</td>
+        <td style="padding: 3px 0; text-align: right; font-weight: 600; color: var(--text-secondary);">${dnaInfluenceVal >= 8 ? 'High' : dnaInfluenceVal >= 5 ? 'Moderate' : 'Low'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 0; font-weight: 600; color: var(--text-secondary);">Fragility</td>
+        <td style="padding: 3px 0; font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #a78bfa;">${drawMonospaceSlider(dnaFragilityVal)}</td>
+        <td style="padding: 3px 0; text-align: right; font-weight: 600; color: var(--text-secondary);">${getMaturityLabel(dnaFragilityVal)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 0; font-weight: 600; color: var(--text-secondary);">Entropy</td>
+        <td style="padding: 3px 0; font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #a78bfa;">${drawMonospaceSlider(dnaEntropyVal)}</td>
+        <td style="padding: 3px 0; text-align: right; font-weight: 600; color: var(--text-secondary);">${dnaEntropyVal >= 8 ? 'High' : dnaEntropyVal >= 5 ? 'Moderate' : 'Low'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 0; font-weight: 600; color: var(--text-secondary);">Control Maturity</td>
+        <td style="padding: 3px 0; font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #a78bfa;">${drawMonospaceSlider(dnaControlMaturityVal)}</td>
+        <td style="padding: 3px 0; text-align: right; font-weight: 600; color: var(--text-secondary);">${getControlLabel(dnaControlMaturityVal)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 0; font-weight: 600; color: var(--text-secondary);">Adaptability</td>
+        <td style="padding: 3px 0; font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #a78bfa;">${drawMonospaceSlider(dnaAdaptabilityVal)}</td>
+        <td style="padding: 3px 0; text-align: right; font-weight: 600; color: var(--text-secondary);">High</td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 0; font-weight: 600; color: var(--text-secondary);">Board Readiness</td>
+        <td style="padding: 3px 0; font-family: monospace; font-size: 11px; letter-spacing: 1px; color: #a78bfa;">${drawMonospaceSlider(dnaBoardReadinessVal)}</td>
+        <td style="padding: 3px 0; text-align: right; font-weight: 600; color: var(--text-secondary);">${dnaBoardReadinessVal >= 8 ? 'High' : dnaBoardReadinessVal >= 5 ? 'Moderate' : 'Developing'}</td>
+      </tr>
+    `;
+
+    // Radar math calculations (Scaled 1-5 to a radius of 70)
+    const rMat = computedMetrics.radarMetrics || { financial: 3.5, people: 3.2, customers: 4.0, technology: 3.0, compliance: 3.8, operations: 3.4 };
+    const dFin = 14 * rMat.financial;
+    const dPeo = 14 * rMat.people;
+    const dCus = 14 * rMat.customers;
+    const dTech = 14 * rMat.technology;
+    const dComp = 14 * rMat.compliance;
+    const dOps = 14 * rMat.operations;
+
+    const p1 = `${(100 + dFin).toFixed(1)},100`;
+    const p2 = `${(100 + dPeo * 0.5).toFixed(1)},${(100 + dPeo * 0.866).toFixed(1)}`;
+    const p3 = `${(100 - dCus * 0.5).toFixed(1)},${(100 + dCus * 0.866).toFixed(1)}`;
+    const p4 = `${(100 - dTech).toFixed(1)},100`;
+    const p5 = `${(100 - dComp * 0.5).toFixed(1)},${(100 - dComp * 0.866).toFixed(1)}`;
+    const p6 = `${(100 + dOps * 0.5).toFixed(1)},${(100 - dOps * 0.866).toFixed(1)}`;
+
+    // Top Influence horizontal bars
+    const maxScore = computedMetrics.topInfluenceRisks[0]?.influenceScore || 12;
+    const influenceBarsHTML = computedMetrics.topInfluenceRisks.slice(0, 4).map((tr, idx) => {
+      const widthPct = maxScore > 0 ? (tr.influenceScore / maxScore) * 100 : 0;
+      return `
+        <div style="margin-bottom: 8px;">
+          <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px; font-weight:600;">
+            <span style="color:var(--text-secondary); font-family:var(--font-header);">${idx + 1}. ${tr.title}</span>
+            <span style="color:#7c3aed; font-weight:700;">${tr.influenceScore}</span>
+          </div>
+          <div style="height:6px; background:var(--bg-tertiary); border-radius:3px; overflow:hidden; border: 1px solid var(--border-color);">
+            <div style="height:100%; width:${widthPct}%; background:linear-gradient(90deg, #7c3aed, #4f46e5); border-radius:3px;"></div>
+          </div>
+        </div>
+      `;
+    }).join('') || `<div style="font-size:10px; color:var(--text-muted); text-align:center;">No high-influence risks mapped.</div>`;
+
+    // Breached KRI Alert Cards
+    const breachedKRIs = kris ? kris.filter(k => k.status === 'BREACHED') : [];
+    const breachedCardsHTML = breachedKRIs.length > 0
+      ? breachedKRIs.slice(0, 2).map(k => `
+        <div style="border-left: 3px solid #ef4444; background: rgba(239, 68, 68, 0.04); padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; border: 1px solid rgba(239, 68, 68, 0.12); display:flex; flex-direction:column; gap:2px;">
+          <div style="display:flex; justify-content:space-between; font-weight:700; font-size:10px; color:var(--text-primary); align-items:center;">
+            <span>⚠️ ${k.name}</span>
+            <span style="color:#ef4444; font-size:8px; text-transform:uppercase; font-weight:800; background:rgba(239,68,68,0.1); padding:1px 4px; border-radius:4px;">BREACHED</span>
+          </div>
+          <div style="font-size:9px; color:var(--text-secondary); font-family:monospace;">
+            Current: <strong style="color:#ef4444;">${k.current}</strong> | Threshold: <strong>${k.threshold}</strong>
+          </div>
+        </div>
+      `).join('')
+      : `
+        <div style="border-left: 3px solid #059669; background: rgba(5, 150, 105, 0.04); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(5, 150, 105, 0.12);">
+          <div style="display:flex; justify-content:space-between; font-weight:700; font-size:10px; color:var(--text-primary); align-items:center;">
+            <span>✅ Operations Standard</span>
+            <span style="color:#059669; font-size:8px; text-transform:uppercase; font-weight:800; background:rgba(5,150,105,0.1); padding:1px 4px; border-radius:4px;">STABLE</span>
+          </div>
+          <div style="font-size:9px; margin-top:2px; color:var(--text-secondary);">
+            All monitored Key Risk Indicators are operating within designated parameters.
+          </div>
+        </div>
+      `;
+
+    // Actions table rows
+    const actionRowsHTML = actions && actions.length > 0
+      ? actions.slice(0, 3).map(a => {
+          let statusBadgeBg = "rgba(245, 158, 11, 0.1)";
+          let statusBadgeColor = "#d97706";
+          if (a.status === 'Completed') {
+            statusBadgeBg = "rgba(5, 150, 105, 0.1)";
+            statusBadgeColor = "#059669";
+          } else if (new Date(a.dueDate) < now) {
+            statusBadgeBg = "rgba(239, 68, 68, 0.1)";
+            statusBadgeColor = "#ef4444";
+          }
+          return `
+            <tr style="border-bottom: 1px solid var(--border-color); color:var(--text-secondary);">
+              <td style="padding: 6px 8px; font-weight: 600; color:var(--text-primary);">${a.owner}</td>
+              <td style="padding: 6px 8px;">${a.title}</td>
+              <td style="padding: 6px 8px; font-family: monospace; font-size: 10px;">${a.dueDate}</td>
+              <td style="padding: 6px 8px;">
+                <span style="padding: 1px 5px; border-radius: 10px; font-size: 8px; font-weight: 700; text-transform: uppercase; background: ${statusBadgeBg}; color: ${statusBadgeColor};">
+                  ${a.status === 'Completed' ? 'Completed' : new Date(a.dueDate) < now ? 'Overdue' : a.status}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('')
+      : `
+        <tr>
+          <td colspan="4" style="padding: 12px; text-align: center; color: var(--text-muted);">
+            No active mitigation actions found.
+          </td>
+        </tr>
+      `;
 
     const prompt = `
-      You are the NAVIS Risk Intelligence Network Engine. Your job is to perform a deep network graph analysis of the organization's risk posture.
-      We have constructed a structured Risk Intelligence Context Object containing details of our company and its risks, controls, actions, KRIs, trends, and calculated metrics.
+      You are the NAVIS Risk Intelligence Network Engine. Your task is to perform a deep network graph analysis and generate a highly visual, courtroom-ready Executive Risk Profile (v2.0 - Executive Dashboard Mode).
+      The target is: "Scan first, read second". You must reduce text volumes by 50%, completely replace paragraphs with styled HTML cards, horizontal gauges, alert scorecards, SVG diagrams, and priority widgets.
 
-      Here is the structured Risk Intelligence Context:
+      Here is the structured Risk Intelligence Context Object:
       ${JSON.stringify(context, null, 2)}
 
-      Please perform a comprehensive, board-ready, boardroom-grade Network Risk Profile analysis.
-      The tone must be professional, authoritative, analytical, and highly structured (courtroom-ready). Avoid generic flat summaries; you are analyzing relationships, influence paths, cascade risks, control weaknesses, and posture trends.
+      Please structure your output strictly inside a single, beautifully organized HTML container.
+      You can use embedded HTML tags (div, table, tr, td, svg, polygon, line, text) with inline CSS styles matching the premium off-white corporate layout.
 
-      Output format MUST be strictly in Markdown using the following structure:
+      The HTML output MUST be strictly formatted using the following structure:
 
-      ### **BOARD RISK INTELLIGENCE CONTEXT PROFILE (v0.1)**
-      *NAVIS Advanced Risk Intelligence Engine | Confidential - Strategic Briefing*
+      ### **BOARD RISK INTELLIGENCE EXECUTIVE CONSOLE (v2.0)**
+      *NAVIS Advanced Risk Intelligence Engine | Confidential - Strategic Dashboard*
 
-      ---
+      <div style="font-family: var(--font-body); color: var(--text-primary); max-width: 100%; display: flex; flex-direction: column; gap: 16px; margin-top: 14px;">
+        
+        <!-- ROW 1: RISK DNA & EXECUTIVE POSTURE (2-Column Grid) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+          
+          <!-- CELL 1.1: ORGANIZATIONAL RISK DNA -->
+          <div style="background: linear-gradient(135deg, rgba(88, 28, 135, 0.05) 0%, rgba(15, 23, 42, 0.4) 100%); border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px; border-radius: 10px; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: #a78bfa; letter-spacing: 0.5px; text-transform: uppercase; margin: 0 0 10px 0;">🧬 ORGANIZATIONAL RISK DNA</h4>
+              <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 10px; color: var(--text-primary);">
+                ${sliderRows}
+              </table>
+            </div>
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(139, 92, 246, 0.15); font-family: var(--font-body); font-size: 11px; line-height: 1.4; color: var(--text-secondary);">
+              <strong>Characterization:</strong> [Provide a dynamic 1-2 sentence AI Characterization describing current scaling exposure, people dependency, and developing governance, keeping prose short]
+            </div>
+          </div>
 
-      #### **1. EXECUTIVE INSIGHT & ORG POSTURE**
-      - **One-Line Risk Posture:** [Include the computed postureSummary here exactly: "${computedMetrics.postureSummary}"]
-      - **Strategic Verdict:** [A brief 2-3 sentence strategic verdict on how our risk posture aligns with our business trajectory, IPO timeline, and goals]
+          <!-- CELL 1.2: EXECUTIVE POSTURE -->
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;">🛡️ EXECUTIVE RISK POSTURE</h4>
+              <div style="margin-bottom: 12px;">
+                <span style="font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Current Posture Status</span>
+                <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 12px; text-transform: uppercase; font-family: var(--font-header); background: ${postureBg}; color: ${postureColor}; border: 1px solid ${postureBorder};">
+                  <span>${postureIcon}</span> ${postureStatus}
+                </div>
+              </div>
+              <div>
+                <span style="font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Top 3 Threat Drivers</span>
+                <ul style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; padding-left: 0; list-style-type: square; margin: 0;">
+                  ${driversList}
+                </ul>
+              </div>
+            </div>
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-color); font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+              <strong>Posture Verdict:</strong> ${computedMetrics.postureSummary}
+            </div>
+          </div>
 
-      #### **2. RISK INFLUENCE ANALYSIS (NETWORK SCORECARD)**
-      Analyze the interdependencies and network connections. Use "Influence Score" instead of "Gravity" internally and in descriptions.
-      - **Top Influence Nodes:** [Identify risks with the highest computed Influence Score and explain why they are critical connectors in the risk network]
-      - **Cascade Exposure:** [Discuss how risks connect (parent-child, related) and where a failure could trigger a cascading failure across other parts of the organization]
-      - **Network Density:** [Analyze the relationship density: ${computedMetrics.relationshipDensity} edges per node. What does this mean for organizational complexity?]
+        </div>
 
-      #### **3. STRUCTURAL FRAGILITY & CONTROL ADEQUACY**
-      Analyze structural vulnerabilities. Include overdue actions in fragility calculations.
-      - **Fragile Nodes:** [List the fragile risks identified by computedMetrics.fragileRisks (impact >= 4 with weak controls or overdue actions) and detail the gaps]
-      - **Control Gaps:** [Assess the presence of partially effective or ineffective controls. Specifically note where high-impact risks lack effective controls]
-      - **Overdue Strategic Mitigations:** [Highlight the ${computedMetrics.overdueActions.length} overdue actions. List them with their owners and due dates, explaining why they compromise our defense]
+        <!-- ROW 2: INFLUENCE SCORE & FRAGILITY RADAR (2-Column Grid) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+          
+          <!-- CELL 2.1: TOP RISK INFLUENCE MAP -->
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;">📊 TOP RISK INFLUENCE SCORECARD</h4>
+              ${influenceBarsHTML}
+            </div>
+            <div style="font-size: 9px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+              *Influence Score is computed as: (child connections + related connections) * residualScore
+            </div>
+          </div>
 
-      #### **4. ENTROPY SIGNALS & REVIEW ACCOUNTABILITY**
-      Analyze velocity, trends, and review gaps. Include stale reviews in entropy.
-      - **Posture Volatility:** [Identify risks with worsening trends or high velocity of change]
-      - **Stale Reviews:** [Highlight the ${computedMetrics.staleReviews.length} risks with stale reviews (no updates in >30 days). List them and explain how review lapses create blind spots]
-      - **KRI Breaches:** [Detail any breached KRIs, their current status, and threshold limits]
+          <!-- CELL 2.2: FRAGILITY RADAR -->
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; text-align: center;">
+            <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px 0; text-align: left;">🌐 FRAGILITY EXPOSURE RADAR</h4>
+            <div style="display:flex; justify-content:center;">
+              <svg width="220" height="190" viewBox="0 0 220 190" style="overflow: visible;">
+                <!-- background hexagons -->
+                <polygon points="170,100 135,160.6 65,160.6 30,100 65,39.4 135,39.4" fill="none" stroke="var(--border-color)" stroke-width="0.75" />
+                <polygon points="146.2,100 123.1,140 76.9,140 53.8,100 76.9,60 123.1,60" fill="none" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2" />
+                <polygon points="123.1,100 111.5,120 88.5,120 76.9,100 88.5,80 111.5,80" fill="none" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2" />
+                
+                <!-- axis lines -->
+                <line x1="100" y1="100" x2="170" y2="100" stroke="var(--border-color)" stroke-width="0.5" />
+                <line x1="100" y1="100" x2="135" y2="160.6" stroke="var(--border-color)" stroke-width="0.5" />
+                <line x1="100" y1="100" x2="65" y2="160.6" stroke="var(--border-color)" stroke-width="0.5" />
+                <line x1="100" y1="100" x2="30" y2="100" stroke="var(--border-color)" stroke-width="0.5" />
+                <line x1="100" y1="100" x2="65" y2="39.4" stroke="var(--border-color)" stroke-width="0.5" />
+                <line x1="100" y1="100" x2="135" y2="39.4" stroke="var(--border-color)" stroke-width="0.5" />
 
-      #### **5. 90-DAY BOARD PRIORITIES & MANAGEMENT ACTION PATHWAY**
-      Provide direct, actionable, bulletproof recommendations. Do NOT attempt Bayesian analysis in v0.1.
-      - **Next 90 Days Priorities:** [What are the top 3 priorities the Board must vote on or monitor to safeguard the IPO timeline or revenue target?]
-      - **Recommended 90-Day Actions:** [Provide 3 concrete, owner-assigned, highly specific management actions to address the fragile nodes, stale controls, and overdue items]
+                <!-- dynamic polygon -->
+                <polygon points="${p1} ${p2} ${p3} ${p4} ${p5} ${p6}" fill="rgba(124, 58, 237, 0.35)" stroke="#7c3aed" stroke-width="1.75" />
+
+                <!-- labels -->
+                <text x="175" y="103" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="start">Financial</text>
+                <text x="135" y="172" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">People</text>
+                <text x="65" y="172" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">Customers</text>
+                <text x="25" y="103" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="end">Technology</text>
+                <text x="65" y="32" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">Compliance</text>
+                <text x="135" y="32" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">Operations</text>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ROW 3: ENTROPY & CASCADE & BREACHES (2-Column Grid) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+          
+          <!-- CELL 3.1: ENTROPY SIGNALS -->
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;">⚡ ENTROPY SIGNALS</h4>
+              <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+                <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+                  <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Overdue Actions</span>
+                  <strong style="font-family:var(--font-header); font-size:18px; color:var(--color-above-appetite);">${overdueCount}</strong>
+                </div>
+                <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+                  <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Stale Reviews</span>
+                  <strong style="font-family:var(--font-header); font-size:18px; color:var(--color-near-appetite);">${staleReviewsCount}</strong>
+                </div>
+                <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+                  <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Breached KRIs</span>
+                  <strong style="font-family:var(--font-header); font-size:18px; color:#ef4444;">${breachedKRIsCount}</strong>
+                </div>
+                <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+                  <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Deteriorating Risks</span>
+                  <strong style="font-family:var(--font-header); font-size:18px; color:#f59e0b;">${deterioratingCount}</strong>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; padding-top:8px; border-top:1px solid var(--border-color);">
+              <span>Entropy Level: <strong>Moderate</strong></span>
+              <span>Entropy Trend: <strong style="color:#ef4444;">↗ Increasing</strong></span>
+            </div>
+          </div>
+
+          <!-- CELL 3.2: CASCADE VISUALIZATION & BREACH CARDS -->
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display:flex; flex-direction:column; gap:12px;">
+            <div>
+              <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px 0;">⛓️ DYNAMIC RISK CASCADE</h4>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                <div style="background:#3b82f6; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(59, 130, 246, 0.15);">Key Person Silo</div>
+                <div style="color:#3b82f6; font-size:10px; font-weight:700; line-height:1;">↓</div>
+                <div style="background:#7c3aed; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(124, 58, 237, 0.15);">Enterprise Concentration</div>
+                <div style="color:#7c3aed; font-size:10px; font-weight:700; line-height:1;">↓</div>
+                <div style="background:#10b981; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(16, 185, 129, 0.15);">Revenue Stability Exposure</div>
+                <div style="color:#10b981; font-size:10px; font-weight:700; line-height:1;">↓</div>
+                <div style="background:#e11d48; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(225, 29, 72, 0.15);">SEBI IPO Filing Block</div>
+              </div>
+            </div>
+            <div>
+              <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px 0;">⚠️ ACTIVE BREACHES</h4>
+              ${breachedCardsHTML}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ROW 4: BOARD PRIORITIES (3-Column Priority Widgets) -->
+        <div>
+          <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px 0;">🎯 90-DAY STRATEGIC BOARD PRIORITIES</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <!-- Priority Card 1 -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; border-top: 3px solid #e11d48;">
+              <span style="font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Priority #1</span>
+              <h4 style="font-size:12px; margin: 3px 0; font-family:var(--font-header); font-weight:700; color:var(--text-primary);">De-risk Founder Silos</h4>
+              <div style="font-size:10px; margin-top:2px;">Impact: <strong style="color:#e11d48;">HIGH</strong> | Owner: <strong>CEO</strong></div>
+              <div style="font-size:10px;">Timeline: <strong>90 Days</strong></div>
+            </div>
+            <!-- Priority Card 2 -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; border-top: 3px solid #ea580c;">
+              <span style="font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Priority #2</span>
+              <h4 style="font-size:12px; margin: 3px 0; font-family:var(--font-header); font-weight:700; color:var(--text-primary);">Revenue De-concentration</h4>
+              <div style="font-size:10px; margin-top:2px;">Impact: <strong style="color:#ea580c;">HIGH</strong> | Owner: <strong>Account Mgmt</strong></div>
+              <div style="font-size:10px;">Timeline: <strong>90 Days</strong></div>
+            </div>
+            <!-- Priority Card 3 -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; border-top: 3px solid #3b82f6;">
+              <span style="font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Priority #3</span>
+              <h4 style="font-size:12px; margin: 3px 0; font-family:var(--font-header); font-weight:700; color:var(--text-primary);">SEBI Director Compliance</h4>
+              <div style="font-size:10px; margin-top:2px;">Impact: <strong style="color:#3b82f6;">HIGH</strong> | Owner: <strong>Board Audit</strong></div>
+              <div style="font-size:10px;">Timeline: <strong>15 Days</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 5: MANAGEMENT ACTIONS (Boardroom Table) -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; overflow-x: auto;">
+          <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px 0;">📋 IMMEDIATE MITIGATION ACTIONS TABLE</h4>
+          <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left; font-family:var(--font-body);">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--border-color); color:var(--text-secondary);">
+                <th style="padding:6px 8px; font-weight:700;">Owner</th>
+                <th style="padding:6px 8px; font-weight:700;">Action Directive</th>
+                <th style="padding:6px 8px; font-weight:700;">Due Date</th>
+                <th style="padding:6px 8px; font-weight:700;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${actionRowsHTML}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    `;
+
+    Please evaluate the ledger and compile this gorgeous HTML dashboard structure. Avoid any paragraphs in headings or listings, keep text brief, and ensure it renders natively in the chat block. Do NOT attempt Bayesian modeling or forecasting.
     `;
 
     let apiErrorNotice = "";
@@ -453,65 +818,205 @@ Responding to custom query: *"${questionText}"*
       }
     }
 
-    // High-Fidelity Local Simulation Engine - Uses ACTUAL computed metrics!
-    const topRisksList = computedMetrics.topInfluenceRisks.slice(0, 3).map(tr => {
-      return `*   **${tr.title} (Influence Score: ${tr.influenceScore}, Residual: ${tr.residualScore}):** Critical nodal connector.`;
-    }).join('\n');
+    // High-Fidelity Local Simulation Engine - Constructs the exact v2.0 Dashboard mathematically!
+    const defaultCharacterization = `Rapidly scaling SaaS organization with strong execution capability, but elevated dependency concentration and developing governance maturity.`;
 
-    const fragileRisksList = computedMetrics.fragileRisks.length > 0
-      ? computedMetrics.fragileRisks.map(fr => `*   **${fr.title}:** Flagged due to High Impact residual metrics and control or action gaps.`).join('\n')
-      : "*   *No fragile nodes detected in active register metrics.*";
+    return apiErrorNotice + `### **BOARD RISK INTELLIGENCE EXECUTIVE CONSOLE (v2.0)**
+*NAVIS Advanced Risk Intelligence Engine | Confidential - Strategic Dashboard*
 
-    const overdueList = computedMetrics.overdueActions.length > 0
-      ? computedMetrics.overdueActions.map(a => `*   **${a.title}** (Owner: *${a.owner}*, Due: *${a.dueDate}*) - Linked to *${a.riskTitle}*`).join('\n')
-      : "*   *No overdue actions registered.*";
+<div style="font-family: var(--font-body); color: var(--text-primary); max-width: 100%; display: flex; flex-direction: column; gap: 16px; margin-top: 14px;">
+  
+  <!-- ROW 1: RISK DNA & EXECUTIVE POSTURE (2-Column Grid) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+    
+    <!-- CELL 1.1: ORGANIZATIONAL RISK DNA -->
+    <div style="background: linear-gradient(135deg, rgba(88, 28, 135, 0.05) 0%, rgba(15, 23, 42, 0.4) 100%); border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px; border-radius: 10px; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08); display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: #a78bfa; letter-spacing: 0.5px; text-transform: uppercase; margin: 0 0 10px 0;">🧬 ORGANIZATIONAL RISK DNA</h4>
+        <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 10px; color: var(--text-primary);">
+          ${sliderRows}
+        </table>
+      </div>
+      <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(139, 92, 246, 0.15); font-family: var(--font-body); font-size: 11px; line-height: 1.4; color: var(--text-secondary);">
+        <strong>Characterization:</strong> ${defaultCharacterization}
+      </div>
+    </div>
 
-    const staleReviewsList = computedMetrics.staleReviews.length > 0
-      ? computedMetrics.staleReviews.map(sr => `*   **${sr.title}** (Last Updated: *${sr.lastReviewed}*) - Exceeds 30-day review threshold.`).join('\n')
-      : "*   *No stale reviews detected (all nodes reviewed within 30 days).*";
+    <!-- CELL 1.2: EXECUTIVE POSTURE -->
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;">🛡️ EXECUTIVE RISK POSTURE</h4>
+        <div style="margin-bottom: 12px;">
+          <span style="font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Current Posture Status</span>
+          <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 12px; text-transform: uppercase; font-family: var(--font-header); background: ${postureBg}; color: ${postureColor}; border: 1px solid ${postureBorder};">
+            <span>${postureIcon}</span> ${postureStatus}
+          </div>
+        </div>
+        <div>
+          <span style="font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Top 3 Threat Drivers</span>
+          <ul style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; padding-left: 0; list-style-type: square; margin: 0;">
+            ${driversList}
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-color); font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
+        <strong>Posture Verdict:</strong> ${computedMetrics.postureSummary}
+      </div>
+    </div>
 
-    const breachedKRIsList = kris.filter(k => k.status === 'BREACHED').map(k => {
-      return `*   **${k.name}** (Current: *${k.current}*, Threshold: *${k.threshold}*) - Mapped to *${k.riskTitle}*`;
-    }).join('\n') || "*   *No active KRI breaches detected in active operations.*";
+  </div>
 
-    return apiErrorNotice + `### **BOARD RISK INTELLIGENCE CONTEXT PROFILE (v0.1)**
-*NAVIS Advanced Risk Intelligence Engine | Confidential - Strategic Briefing*
+  <!-- ROW 2: INFLUENCE SCORE & FRAGILITY RADAR (2-Column Grid) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+    
+    <!-- CELL 2.1: TOP RISK INFLUENCE MAP -->
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;">📊 TOP RISK INFLUENCE SCORECARD</h4>
+        ${influenceBarsHTML}
+      </div>
+      <div style="font-size: 9px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+        *Influence Score is computed as: (child connections + related connections) * residualScore
+      </div>
+    </div>
 
----
+    <!-- CELL 2.2: FRAGILITY EXPOSURE RADAR -->
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; text-align: center;">
+      <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px 0; text-align: left;">🌐 FRAGILITY EXPOSURE RADAR</h4>
+      <div style="display:flex; justify-content:center;">
+        <svg width="220" height="190" viewBox="0 0 220 190" style="overflow: visible;">
+          <!-- background hexagons -->
+          <polygon points="170,100 135,160.6 65,160.6 30,100 65,39.4 135,39.4" fill="none" stroke="var(--border-color)" stroke-width="0.75" />
+          <polygon points="146.2,100 123.1,140 76.9,140 53.8,100 76.9,60 123.1,60" fill="none" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2" />
+          <polygon points="123.1,100 111.5,120 88.5,120 76.9,100 88.5,80 111.5,80" fill="none" stroke="var(--border-color)" stroke-width="0.5" stroke-dasharray="2" />
+          
+          <!-- axis lines -->
+          <line x1="100" y1="100" x2="170" y2="100" stroke="var(--border-color)" stroke-width="0.5" />
+          <line x1="100" y1="100" x2="135" y2="160.6" stroke="var(--border-color)" stroke-width="0.5" />
+          <line x1="100" y1="100" x2="65" y2="160.6" stroke="var(--border-color)" stroke-width="0.5" />
+          <line x1="100" y1="100" x2="30" y2="100" stroke="var(--border-color)" stroke-width="0.5" />
+          <line x1="100" y1="100" x2="65" y2="39.4" stroke="var(--border-color)" stroke-width="0.5" />
+          <line x1="100" y1="100" x2="135" y2="39.4" stroke="var(--border-color)" stroke-width="0.5" />
 
-#### **1. EXECUTIVE INSIGHT & ORG POSTURE**
-- **One-Line Risk Posture:** ${computedMetrics.postureSummary}
-- **Strategic Verdict:** The operational profile for **${settings.companyName || 'the organization'}** presents structural vulnerabilities that intersect directly with the target IPO sequence (**${settings.ipoTimeline || 'Q3 FY27'}**). While baseline risk controls remain active, the network of interconnected dependencies creates critical path friction that could compress valuation multiples if left unmitigated.
+          <!-- dynamic polygon -->
+          <polygon points="${p1} ${p2} ${p3} ${p4} ${p5} ${p6}" fill="rgba(124, 58, 237, 0.35)" stroke="#7c3aed" stroke-width="1.75" />
 
-#### **2. RISK INFLUENCE ANALYSIS (NETWORK SCORECARD)**
-- **Top Influence Nodes:** 
-${topRisksList || '*   No high-influence connector nodes detected.*'}
-- **Cascade Exposure:** The high degree of structural coupling between strategic and operational nodes introduces feedback cascades. Specifically, tech person dependencies cascade directly into product delivery delays, compromising enterprise customer satisfaction and compounding revenue concentration exposures.
-- **Network Density:** We detect a relationship density of **${computedMetrics.relationshipDensity.toFixed(2)} edges per node**. This indicates a moderately coupled risk topology where risk events in single nodes are likely to diffuse across adjacent layers.
+          <!-- labels -->
+          <text x="175" y="103" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="start">Financial</text>
+          <text x="135" y="172" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">People</text>
+          <text x="65" y="172" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">Customers</text>
+          <text x="25" y="103" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="end">Technology</text>
+          <text x="65" y="32" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">Compliance</text>
+          <text x="135" y="32" font-size="8" fill="var(--text-secondary)" font-family="var(--font-header)" font-weight="700" text-anchor="middle">Operations</text>
+        </svg>
+      </div>
+    </div>
 
-#### **3. STRUCTURAL FRAGILITY & CONTROL ADEQUACY**
-- **Fragile Nodes:** 
-${fragileRisksList}
-- **Control Gaps:** Significant control gaps remain active in high-residual risk zones. Existing "Succession Mapping" and "Commercial Authorization" programs are rated Partially Effective or Ineffective, failing to suppress the underlying vulnerabilities.
-- **Overdue Strategic Mitigations:**
-${overdueList}
+  </div>
 
-#### **4. ENTROPY SIGNALS & REVIEW ACCOUNTABILITY**
-- **Posture Volatility:** Volatility is elevated in technical and financial risk categories. Key Person dependency metrics show high sensitivity, driven by founder centrality.
-- **Stale Reviews:**
-${staleReviewsList}
-- **KRI Breaches:**
-${breachedKRIsList}
+  <!-- ROW 3: ENTROPY & CASCADE & BREACHES (2-Column Grid) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+    
+    <!-- CELL 3.1: ENTROPY SIGNALS -->
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px 0;">⚡ ENTROPY SIGNALS</h4>
+        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:12px;">
+          <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+            <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Overdue Actions</span>
+            <strong style="font-family:var(--font-header); font-size:18px; color:var(--color-above-appetite);">${overdueCount}</strong>
+          </div>
+          <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+            <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Stale Reviews</span>
+            <strong style="font-family:var(--font-header); font-size:18px; color:var(--color-near-appetite);">${staleReviewsCount}</strong>
+          </div>
+          <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+            <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Breached KRIs</span>
+            <strong style="font-family:var(--font-header); font-size:18px; color:#ef4444;">${breachedKRIsCount}</strong>
+          </div>
+          <div style="background:var(--bg-tertiary); border:1px solid var(--border-color); padding:8px 10px; border-radius:6px; text-align:center;">
+            <span style="font-size:9px; color:var(--text-muted); display:block; font-weight:600; text-transform:uppercase;">Deteriorating Risks</span>
+            <strong style="font-family:var(--font-header); font-size:18px; color:#f59e0b;">${deterioratingCount}</strong>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; padding-top:8px; border-top:1px solid var(--border-color);">
+        <span>Entropy Level: <strong>Moderate</strong></span>
+        <span>Entropy Trend: <strong style="color:#ef4444;">↗ Increasing</strong></span>
+      </div>
+    </div>
 
-#### **5. 90-DAY BOARD PRIORITIES & MANAGEMENT ACTION PATHWAY**
-- **Next 90 Days Priorities:**
-  1. **Governance Compliance:** Resolution of SEBI independent director board seat vacancies to unblock the IPO prospectus sequence.
-  2. **Technical De-risking:** Onboarding engineering leadership to systematically decouple daily operations from founders.
-  3. **Revenue Protection:** Executing contract expansions and multi-year lock-ins to mitigate enterprise concentration risks.
-- **Recommended 90-Day Actions:**
-  1. **Action 1 (CPO/CRO):** Complete recruitment for the VP of Engineering by Q3 to take over architecture oversight.
-  2. **Action 2 (CFO/General Counsel):** Nominate and appoint two new Independent Directors to the Board Audit Committee.
-  3. **Action 3 (VP Customer Success):** Restructure high-priority enterprise contract terms to include 24-month minimum lock-ins during renewals.`;
+    <!-- CELL 3.2: CASCADE VISUALIZATION & BREACH CARDS -->
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px 0;">⛓️ DYNAMIC RISK CASCADE</h4>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+          <div style="background:#3b82f6; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(59, 130, 246, 0.15);">Key Person Silo</div>
+          <div style="color:#3b82f6; font-size:10px; font-weight:700; line-height:1;">↓</div>
+          <div style="background:#7c3aed; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(124, 58, 237, 0.15);">Enterprise Concentration</div>
+          <div style="color:#7c3aed; font-size:10px; font-weight:700; line-height:1;">↓</div>
+          <div style="background:#10b981; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(16, 185, 129, 0.15);">Revenue Stability Exposure</div>
+          <div style="color:#10b981; font-size:10px; font-weight:700; line-height:1;">↓</div>
+          <div style="background:#e11d48; color:white; padding:6px 10px; border-radius:6px; font-weight:700; font-size:10px; width:100%; text-align:center; box-shadow:0 2px 4px rgba(225, 29, 72, 0.15);">SEBI IPO Filing Block</div>
+        </div>
+      </div>
+      <div>
+        <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px 0;">⚠️ ACTIVE BREACHES</h4>
+        ${breachedCardsHTML}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROW 4: BOARD PRIORITIES (3-Column Priority Widgets) -->
+  <div>
+    <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px 0;">🎯 90-DAY STRATEGIC BOARD PRIORITIES</h4>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+      <!-- Priority Card 1 -->
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; border-top: 3px solid #e11d48;">
+        <span style="font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Priority #1</span>
+        <h4 style="font-size:12px; margin: 3px 0; font-family:var(--font-header); font-weight:700; color:var(--text-primary);">De-risk Founder Silos</h4>
+        <div style="font-size:10px; margin-top:2px;">Impact: <strong style="color:#e11d48;">HIGH</strong> | Owner: <strong>CEO</strong></div>
+        <div style="font-size:10px;">Timeline: <strong>90 Days</strong></div>
+      </div>
+      <!-- Priority Card 2 -->
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; border-top: 3px solid #ea580c;">
+        <span style="font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Priority #2</span>
+        <h4 style="font-size:12px; margin: 3px 0; font-family:var(--font-header); font-weight:700; color:var(--text-primary);">Revenue De-concentration</h4>
+        <div style="font-size:10px; margin-top:2px;">Impact: <strong style="color:#ea580c;">HIGH</strong> | Owner: <strong>Account Mgmt</strong></div>
+        <div style="font-size:10px;">Timeline: <strong>90 Days</strong></div>
+      </div>
+      <!-- Priority Card 3 -->
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; border-top: 3px solid #3b82f6;">
+        <span style="font-size:9px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Priority #3</span>
+        <h4 style="font-size:12px; margin: 3px 0; font-family:var(--font-header); font-weight:700; color:var(--text-primary);">SEBI Director Compliance</h4>
+        <div style="font-size:10px; margin-top:2px;">Impact: <strong style="color:#3b82f6;">HIGH</strong> | Owner: <strong>Board Audit</strong></div>
+        <div style="font-size:10px;">Timeline: <strong>15 Days</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5: MANAGEMENT ACTIONS (Boardroom Table) -->
+  <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; overflow-x: auto;">
+    <h4 style="font-family: var(--font-header); font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px 0;">📋 IMMEDIATE MITIGATION ACTIONS TABLE</h4>
+    <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left; font-family:var(--font-body);">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border-color); color:var(--text-secondary);">
+          <th style="padding:6px 8px; font-weight:700;">Owner</th>
+          <th style="padding:6px 8px; font-weight:700;">Action Directive</th>
+          <th style="padding:6px 8px; font-weight:700;">Due Date</th>
+          <th style="padding:6px 8px; font-weight:700;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${actionRowsHTML}
+      </tbody>
+    </table>
+  </div>
+
+</div>`;
+  }
+}
   }
 }
 

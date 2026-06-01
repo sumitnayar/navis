@@ -6,10 +6,14 @@ export class SettingsComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
     this.onStateChange = onStateChange;
+    this.demoMessage = null;
+    this.demoMessageType = 'success';
+    this.demoBusy = false;
   }
 
   render(container) {
     const s = this.state.settings;
+    const demoCounts = StorageService.getDemoDataCounts();
 
     container.innerHTML = `
       <div class="page-header">
@@ -87,6 +91,44 @@ export class SettingsComponent {
 
         <!-- RIGHT: META DATA DEFAULTS & REBOOT -->
         <div class="details-panel">
+
+          <!-- DEMO DATA GENERATOR -->
+          <div class="glass-panel" style="background:rgba(0,181,181,0.03);border-color:rgba(0,181,181,0.18);">
+            <h3 class="dashboard-card-title" style="color:var(--color-indigo);">SaaS Demo Data</h3>
+            <p style="font-size:12px;color:var(--text-secondary);line-height:1.45;margin-bottom:14px;">
+              Generate a realistic SaaS risk dataset for private demos. This will add sample risks, controls, KRIs, actions, and relationships.
+            </p>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+              <div style="background:#fff;border:1px solid var(--border-color);border-radius:8px;padding:10px;">
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Risks</div>
+                <div style="font-family:var(--font-header);font-size:20px;font-weight:700;">${demoCounts.risks}</div>
+              </div>
+              <div style="background:#fff;border:1px solid var(--border-color);border-radius:8px;padding:10px;">
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Controls</div>
+                <div style="font-family:var(--font-header);font-size:20px;font-weight:700;">${demoCounts.controls}</div>
+              </div>
+              <div style="background:#fff;border:1px solid var(--border-color);border-radius:8px;padding:10px;">
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Actions</div>
+                <div style="font-family:var(--font-header);font-size:20px;font-weight:700;">${demoCounts.actions}</div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.4;margin-bottom:14px;">
+              Demo records use deterministic <strong>demo-trk-*</strong> IDs and a <strong>[DEMO Trackier SaaS]</strong> title marker so they can be safely identified later.
+            </div>
+            ${this.demoMessage ? `
+              <div class="auth-message ${this.demoMessageType === 'error' ? 'error' : 'success'}" style="margin-bottom:12px;">
+                ${this.demoMessage}
+              </div>
+            ` : ''}
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-small" id="btn-generate-demo-data" style="flex:1;justify-content:center;" ${this.demoBusy ? 'disabled' : ''}>
+                ${this.demoBusy ? 'Generating...' : 'Generate SaaS Demo Data'}
+              </button>
+              <button class="btn btn-secondary btn-small" id="btn-clear-demo-data" style="flex:1;justify-content:center;" ${this.demoBusy ? 'disabled' : ''}>
+                Clear Demo Data
+              </button>
+            </div>
+          </div>
           
           <!-- SEED DEFAULTS -->
           <div class="glass-panel" style="background:rgba(255,42,84,0.02);border-color:rgba(255,42,84,0.15);">
@@ -126,6 +168,58 @@ export class SettingsComponent {
   }
 
   bindEvents(container) {
+    const generateDemoBtn = container.querySelector('#btn-generate-demo-data');
+    if (generateDemoBtn) {
+      generateDemoBtn.addEventListener('click', async () => {
+        const confirmed = confirm("Generate SaaS demo data? This will add or refresh only records marked with [DEMO Trackier SaaS] and leave existing user-created records intact.");
+        if (!confirmed) return;
+
+        this.demoBusy = true;
+        this.demoMessage = null;
+        this.render(container);
+
+        try {
+          const counts = await StorageService.generateSaasDemoData();
+          this.state.risks = await StorageService.getRisks();
+          this.demoMessageType = 'success';
+          this.demoMessage = `Demo data generated successfully. Added ${counts.risks} risks, ${counts.controls} controls, ${counts.kris} KRIs, ${counts.actions} actions, ${counts.relationships} relationships, and ${counts.trendLogs} trend logs.`;
+          this.demoBusy = false;
+          this.onStateChange({ risks: this.state.risks });
+        } catch (err) {
+          this.demoMessageType = 'error';
+          this.demoMessage = `Demo data generation failed: ${err.message || err}`;
+          this.demoBusy = false;
+          this.render(container);
+        }
+      });
+    }
+
+    const clearDemoBtn = container.querySelector('#btn-clear-demo-data');
+    if (clearDemoBtn) {
+      clearDemoBtn.addEventListener('click', async () => {
+        const confirmed = confirm("Clear generated demo data? This removes only demo-trk-* records created by the generator.");
+        if (!confirmed) return;
+
+        this.demoBusy = true;
+        this.demoMessage = null;
+        this.render(container);
+
+        try {
+          const counts = await StorageService.clearSaasDemoData();
+          this.state.risks = await StorageService.getRisks();
+          this.demoMessageType = 'success';
+          this.demoMessage = `Demo data cleared. Removed generator-managed demo records for ${counts.risks} demo risks.`;
+          this.demoBusy = false;
+          this.onStateChange({ risks: this.state.risks });
+        } catch (err) {
+          this.demoMessageType = 'error';
+          this.demoMessage = `Clear demo data failed: ${err.message || err}`;
+          this.demoBusy = false;
+          this.render(container);
+        }
+      });
+    }
+
     // Save settings
     container.querySelector('#btn-save-settings').addEventListener('click', async () => {
       const form = container.querySelector('#settings-form');
