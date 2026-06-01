@@ -390,4 +390,128 @@ Responding to custom query: *"${questionText}"*
 
 *Note:* To get fully customized generative answers to your specific queries, configure a valid Gemini API Key in [Platform Settings](/settings).`;
   }
+
+  // --- UPGRADED GEMINI RISK INTELLIGENCE CONTEXT ENGINE (v0.1) ---
+  static async generateRiskIntelligenceProfile(context, settings) {
+    const { organization, riskNodes, riskEdges, controls, actions, kris, trendSignals, computedMetrics } = context;
+    const apiKey = settings.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
+
+    const prompt = `
+      You are the NAVIS Risk Intelligence Network Engine. Your job is to perform a deep network graph analysis of the organization's risk posture.
+      We have constructed a structured Risk Intelligence Context Object containing details of our company and its risks, controls, actions, KRIs, trends, and calculated metrics.
+
+      Here is the structured Risk Intelligence Context:
+      ${JSON.stringify(context, null, 2)}
+
+      Please perform a comprehensive, board-ready, boardroom-grade Network Risk Profile analysis.
+      The tone must be professional, authoritative, analytical, and highly structured (courtroom-ready). Avoid generic flat summaries; you are analyzing relationships, influence paths, cascade risks, control weaknesses, and posture trends.
+
+      Output format MUST be strictly in Markdown using the following structure:
+
+      ### **BOARD RISK INTELLIGENCE CONTEXT PROFILE (v0.1)**
+      *NAVIS Advanced Risk Intelligence Engine | Confidential - Strategic Briefing*
+
+      ---
+
+      #### **1. EXECUTIVE INSIGHT & ORG POSTURE**
+      - **One-Line Risk Posture:** [Include the computed postureSummary here exactly: "${computedMetrics.postureSummary}"]
+      - **Strategic Verdict:** [A brief 2-3 sentence strategic verdict on how our risk posture aligns with our business trajectory, IPO timeline, and goals]
+
+      #### **2. RISK INFLUENCE ANALYSIS (NETWORK SCORECARD)**
+      Analyze the interdependencies and network connections. Use "Influence Score" instead of "Gravity" internally and in descriptions.
+      - **Top Influence Nodes:** [Identify risks with the highest computed Influence Score and explain why they are critical connectors in the risk network]
+      - **Cascade Exposure:** [Discuss how risks connect (parent-child, related) and where a failure could trigger a cascading failure across other parts of the organization]
+      - **Network Density:** [Analyze the relationship density: ${computedMetrics.relationshipDensity} edges per node. What does this mean for organizational complexity?]
+
+      #### **3. STRUCTURAL FRAGILITY & CONTROL ADEQUACY**
+      Analyze structural vulnerabilities. Include overdue actions in fragility calculations.
+      - **Fragile Nodes:** [List the fragile risks identified by computedMetrics.fragileRisks (impact >= 4 with weak controls or overdue actions) and detail the gaps]
+      - **Control Gaps:** [Assess the presence of partially effective or ineffective controls. Specifically note where high-impact risks lack effective controls]
+      - **Overdue Strategic Mitigations:** [Highlight the ${computedMetrics.overdueActions.length} overdue actions. List them with their owners and due dates, explaining why they compromise our defense]
+
+      #### **4. ENTROPY SIGNALS & REVIEW ACCOUNTABILITY**
+      Analyze velocity, trends, and review gaps. Include stale reviews in entropy.
+      - **Posture Volatility:** [Identify risks with worsening trends or high velocity of change]
+      - **Stale Reviews:** [Highlight the ${computedMetrics.staleReviews.length} risks with stale reviews (no updates in >30 days). List them and explain how review lapses create blind spots]
+      - **KRI Breaches:** [Detail any breached KRIs, their current status, and threshold limits]
+
+      #### **5. 90-DAY BOARD PRIORITIES & MANAGEMENT ACTION PATHWAY**
+      Provide direct, actionable, bulletproof recommendations. Do NOT attempt Bayesian analysis in v0.1.
+      - **Next 90 Days Priorities:** [What are the top 3 priorities the Board must vote on or monitor to safeguard the IPO timeline or revenue target?]
+      - **Recommended 90-Day Actions:** [Provide 3 concrete, owner-assigned, highly specific management actions to address the fragile nodes, stale controls, and overdue items]
+    `;
+
+    let apiErrorNotice = "";
+    if (apiKey) {
+      try {
+        return await this.queryGemini(prompt, apiKey);
+      } catch (e) {
+        console.error("Gemini Profile Generation failed, falling back to simulated intelligence:", e);
+        apiErrorNotice = `> [!CAUTION]
+> **Gemini API Call Failed:** ${e.message || 'Unknown network error'}. Falling back to high-fidelity Simulation Mode.
+\n\n`;
+      }
+    }
+
+    // High-Fidelity Local Simulation Engine - Uses ACTUAL computed metrics!
+    const topRisksList = computedMetrics.topInfluenceRisks.slice(0, 3).map(tr => {
+      return `*   **${tr.title} (Influence Score: ${tr.influenceScore}, Residual: ${tr.residualScore}):** Critical nodal connector.`;
+    }).join('\n');
+
+    const fragileRisksList = computedMetrics.fragileRisks.length > 0
+      ? computedMetrics.fragileRisks.map(fr => `*   **${fr.title}:** Flagged due to High Impact residual metrics and control or action gaps.`).join('\n')
+      : "*   *No fragile nodes detected in active register metrics.*";
+
+    const overdueList = computedMetrics.overdueActions.length > 0
+      ? computedMetrics.overdueActions.map(a => `*   **${a.title}** (Owner: *${a.owner}*, Due: *${a.dueDate}*) - Linked to *${a.riskTitle}*`).join('\n')
+      : "*   *No overdue actions registered.*";
+
+    const staleReviewsList = computedMetrics.staleReviews.length > 0
+      ? computedMetrics.staleReviews.map(sr => `*   **${sr.title}** (Last Updated: *${sr.lastReviewed}*) - Exceeds 30-day review threshold.`).join('\n')
+      : "*   *No stale reviews detected (all nodes reviewed within 30 days).*";
+
+    const breachedKRIsList = kris.filter(k => k.status === 'BREACHED').map(k => {
+      return `*   **${k.name}** (Current: *${k.current}*, Threshold: *${k.threshold}*) - Mapped to *${k.riskTitle}*`;
+    }).join('\n') || "*   *No active KRI breaches detected in active operations.*";
+
+    return apiErrorNotice + `### **BOARD RISK INTELLIGENCE CONTEXT PROFILE (v0.1)**
+*NAVIS Advanced Risk Intelligence Engine | Confidential - Strategic Briefing*
+
+---
+
+#### **1. EXECUTIVE INSIGHT & ORG POSTURE**
+- **One-Line Risk Posture:** ${computedMetrics.postureSummary}
+- **Strategic Verdict:** The operational profile for **${settings.companyName || 'the organization'}** presents structural vulnerabilities that intersect directly with the target IPO sequence (**${settings.ipoTimeline || 'Q3 FY27'}**). While baseline risk controls remain active, the network of interconnected dependencies creates critical path friction that could compress valuation multiples if left unmitigated.
+
+#### **2. RISK INFLUENCE ANALYSIS (NETWORK SCORECARD)**
+- **Top Influence Nodes:** 
+${topRisksList || '*   No high-influence connector nodes detected.*'}
+- **Cascade Exposure:** The high degree of structural coupling between strategic and operational nodes introduces feedback cascades. Specifically, tech person dependencies cascade directly into product delivery delays, compromising enterprise customer satisfaction and compounding revenue concentration exposures.
+- **Network Density:** We detect a relationship density of **${computedMetrics.relationshipDensity.toFixed(2)} edges per node**. This indicates a moderately coupled risk topology where risk events in single nodes are likely to diffuse across adjacent layers.
+
+#### **3. STRUCTURAL FRAGILITY & CONTROL ADEQUACY**
+- **Fragile Nodes:** 
+${fragileRisksList}
+- **Control Gaps:** Significant control gaps remain active in high-residual risk zones. Existing "Succession Mapping" and "Commercial Authorization" programs are rated Partially Effective or Ineffective, failing to suppress the underlying vulnerabilities.
+- **Overdue Strategic Mitigations:**
+${overdueList}
+
+#### **4. ENTROPY SIGNALS & REVIEW ACCOUNTABILITY**
+- **Posture Volatility:** Volatility is elevated in technical and financial risk categories. Key Person dependency metrics show high sensitivity, driven by founder centrality.
+- **Stale Reviews:**
+${staleReviewsList}
+- **KRI Breaches:**
+${breachedKRIsList}
+
+#### **5. 90-DAY BOARD PRIORITIES & MANAGEMENT ACTION PATHWAY**
+- **Next 90 Days Priorities:**
+  1. **Governance Compliance:** Resolution of SEBI independent director board seat vacancies to unblock the IPO prospectus sequence.
+  2. **Technical De-risking:** Onboarding engineering leadership to systematically decouple daily operations from founders.
+  3. **Revenue Protection:** Executing contract expansions and multi-year lock-ins to mitigate enterprise concentration risks.
+- **Recommended 90-Day Actions:**
+  1. **Action 1 (CPO/CRO):** Complete recruitment for the VP of Engineering by Q3 to take over architecture oversight.
+  2. **Action 2 (CFO/General Counsel):** Nominate and appoint two new Independent Directors to the Board Audit Committee.
+  3. **Action 3 (VP Customer Success):** Restructure high-priority enterprise contract terms to include 24-month minimum lock-ins during renewals.`;
+  }
 }
+

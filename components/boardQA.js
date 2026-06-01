@@ -1,6 +1,7 @@
 // Board Questions & Answers Assistant Component - The Boardroom Chat Copilot
 
 import { AIService } from '../services/aiService.js';
+import { RiskIntelligenceContextService } from '../services/riskIntelligenceContextService.js';
 
 export class BoardQAComponent {
   constructor(appState, onStateChange) {
@@ -25,6 +26,7 @@ Please select one of the core board questions on the left, or type a custom quer
     let html = text;
     // Replace headings
     html = html.replace(/^### (.*$)/gim, '<h4 style="font-size:13px;font-weight:700;color:var(--text-primary);margin-top:10px;margin-bottom:6px;">$1</h4>');
+    html = html.replace(/^#### (.*$)/gim, '<h5 style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-top:8px;margin-bottom:4px;">$1</h5>');
     // Replace bold
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
     html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
@@ -74,6 +76,20 @@ Please select one of the core board questions on the left, or type a custom quer
                 </div>
               `).join('')}
             </div>
+
+            <!-- PREMIUM PROFILE GENERATOR CARD -->
+            <div class="glass-panel risk-intel-card" style="border: 1px solid rgba(139, 92, 246, 0.25); background: linear-gradient(135deg, rgba(88, 28, 135, 0.1) 0%, rgba(15, 23, 42, 0.4) 100%); margin-top: 8px; padding: 14px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 14px;">🌐</span>
+                <span style="font-family: var(--font-header); font-size: 10px; font-weight: 700; color: #a78bfa; letter-spacing: 0.5px; text-transform: uppercase;">Risk Network Engine</span>
+              </div>
+              <h3 style="font-family: var(--font-header); font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 0; line-height: 1.2;">Boardroom Intelligence Profiler</h3>
+              <p style="font-size: 10px; color: var(--text-secondary); line-height: 1.3; margin: 0;">Assemble structural fragility, influence metrics, stale review logs, and 90-day board directives.</p>
+              <button class="btn btn-primary" id="btn-generate-intel-profile" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border: none; color: white; padding: 8px 12px; font-weight: 600; font-size: 10px; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; width: 100%; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);" ${this.isThinking ? 'disabled' : ''}>
+                ⚡ Generate Risk Profile
+              </button>
+            </div>
+
             <p style="font-size:10px;color:var(--text-muted);margin-top:auto;text-align:center;line-height:1.3;">
               *AI answers compile active, live parameters from your risk ledger dynamically.
             </p>
@@ -177,6 +193,33 @@ Please select one of the core board questions on the left, or type a custom quer
     }
   }
 
+  async handleGenerateProfile(container) {
+    if (this.isThinking) return;
+
+    this.messages.push({ sender: 'user', text: "Generate Boardroom Risk Intelligence Context Profile" });
+    this.isThinking = true;
+    this.render(container);
+
+    try {
+      // Build structured context object (zero DB schema change)
+      const context = await RiskIntelligenceContextService.buildContext();
+
+      // Query the upgraded Gemini engine
+      const profile = await AIService.generateRiskIntelligenceProfile(context, this.state.settings);
+
+      this.messages.push({ sender: 'bot', text: profile });
+    } catch (e) {
+      console.error("Profile generation failed:", e);
+      this.messages.push({ 
+        sender: 'bot', 
+        text: `### **Risk Network Engine Alert**\nFailed to compile structural risk intelligence profile.\n\n**Error details:** ${e.message || 'Supabase query or context aggregation failure'}` 
+      });
+    } finally {
+      this.isThinking = false;
+      this.render(container);
+    }
+  }
+
   bindEvents(container) {
     // Preset cards click
     const presetCards = container.querySelectorAll('.preset-question-card');
@@ -186,6 +229,14 @@ Please select one of the core board questions on the left, or type a custom quer
         this.handleQuery(id, null, container);
       });
     });
+
+    // Generate Intelligence Profile click
+    const genIntelBtn = container.querySelector('#btn-generate-intel-profile');
+    if (genIntelBtn) {
+      genIntelBtn.addEventListener('click', () => {
+        this.handleGenerateProfile(container);
+      });
+    }
 
     // Custom query send click
     const sendBtn = container.querySelector('#btn-chat-send');
