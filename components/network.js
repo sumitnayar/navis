@@ -114,10 +114,10 @@ export class NetworkComponent {
               <svg class="network-svg" viewBox="0 0 800 360" id="risk-network-svg">
                 <!-- SVG MARKER FOR LINE ARROWS -->
                 <defs>
-                  <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(0,0,0,0.15)" />
+                  <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(71, 85, 105, 0.75)" />
                   </marker>
-                  <marker id="arrow-highlight" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <marker id="arrow-highlight" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-indigo)" />
                   </marker>
                 </defs>
@@ -134,13 +134,31 @@ export class NetworkComponent {
                     
                     const isHighlighted = this.selectedNodeId === r.id && activeChainIds.has(cid);
                     
+                    if (isHighlighted) {
+                      return `
+                        <!-- Glowing path behind -->
+                        <line x1="${parentPos.x}" y1="${parentPos.y}" 
+                              x2="${childPos.x}" y2="${childPos.y}" 
+                              stroke="rgba(0, 181, 181, 0.22)" 
+                              stroke-width="6.5" 
+                              stroke-linecap="round" />
+                        <!-- Primary active path -->
+                        <line class="network-link active-chain" 
+                              x1="${parentPos.x}" y1="${parentPos.y}" 
+                              x2="${childPos.x}" y2="${childPos.y}"
+                              stroke="var(--color-indigo)" 
+                              stroke-width="2.8" 
+                              marker-end="url(#arrow-highlight)" />
+                      `;
+                    }
+
                     return `
-                      <line class="network-link ${isHighlighted ? 'active-chain' : ''}" 
+                      <line class="network-link direct" 
                             x1="${parentPos.x}" y1="${parentPos.y}" 
                             x2="${childPos.x}" y2="${childPos.y}"
-                            stroke="${isHighlighted ? 'var(--color-indigo)' : 'rgba(0,0,0,0.08)'}" 
-                            stroke-width="${isHighlighted ? 2.5 : 1.2}" 
-                            marker-end="${isHighlighted ? 'url(#arrow-highlight)' : 'url(#arrow)'}" />
+                            stroke="rgba(71, 85, 105, 0.38)" 
+                            stroke-width="1.6" 
+                            marker-end="url(#arrow)" />
                     `;
                   });
 
@@ -152,13 +170,29 @@ export class NetworkComponent {
 
                     const isHighlighted = this.selectedNodeId === r.id || this.selectedNodeId === rid;
 
+                    if (isHighlighted) {
+                      return `
+                        <!-- Glowing path behind -->
+                        <line x1="${parentPos.x}" y1="${parentPos.y}" 
+                              x2="${relPos.x}" y2="${relPos.y}" 
+                              stroke="rgba(0, 181, 181, 0.15)" 
+                              stroke-width="4" 
+                              stroke-linecap="round" />
+                        <!-- Primary active dashed path -->
+                        <line class="network-link related active-chain" 
+                              x1="${parentPos.x}" y1="${parentPos.y}" 
+                              x2="${relPos.x}" y2="${relPos.y}"
+                              stroke="var(--color-indigo)" 
+                              stroke-width="2" />
+                      `;
+                    }
+
                     return `
-                      <line class="network-link" 
+                      <line class="network-link related" 
                             x1="${parentPos.x}" y1="${parentPos.y}" 
                             x2="${relPos.x}" y2="${relPos.y}"
-                            stroke="${isHighlighted ? 'var(--color-indigo)' : 'rgba(0,0,0,0.05)'}" 
-                            stroke-width="${isHighlighted ? 1.5 : 0.8}" 
-                            stroke-dasharray="2 3" />
+                            stroke="rgba(148, 163, 184, 0.55)" 
+                            stroke-width="1.2" />
                     `;
                   });
 
@@ -169,15 +203,15 @@ export class NetworkComponent {
                 ${activeNodes.map(r => {
                   const pos = graphPositions[r.id];
                   
-                  // Color mapped to residual score appetite status
+                  // Color mapped to residual score appetite status with prominent glows
                   let fill = 'var(--color-within-appetite)';
-                  let glow = 'var(--glow-within-appetite)';
+                  let glow = 'rgba(5, 150, 105, 0.35)';
                   if (r.appetiteStatus === 'Above Appetite') {
                     fill = 'var(--color-above-appetite)';
-                    glow = 'var(--glow-above-appetite)';
+                    glow = 'rgba(225, 29, 72, 0.4)';
                   } else if (r.appetiteStatus === 'Near Appetite') {
                     fill = 'var(--color-near-appetite)';
-                    glow = 'var(--glow-near-appetite)';
+                    glow = 'rgba(217, 119, 6, 0.35)';
                   }
 
                   // Radius mapped to risk residual score
@@ -194,15 +228,22 @@ export class NetworkComponent {
                       <circle r="${radius}" 
                               fill="#FFFFFF" 
                               stroke="${fill}" 
-                              stroke-width="${isSelected ? 3 : 1.5}"
+                              stroke-width="${isSelected ? 3.5 : 2.2}"
                               style="filter: drop-shadow(0 0 6px ${glow});" />
                       <circle r="${radius - 5}" 
                               fill="${fill}" 
-                              opacity="${isSelected ? 0.9 : 0.3}" />
+                              opacity="${isSelected ? 0.95 : 0.55}" />
                       
-                      <!-- Node Label -->
-                      <text y="${radius + 14}" text-anchor="middle" fill="${isSelected ? 'white' : 'var(--text-secondary)'}">
-                        ${r.title.split(' ').slice(0, 2).join(' ')}..
+                      <!-- Node Label (Cleaned from demo prefix for premium display) -->
+                      <text y="${radius + 15}" 
+                            text-anchor="middle" 
+                            fill="${isSelected ? 'var(--text-primary)' : 'var(--text-secondary)'}"
+                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 10.5px;">
+                        ${(() => {
+                          const cleanTitle = r.title.replace(/^\[DEMO\s+[^\]]+\]\s*/i, '').trim();
+                          const words = cleanTitle.split(' ');
+                          return words.slice(0, 2).join(' ') + (words.length > 2 ? '..' : '');
+                        })()}
                       </text>
                     </g>
                   `;

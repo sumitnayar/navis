@@ -474,14 +474,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .network-link {
-  stroke-dasharray: 4;
   stroke-linecap: round;
-  animation: dashMove 20s linear infinite;
+  transition: all 0.3s ease;
+}
+
+.network-link.related {
+  stroke-dasharray: 4 4;
 }
 
 .network-link.active-chain {
-  stroke-width: 2px !important;
-  animation: dashMove 5s linear infinite;
+  stroke-width: 2.8px !important;
+  animation: dashMove 4s linear infinite;
+  stroke-dasharray: 6 3;
 }
 
 @keyframes dashMove {
