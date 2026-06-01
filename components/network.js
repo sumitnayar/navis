@@ -237,13 +237,26 @@ export class NetworkComponent {
                   const isSelected = this.selectedNodeId === r.id;
                   const isInChain = activeChainIds.has(r.id) && this.selectedNodeId !== r.id;
 
-                  // Extract cleaned 3-word descriptive label
-                  const getCleanLabel = () => {
+                  // Extract cleaned and stacked descriptive label lines to prevent horizontal overlap
+                  const getLines = () => {
                     const cleanTitle = r.title.replace(/^\[DEMO\s+[^\]]+\]\s*/i, '').trim();
                     const words = cleanTitle.split(' ');
-                    return words.slice(0, 3).join(' ') + (words.length > 3 ? '..' : '');
+                    let line1 = '';
+                    let line2 = '';
+                    if (words.length <= 2) {
+                      line1 = words.join(' ');
+                    } else {
+                      if (words[0].length + words[1].length < 13) {
+                        line1 = words[0] + ' ' + words[1];
+                        line2 = words.slice(2, 4).join(' ') + (words.length > 4 ? '..' : '');
+                      } else {
+                        line1 = words[0];
+                        line2 = words.slice(1, 3).join(' ') + (words.length > 3 ? '..' : '');
+                      }
+                    }
+                    return { line1, line2 };
                   };
-                  const nodeLabel = getCleanLabel();
+                  const { line1, line2 } = getLines();
 
                   return `
                     <g class="network-node ${isSelected ? 'selected' : ''} ${isInChain ? 'active-chain' : ''}" 
@@ -259,23 +272,25 @@ export class NetworkComponent {
                               opacity="${isSelected ? 0.95 : 0.55}" />
                       
                       <!-- Text Background Halo Outline (For ultimate 100% readability) -->
-                      <text y="${radius + 16}" 
+                      <text y="${radius + 15}" 
                             text-anchor="middle" 
                             stroke="#FFFFFF" 
                             stroke-width="3.5px" 
                             stroke-linejoin="round" 
                             fill="none" 
                             opacity="0.95"
-                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 11px; font-family: var(--font-header);">
-                        ${nodeLabel}
+                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 10px; font-family: var(--font-header); line-height: 1.2;">
+                        <tspan x="0" dy="0">${line1}</tspan>
+                        ${line2 ? `<tspan x="0" dy="10">${line2}</tspan>` : ''}
                       </text>
 
                       <!-- Node Label Solid Text -->
-                      <text y="${radius + 16}" 
+                      <text y="${radius + 15}" 
                             text-anchor="middle" 
                             fill="${isSelected ? 'var(--color-indigo)' : 'var(--text-primary)'}"
-                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 11px; font-family: var(--font-header);">
-                        ${nodeLabel}
+                            style="font-weight: ${isSelected ? '700' : '600'}; font-size: 10px; font-family: var(--font-header); line-height: 1.2;">
+                        <tspan x="0" dy="0">${line1}</tspan>
+                        ${line2 ? `<tspan x="0" dy="10">${line2}</tspan>` : ''}
                       </text>
                     </g>
                   `;
