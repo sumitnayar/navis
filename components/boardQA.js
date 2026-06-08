@@ -46,10 +46,10 @@ Please select one of the core board questions on the left, or type a custom quer
 
     // Preset Boardroom questions
     const presets = [
-      { id: 'q-1', text: "What are our biggest risks and above appetite items?" },
-      { id: 'q-2', text: "Which risks are worsening and improving this month?" },
-      { id: 'q-3', text: "What threatens our company growth and revenue objectives?" },
-      { id: 'q-4', text: "Which risks are interconnected and depend on each other?" },
+      { id: 'q-1', text: "Which risks are above appetite?" },
+      { id: 'q-2', text: "Which risks are worsening and improving?" },
+      { id: 'q-3', text: "What threatens our growth and revenue objectives?" },
+      { id: 'q-4', text: "Which risks are interconnected?" },
       { id: 'q-5', text: "Which KRIs are breached and what actions are overdue?" }
     ];
 
@@ -117,10 +117,17 @@ Please select one of the core board questions on the left, or type a custom quer
             `).join('')}
 
             ${this.isThinking ? `
-              <div class="chat-bubble bot">
-                <div class="chat-bubble-loader">
+              <div class="chat-bubble bot" style="display:flex; align-items:center; gap:8px;">
+                <style>
+                  @keyframes boardQAPulse {
+                    0%, 100% { opacity: 0.6; }
+                    50% { opacity: 1; }
+                  }
+                </style>
+                <div class="chat-bubble-loader" style="margin:0;">
                   <span></span><span></span><span></span>
                 </div>
+                <span style="font-size:11px;color:var(--text-secondary);font-family:var(--font-header);animation:boardQAPulse 1.5s infinite;">Analyzing ${this.state.risks.length} active risk elements...</span>
               </div>
             ` : ''}
           </div>
@@ -155,10 +162,10 @@ Please select one of the core board questions on the left, or type a custom quer
     let queryText = customText;
     if (questionId) {
       const presetsMap = {
-        'q-1': "What are our biggest risks and above appetite items?",
-        'q-2': "Which risks are worsening and improving this month?",
-        'q-3': "What threatens our company growth and revenue objectives?",
-        'q-4': "Which risks are interconnected and depend on each other?",
+        'q-1': "Which risks are above appetite?",
+        'q-2': "Which risks are worsening and improving?",
+        'q-3': "What threatens our growth and revenue objectives?",
+        'q-4': "Which risks are interconnected?",
         'q-5': "Which KRIs are breached and what actions are overdue?"
       };
       queryText = presetsMap[questionId] || "";
@@ -186,7 +193,10 @@ Please select one of the core board questions on the left, or type a custom quer
       // 3. Push Bot Answer
       this.messages.push({ sender: 'bot', text: answer });
     } catch (e) {
-      this.messages.push({ sender: 'bot', text: "### **System Alert**\nFailed to compile dynamic analysis. Please check your internet connection or try again." });
+      this.messages.push({ 
+        sender: 'bot', 
+        text: `Intelligence layer temporarily unavailable. Displaying last cached analysis.\n\n*Error details: Failed to communicate with intelligence layer.*` 
+      });
     } finally {
       this.isThinking = false;
       this.render(container); // Final re-render
@@ -212,7 +222,7 @@ Please select one of the core board questions on the left, or type a custom quer
       console.error("Profile generation failed:", e);
       this.messages.push({ 
         sender: 'bot', 
-        text: `### **Risk Network Engine Alert**\nFailed to compile structural risk intelligence profile.\n\n**Error details:** ${e.message || 'Supabase query or context aggregation failure'}` 
+        text: `Intelligence layer temporarily unavailable. Displaying last cached analysis.\n\n*Error details: Failed to compile structural risk intelligence profile.*` 
       });
     } finally {
       this.isThinking = false;
