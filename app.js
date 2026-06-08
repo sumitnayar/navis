@@ -185,7 +185,7 @@ class RiskOSApplication {
           </a>
           <nav class="public-nav-actions" aria-label="Primary">
             <a href="${primaryPath}" data-route="${primaryPath}">${primaryLabel}</a>
-            <a class="btn btn-primary btn-small" href="/contact" data-route="/contact">Request Demo</a>
+            <a class="btn btn-primary btn-small btn-request-demo" href="/contact" data-route="/contact">Request Demo</a>
           </nav>
         </header>
 
@@ -199,7 +199,7 @@ class RiskOSApplication {
               <p class="hero-support">Navis helps organizations move beyond static spreadsheets and fragmented risk registers by bringing risks, controls, incidents, actions, compliance oversight, and board reporting into one intelligent operating layer.</p>
               <div class="hero-actions">
                 <a class="btn btn-primary" href="${primaryPath}" data-route="${primaryPath}">${primaryLabel} &rarr;</a>
-                <a class="btn btn-secondary" href="/contact" data-route="/contact">Request Demo</a>
+                <a class="btn btn-secondary btn-request-demo" href="/contact" data-route="/contact">Request Demo</a>
               </div>
             </div>
             <div class="hero-signal-panel" aria-label="Risk intelligence preview">
@@ -276,6 +276,15 @@ class RiskOSApplication {
     `;
 
     this.bindPublicRouteLinks();
+
+    // Bind Request Demo modal triggers
+    this.publicContainer.querySelectorAll('.btn-request-demo').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.showRequestDemoModal();
+      });
+    });
   }
 
   renderCapabilityCards(labels) {
@@ -421,6 +430,176 @@ class RiskOSApplication {
         this.navigate(link.getAttribute('data-route'));
       });
     });
+  }
+
+  showRequestDemoModal() {
+    let modal = document.querySelector('#request-demo-modal');
+    if (modal) return;
+
+    modal = document.createElement('div');
+    modal.id = 'request-demo-modal';
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal-container">
+        <button class="modal-close-btn" aria-label="Close modal">&times;</button>
+        <div class="modal-content">
+          <h2 class="modal-heading">Request Access to Navis</h2>
+          <p class="modal-subheading">Share a few details and the Navis team will follow up.</p>
+          <form id="modal-demo-form" class="modal-form">
+            <div class="form-group">
+              <label for="modal-name">Full Name</label>
+              <input id="modal-name" class="form-control" type="text" autocomplete="name" required placeholder="John Doe" />
+            </div>
+            <div class="form-group">
+              <label for="modal-company">Company Name</label>
+              <input id="modal-company" class="form-control" type="text" autocomplete="organization" required placeholder="Acme Corp" />
+            </div>
+            <div class="form-group">
+              <label for="modal-email">Work Email</label>
+              <input id="modal-email" class="form-control" type="email" autocomplete="email" required placeholder="john@acme.com" />
+            </div>
+            <div id="modal-error-message" class="modal-error is-hidden"></div>
+            <button id="modal-submit-btn" class="btn btn-primary modal-submit" type="submit">Request Access</button>
+          </form>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        this.closeRequestDemoModal();
+      }
+    });
+
+    const closeBtn = modal.querySelector('.modal-close-btn');
+    closeBtn.addEventListener('click', () => {
+      this.closeRequestDemoModal();
+    });
+
+    const form = modal.querySelector('#modal-demo-form');
+    const submitBtn = modal.querySelector('#modal-submit-btn');
+    const errorEl = modal.querySelector('#modal-error-message');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorEl.classList.add('is-hidden');
+      errorEl.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      const name = form.querySelector('#modal-name').value.trim();
+      const company = form.querySelector('#modal-company').value.trim();
+      const email = form.querySelector('#modal-email').value.trim();
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        errorEl.textContent = 'Please enter a valid work email address.';
+        errorEl.classList.remove('is-hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Request Access';
+        return;
+      }
+
+      try {
+        let isSuccess = false;
+        
+        try {
+          const response = await fetch('/api/demo-request', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, company, email })
+          });
+
+          if (response.ok) {
+            isSuccess = true;
+          } else {
+            const errResult = await response.json().catch(() => ({}));
+            console.error('Vercel API request failed:', errResult);
+          }
+        } catch (apiError) {
+          console.warn('API route /api/demo-request unavailable or failed. Trying direct client fallback...', apiError);
+        }
+
+        if (!isSuccess) {
+          const isSupabaseLive = window.supabase && window.ENV?.SUPABASE_URL && window.ENV?.SUPABASE_KEY && window.ENV?.SUPABASE_URL !== '__SUPABASE_URL__';
+          
+          if (isSupabaseLive) {
+            try {
+              const localClient = window.supabase.createClient(window.ENV.SUPABASE_URL, window.ENV.SUPABASE_KEY);
+              const { error } = await localClient
+                .from('demo_requests')
+                .insert([{ full_name: name, company_name: company, work_email: email }]);
+
+              if (error) throw error;
+              isSuccess = true;
+              console.log('Successfully saved demo request to Supabase via client fallback.');
+            } catch (dbError) {
+              console.error('Direct Supabase insert failed:', dbError);
+            }
+          }
+          
+          if (!isSuccess) {
+            try {
+              const pendingRequests = JSON.parse(localStorage.getItem('navis_pending_demo_requests') || '[]');
+              pendingRequests.push({ name, company, email, submittedAt: new Date().toISOString() });
+              localStorage.setItem('navis_pending_demo_requests', JSON.stringify(pendingRequests));
+              isSuccess = true;
+              console.log('Offline demo mode: Saved request to localStorage.', { name, company, email });
+            } catch (lsError) {
+              console.error('Failed to save to localStorage:', lsError);
+            }
+          }
+          
+          if (isSuccess) {
+            console.log('%c[SIMULATED EMAIL NOTIFICATION]', 'color: #00B5B5; font-weight: bold;', {
+              subject: 'New Demo Request — Navis',
+              to: 'sumitnayar@gmail.com',
+              body: {
+                fullName: name,
+                companyName: company,
+                workEmail: email,
+                timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }) + ' (IST)'
+              }
+            });
+          }
+        }
+
+        if (isSuccess) {
+          const modalContent = modal.querySelector('.modal-content');
+          modalContent.innerHTML = `
+            <div class="modal-success-message">
+              <span class="success-icon">✓</span>
+              <h3>Thank you. We'll be in touch within 24 hours.</h3>
+              <button class="btn btn-secondary modal-close-after-success" style="margin-top: 12px; width: 100%;">Close</button>
+            </div>
+          `;
+          
+          modalContent.querySelector('.modal-close-after-success').addEventListener('click', () => {
+            this.closeRequestDemoModal();
+          });
+        } else {
+          throw new Error('All submission routes failed.');
+        }
+
+      } catch (submitErr) {
+        console.error('Submission error:', submitErr);
+        errorEl.textContent = 'Something went wrong. Please email us at hello@navisrisk.com';
+        errorEl.classList.remove('is-hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Request Access';
+      }
+    });
+  }
+
+  closeRequestDemoModal() {
+    const modal = document.querySelector('#request-demo-modal');
+    if (modal) {
+      modal.remove();
+    }
   }
 
   async renderAuthenticatedApp(tabId) {

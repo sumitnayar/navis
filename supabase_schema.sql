@@ -114,6 +114,15 @@ CREATE TABLE IF NOT EXISTS public.ai_cache (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 8. DEMO REQUESTS FROM LANDING PAGE
+CREATE TABLE IF NOT EXISTS public.demo_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    full_name VARCHAR(255) NOT NULL,
+    company_name VARCHAR(255) NOT NULL,
+    work_email VARCHAR(255) NOT NULL,
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 
 -- ==========================================
 -- 2. DEMO REPOSITORY SEED DATA
