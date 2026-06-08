@@ -178,11 +178,13 @@ export class AIService {
     }
   }
   // --- REAL GEMINI API CONNECTOR ---
-  static async queryGemini(prompt, apiKey) {
+  static async queryGemini(prompt, apiKey, isRetry = false) {
     try {
       // 1. Prioritize Secure Server-Side Bridge
+      let response;
+      let isServerBridge = true;
       try {
-        const response = await fetch('/api/gemini', {
+        response = await fetch('/api/gemini', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -196,19 +198,21 @@ export class AIService {
         }
 
         // Handle specific server-side errors
-        const err = await response.json();
+        const err = await response.json().catch(() => ({}));
         
         // If the server explicitly complains about a missing key, check if we have a local fallback key
         if (err.code === 'MISSING_SERVER_KEY') {
           if (apiKey) {
             console.log("Server environment key is missing, falling back to client-side developer key...");
-            // Proceed to the direct client fetch below
+            isServerBridge = false; // Proceed to the direct client fetch below
           } else {
             throw new Error('GEMINI_API_KEY is not configured on the server. Please set it as an environment variable in Vercel, or set a local developer key in Platform Settings.');
           }
         } else {
           // General server-side errors (e.g. quota, bad prompt) should be thrown directly
-          throw new Error(err.error || 'Server bridge failed to process Gemini request');
+          const serverErr = new Error(err.error || 'Server bridge failed to process Gemini request');
+          serverErr.status = response.status;
+          throw serverErr;
         }
       } catch (serverError) {
         // If it's a missing server key error we already handled, rethrow it
@@ -216,37 +220,60 @@ export class AIService {
           throw serverError;
         }
         
+        // If it is a status-bearing error (e.g. 429/503), rethrow it so outer catch can retry it
+        if (serverError.status) {
+          throw serverError;
+        }
+        
         // If the server route is not found or connection failed (e.g. local dev without api server),
         // we can fallback to direct browser call if a local apiKey exists.
         if (apiKey) {
           console.warn("Secure server bridge failed/unreachable. Attempting direct browser call fallback:", serverError);
+          isServerBridge = false;
         } else {
           throw serverError;
         }
       }
 
       // 2. Direct Browser Fallback (if client key is provided and server route was missing/keyless)
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }]
-        })
-      });
+      if (!isServerBridge) {
+        const directResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }]
+          })
+        });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || 'Failed to connect to Gemini API');
+        if (!directResponse.ok) {
+          const err = await directResponse.json().catch(() => ({}));
+          const errMsg = err.error?.message || 'Failed to connect to Gemini API';
+          const browserErr = new Error(errMsg);
+          browserErr.status = directResponse.status;
+          throw browserErr;
+        }
+
+        const result = await directResponse.json();
+        return result.candidates?.[0]?.content?.parts?.[0]?.text || "Unable to extract response from Gemini.";
       }
 
-      const result = await response.json();
-      return result.candidates?.[0]?.content?.parts?.[0]?.text || "Unable to extract response from Gemini.";
-
     } catch (error) {
+      const status = error.status;
+      const errMsg = error.message ? error.message.toLowerCase() : "";
+      
+      const isRateLimit = status === 429 || errMsg.includes("429") || errMsg.includes("rate limit") || errMsg.includes("too many requests") || errMsg.includes("quota");
+      const isOverload = status === 503 || errMsg.includes("503") || errMsg.includes("overload") || errMsg.includes("exhausted") || errMsg.includes("service unavailable");
+      
+      if ((isRateLimit || isOverload) && !isRetry) {
+        console.warn(`Gemini rate limit/overload error detected (status: ${status}, message: ${error.message}). Retrying in 3 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        return this.queryGemini(prompt, apiKey, true);
+      }
+      
       console.error("Gemini API Router Error:", error);
       throw error;
     }
@@ -405,21 +432,15 @@ export class AIService {
       Keep the tone formal, board-worthy, and concise. No fluff.
     `;
 
-    let apiErrorNotice = "";
     try {
       const clientKey = settings.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
       return await this.queryGemini(contextPrompt, clientKey);
     } catch (e) {
       console.error("Gemini Brief Call failed, falling back to simulated intelligence:", e);
-      if (e.message && !e.message.includes('not configured on the server') && !e.message.includes('Failed to fetch')) {
-        apiErrorNotice = `> [!CAUTION]
-> **Gemini API Call Failed:** ${e.message || 'Unknown network error'}. Falling back to Simulation Mode.
-\n\n`;
-      }
     }
 
     // High-Fidelity Local Simulation Engine
-    return apiErrorNotice + `### **BOARD EXECUTIVE BRIEF: RISK POSTURE OVERVIEW**
+    return `### **BOARD EXECUTIVE BRIEF: RISK POSTURE OVERVIEW**
 *Generated by RiskOS AI Analyst | Confidential - For Board of Directors Only*
 
 ---
@@ -481,7 +502,7 @@ To restore risk posture within acceptable appetite levels, the executive committ
     const queryLower = questionText.toLowerCase().trim();
     
     // Extract search tokens (ignore small grammar words)
-    const stopwords = new Set(['what', 'which', 'who', 'how', 'why', 'where', 'when', 'is', 'are', 'our', 'the', 'and', 'for', 'of', 'in', 'on', 'at', 'to', 'a', 'an', 'this', 'that', 'these', 'those', 'with', 'above', 'below', 'threatens', 'worsening', 'improving', 'interconnected', 'breached', 'overdue', 'appetite', 'growth', 'revenue', 'objective', 'objectives', 'risks', 'risk', 'kris', 'kri', 'action', 'actions', 'items', 'item']);
+    const stopwords = new Set(['what', 'which', 'who', 'how', 'why', 'where', 'when', 'is', 'are', 'our', 'the', 'and', 'for', 'of', 'in', 'on', 'at', 'to', 'a', 'an', 'this', 'that', 'these', 'those', 'with', 'above', 'below', 'threatens', 'under', 'about', 'some', 'any', 'my', 'your', 'we', 'they', 'he', 'she', 'it', 'us', 'them', 'has', 'have', 'had', 'do', 'does', 'did', 'been', 'was', 'were', 'be', 'can', 'will', 'should', 'would', 'could', 'may', 'might', 'must', 'tell', 'me', 'explain', 'show', 'list', 'detail', 'details', 'give', 'get']);
     const queryTokens = queryLower
       .replace(/[^a-zA-Z0-9\s]/g, '')
       .split(/\s+/)
@@ -544,8 +565,17 @@ To restore risk posture within acceptable appetite levels, the executive committ
     // Determine specific data gap based on query tokens
     let missingGap = "specific risk entries or relevant metrics in the risk register";
     if (queryTokens.length > 0) {
-      const gapWords = queryTokens.join(', ');
-      missingGap = `${gapWords} risk entries, which are not currently captured in the risk register`;
+      const tokensStr = queryTokens.join(' ');
+      if (tokensStr.includes('employee') || tokensStr.includes('headcount') || tokensStr.includes('hr') || tokensStr.includes('people') || tokensStr.includes('talent') || tokensStr.includes('attrition') || tokensStr.includes('salary') || tokensStr.includes('hiring') || tokensStr.includes('staff')) {
+        missingGap = "headcount and HR risk entries, which are not currently captured in the risk register";
+      } else if (tokensStr.includes('revenue') || tokensStr.includes('financial') || tokensStr.includes('finance') || tokensStr.includes('cost') || tokensStr.includes('profit') || tokensStr.includes('sales') || tokensStr.includes('multiple') || tokensStr.includes('valuation') || tokensStr.includes('growth')) {
+        missingGap = "financial and revenue risk entries, which are not currently captured in the risk register";
+      } else if (tokensStr.includes('cyber') || tokensStr.includes('security') || tokensStr.includes('data') || tokensStr.includes('privacy') || tokensStr.includes('gdpr') || tokensStr.includes('dpdpa') || tokensStr.includes('hack') || tokensStr.includes('leak') || tokensStr.includes('server') || tokensStr.includes('aws')) {
+        missingGap = "cyber security and data privacy risk entries, which are not currently captured in the risk register";
+      } else {
+        const gapWords = queryTokens.join(', ');
+        missingGap = `${gapWords} risk entries, which are not currently captured in the risk register`;
+      }
     }
 
     // Fallback if zero relevant items found
@@ -573,6 +603,7 @@ Your responses MUST follow these rules strictly:
    - One board-level recommendation.
 3. Total word count must be STRICTLY under 150 words.
 4. Never use meta-language or chatbot phrases like "based on the data provided", "as an AI", "according to the JSON", "my analysis shows", etc. Speak as an executive board intelligence system.
+5. If the query asks for details that are partially missing from the context, attempt to answer using the available data in the context and note the specific data limitation inline rather than refusing to answer.
 
 Detected Query Intent Type: ${classifiedIntent}
 Explicit Format Rules Per Intent Type:
@@ -716,7 +747,6 @@ User's Question:
     const reasoning = `Founder Dependency is at score 12 (Critical gap) due to lack of succession tracking. Top-Tier Customer Concentration is score 12, driven by top 3 accounts representing 48% of total ARR.`;
     const recommendation = "Recommend immediate board governance succession mapping and commercial threshold reviews within 14 days.";
     return `${verdict}\n\nReasoning: ${reasoning}\n\nRecommendation: ${recommendation}`;
-  }
   }
 
   // --- UPGRADED GEMINI RISK INTELLIGENCE CONTEXT ENGINE (v2.0 - EXECUTIVE BRIEF MODE) ---
@@ -962,6 +992,5 @@ ${JSON.stringify(context, null, 2)}
     ${directivesHTML}
   </div>
 </div>`;
-  }
   }
 }
