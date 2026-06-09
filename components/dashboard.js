@@ -132,40 +132,40 @@ export class DashboardComponent {
       </div>
 
       <!-- 1. KRI BREACH MONITOR (FULL WIDTH) -->
-      <div class="dashboard-graph-card" id="kri-breach-container" style="margin-bottom: 24px;">
+      <div class="dashboard-graph-card" id="kri-breach-container">
         <div class="dashboard-graph-card-header">
           <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
           <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
         </div>
-        <div class="kri-gauge-grid">
-          ${isLoading ? `
-            ${[1, 2, 3].map(() => `
-              <div class="kri-gauge-card">
-                <div class="kri-gauge-title">
-                  <div class="skeleton-loading" style="width: 120px; height: 14px; margin: 0 auto;"></div>
+        <div class="kri-gauge-scroll-container">
+          <div class="kri-gauge-grid">
+            ${isLoading ? `
+              ${[1, 2, 3, 4].map(() => `
+                <div class="kri-gauge-card">
+                  <div class="kri-gauge-title">
+                    <div class="skeleton-loading" style="width: 100px; height: 12px; margin: 0 auto;"></div>
+                  </div>
+                  <div style="position: relative; width: 100%; max-width: 120px; height: 66px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;">
+                    <div class="skeleton-loading" style="width: 100px; height: 50px; border-radius: 50px 50px 0 0;"></div>
+                  </div>
+                  <div class="skeleton-loading" style="width: 60px; height: 18px; margin: 0 auto; border-radius: 4px;"></div>
                 </div>
-                <div style="position: relative; width: 100%; max-width: 160px; height: 88px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
-                  <div class="skeleton-loading" style="width: 140px; height: 70px; border-radius: 70px 70px 0 0;"></div>
-                </div>
-                <div class="skeleton-loading" style="width: 60px; height: 20px; margin: 0 auto 6px; border-radius: 4px;"></div>
-                <div class="skeleton-loading" style="width: 90px; height: 10px; margin: 0 auto 4px; border-radius: 2px;"></div>
-                <div class="skeleton-loading" style="width: 80px; height: 10px; margin: 0 auto; border-radius: 2px;"></div>
-              </div>
-            `).join('')}
-          ` : `
-            <!-- Will be populated dynamically in initGraphs -->
-          `}
+              `).join('')}
+            ` : `
+              <!-- Will be populated dynamically in initGraphs -->
+            `}
+          </div>
         </div>
       </div>
 
       <!-- 2. RISK HEATMAP (FULL WIDTH) -->
-      <div class="dashboard-graph-card" id="risk-heatmap-container" style="margin-bottom: 24px;">
+      <div class="dashboard-graph-card" id="risk-heatmap-container">
         <div class="dashboard-graph-card-header">
           <h3 class="dashboard-graph-card-title">Risk Heatmap</h3>
           <p class="dashboard-graph-card-subtitle">Residual likelihood vs impact across active risk portfolio</p>
         </div>
         ${isLoading ? `
-          <div class="dashboard-fade-in" style="position: relative; height: 320px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.02); border-radius: 8px;">
+          <div class="dashboard-fade-in" style="position: relative; height: 280px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.02); border-radius: 8px;">
             <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 8px;"></div>
           </div>
           <!-- Heatmap legend placeholder -->
@@ -192,36 +192,43 @@ export class DashboardComponent {
       </div>
 
       <!-- 3. RISK VELOCITY TRACKER (FULL WIDTH) -->
-      <div class="dashboard-graph-card" id="risk-velocity-container" style="margin-bottom: 24px;">
+      <div class="dashboard-graph-card" id="risk-velocity-container">
         <div class="dashboard-graph-card-header">
           <h3 class="dashboard-graph-card-title">Risk Velocity Tracker</h3>
           <p class="dashboard-graph-card-subtitle">Residual score movement across top risks</p>
         </div>
-        <div class="risk-velocity-grid">
-          ${isLoading ? `
-            ${[1, 2, 3, 4, 5].map(() => `
-              <div class="risk-velocity-card" style="height: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <div class="skeleton-loading" style="width: 50px; height: 8px;"></div>
-                  <div class="skeleton-loading" style="width: 50px; height: 10px; border-radius: 4px;"></div>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                  <div class="skeleton-loading" style="width: 100px; height: 12px;"></div>
-                  <div class="skeleton-loading" style="width: 20px; height: 16px;"></div>
-                </div>
-                <div style="height: 100px; width: 100%;">
-                  <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 4px;"></div>
-                </div>
-              </div>
-            `).join('')}
-          ` : `
-            <!-- Will be populated dynamically in initGraphs -->
-          `}
-        </div>
+        ${isLoading ? `
+          <div style="overflow-x: auto; width: 100%;">
+            <table class="risk-velocity-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600;">
+                  <th style="padding: 8px 12px;">Risk Name</th>
+                  <th style="padding: 8px 12px;">Category</th>
+                  <th style="padding: 8px 12px; text-align: center;">Score</th>
+                  <th style="padding: 8px 12px; text-align: center;">Trend</th>
+                  <th style="padding: 8px 12px; width: 100px; text-align: center;">Sparkline</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${[1, 2, 3, 4, 5].map(() => `
+                  <tr style="border-bottom: 1px solid rgba(0, 0, 0, 0.03);">
+                    <td style="padding: 10px 12px;"><div class="skeleton-loading" style="width: 180px; height: 12px;"></div></td>
+                    <td style="padding: 10px 12px;"><div class="skeleton-loading" style="width: 80px; height: 10px; border-radius: 4px;"></div></td>
+                    <td style="padding: 10px 12px; text-align: center; display: flex; justify-content: center;"><div class="skeleton-loading" style="width: 20px; height: 16px;"></div></td>
+                    <td style="padding: 10px 12px; text-align: center;"><div class="skeleton-loading" style="width: 60px; height: 12px; border-radius: 4px; margin: 0 auto;"></div></td>
+                    <td style="padding: 10px 12px; text-align: center;"><div class="skeleton-loading" style="width: 80px; height: 24px; border-radius: 4px; margin: 0 auto;"></div></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : `
+          <!-- Will be populated dynamically in initGraphs -->
+        `}
       </div>
 
       <!-- 4. STRATEGIC FRAGILITY MAP (FULL WIDTH) -->
-      <div class="dashboard-graph-card" id="fragility-map-container" style="margin-bottom: 24px;">
+      <div class="dashboard-graph-card" id="fragility-map-container">
         <div class="dashboard-graph-card-header">
           <h3 class="dashboard-graph-card-title">Strategic Fragility Map</h3>
           <p class="dashboard-graph-card-subtitle">Aggregated risk severity mapped to core strategic objective categories</p>
@@ -262,7 +269,7 @@ export class DashboardComponent {
       </div>
 
       <!-- 5. RISK DYNAMICS TRACKER (FULL WIDTH) -->
-      <div class="dashboard-graph-card" id="dynamics-tracker-container" style="margin-bottom: 24px;">
+      <div class="dashboard-graph-card" id="dynamics-tracker-container">
         <div class="dashboard-graph-card-header">
           <h3 class="dashboard-graph-card-title">Risk Dynamics Tracker</h3>
           <p class="dashboard-graph-card-subtitle">Detailed categorization of risk posture trend changes</p>
@@ -325,7 +332,7 @@ export class DashboardComponent {
       </div>
 
       <!-- 6. AI BOARD NARRATIVE BRIEF (FULL WIDTH COLLAPSIBLE) -->
-      <div class="dashboard-graph-card" id="ai-brief-container" style="margin-bottom: 24px;">
+      <div class="dashboard-graph-card" id="ai-brief-container">
         <div class="dashboard-graph-card-header" id="ai-brief-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
           <div>
             <h3 class="dashboard-graph-card-title" style="display: flex; align-items: center; gap: 8px; margin: 0;">
@@ -504,26 +511,42 @@ export class DashboardComponent {
           <h3 class="dashboard-graph-card-title">Risk Velocity Tracker</h3>
           <p class="dashboard-graph-card-subtitle">Residual score movement across top risks</p>
         </div>
-        <div class="risk-velocity-grid dashboard-fade-in">
-          ${top5Risks.map((r, idx) => {
-            const trendLabel = r.trend === 'Deteriorating' ? 'Worsening' : r.trend === 'Improving' ? 'Improving' : 'Stable';
-            const badgeClass = r.trend === 'Deteriorating' ? 'above' : r.trend === 'Improving' ? 'within' : 'near';
-            return `
-              <div class="risk-velocity-card" style="height: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span class="profile-role-badge" style="font-size: 8px; color: var(--color-indigo); margin: 0;">${r.category}</span>
-                  <span class="status-badge ${badgeClass}" style="font-size: 8px; padding: 1px 4px; font-weight: bold;">${trendLabel}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                  <div style="font-weight: 700; font-size: 11px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; margin-right: 8px;" title="${r.title}">${r.title}</div>
-                  <span style="font-size: 16px; font-weight: 800; color: var(--text-primary); line-height: 1;">${r.residualScore}</span>
-                </div>
-                <div style="height: 100px; width: 100%; position: relative;">
-                  <canvas id="velocity-chart-${idx}"></canvas>
-                </div>
-              </div>
-            `;
-          }).join('')}
+        <div style="overflow-x: auto; width: 100%;" class="dashboard-fade-in">
+          <table class="risk-velocity-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; color: var(--text-primary);">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600;">
+                <th style="padding: 8px 12px;">Risk Name</th>
+                <th style="padding: 8px 12px;">Category</th>
+                <th style="padding: 8px 12px; text-align: center; width: 60px;">Score</th>
+                <th style="padding: 8px 12px; text-align: center; width: 100px;">Trend</th>
+                <th style="padding: 8px 12px; text-align: center; width: 100px;">Sparkline</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${top5Risks.map((r, idx) => {
+                const trendLabel = r.trend === 'Deteriorating' ? 'Worsening' : r.trend === 'Improving' ? 'Improving' : 'Stable';
+                const badgeClass = r.trend === 'Deteriorating' ? 'above' : r.trend === 'Improving' ? 'within' : 'near';
+                const rowBg = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+                return `
+                  <tr style="background-color: ${rowBg}; border-bottom: 1px solid rgba(0, 0, 0, 0.03);">
+                    <td style="padding: 10px 12px; font-weight: 600; font-size: 12px;" title="${r.title}">${r.title}</td>
+                    <td style="padding: 10px 12px;">
+                      <span class="profile-role-badge" style="font-size: 8px; color: var(--color-indigo); margin: 0; padding: 2px 6px;">${r.category}</span>
+                    </td>
+                    <td style="padding: 10px 12px; text-align: center; font-size: 14px; font-weight: 700;">${r.residualScore}</td>
+                    <td style="padding: 10px 12px; text-align: center;">
+                      <span class="status-badge ${badgeClass}" style="font-size: 8px; padding: 1px 4px; font-weight: bold; display: inline-block;">${trendLabel}</span>
+                    </td>
+                    <td style="padding: 6px 12px; text-align: center; vertical-align: middle;">
+                      <div style="width: 80px; height: 32px; margin: 0 auto; position: relative;">
+                        <canvas id="velocity-chart-${idx}" width="80" height="32" style="width: 80px !important; height: 32px !important;"></canvas>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
         </div>
       `;
 
@@ -574,18 +597,18 @@ export class DashboardComponent {
               datasets: [{
                 data: historyPoints,
                 borderColor: lineColor,
-                borderWidth: 2,
+                borderWidth: 1.5,
                 pointBackgroundColor: lineColor,
                 pointBorderColor: '#FFFFFF',
-                pointBorderWidth: 1.5,
-                pointRadius: 2.5,
-                pointHoverRadius: 4.5,
+                pointBorderWidth: 1.0,
+                pointRadius: 1.5,
+                pointHoverRadius: 3.0,
                 fill: false,
                 tension: 0.35
               }]
             },
             options: {
-              responsive: true,
+              responsive: false,
               maintainAspectRatio: false,
               plugins: {
                 legend: { display: false },
@@ -598,7 +621,7 @@ export class DashboardComponent {
                   bodyColor: '#FFFFFF',
                   titleFont: { size: 9, family: 'Inter' },
                   bodyFont: { size: 10, family: 'Inter', weight: 'bold' },
-                  padding: 6,
+                  padding: 4,
                   callbacks: {
                     title: () => '',
                     label: (context) => `Score: ${context.parsed.y}`
@@ -608,14 +631,10 @@ export class DashboardComponent {
               scales: {
                 x: { display: false },
                 y: {
-                  display: true,
+                  display: false,
                   min: Math.max(0, Math.min(...historyPoints) - 1),
                   max: Math.max(...historyPoints) + 1,
-                  ticks: { display: false },
-                  grid: {
-                    color: 'rgba(0, 0, 0, 0.03)',
-                    drawTicks: false
-                  },
+                  grid: { display: false },
                   border: { display: false }
                 }
               }
@@ -634,7 +653,7 @@ export class DashboardComponent {
           <h3 class="dashboard-graph-card-title">Risk Heatmap</h3>
           <p class="dashboard-graph-card-subtitle">Residual likelihood vs impact across active risk portfolio</p>
         </div>
-        <div class="dashboard-fade-in" style="position: relative; height: 320px; margin-bottom: 16px;">
+        <div class="dashboard-fade-in" style="position: relative; height: 280px; margin-bottom: 16px;">
           <canvas id="heatmap-chart-canvas"></canvas>
         </div>
         <div class="dashboard-fade-in" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px; font-size: 11px;">
@@ -669,6 +688,19 @@ export class DashboardComponent {
 
         this.selectedHeatmapRiskIndex = null;
 
+        // Calculate dynamic bounds based on actual data
+        const xVals = risks.map(r => r.likelihoodResidual || r.likelihood || 1);
+        const yVals = risks.map(r => r.impactResidual || r.impact || 1);
+        const xMin = Math.min(...xVals);
+        const xMax = Math.max(...xVals);
+        const yMin = Math.min(...yVals);
+        const yMax = Math.max(...yVals);
+
+        const scaleMinX = Math.max(0.5, xMin - 0.5);
+        const scaleMaxX = Math.min(5.5, xMax + 0.5);
+        const scaleMinY = Math.max(0.5, yMin - 0.5);
+        const scaleMaxY = Math.min(5.5, yMax + 0.5);
+
         // Custom Quadrant shading plugin (Barely visible High Likelihood / High Impact red shade)
         const quadrantPlugin = {
           id: 'quadrantShading',
@@ -677,11 +709,18 @@ export class DashboardComponent {
             chartCtx.save();
             const xPixel = x.getPixelForValue(3);
             const yPixel = y.getPixelForValue(3);
-            const xMaxPixel = x.getPixelForValue(5.5);
-            const yMaxPixel = y.getPixelForValue(5.5);
+            const xMaxVal = Math.max(3, x.max);
+            const yMaxVal = Math.max(3, y.max);
+            const xMaxPixel = x.getPixelForValue(xMaxVal);
+            const yMaxPixel = y.getPixelForValue(yMaxVal);
 
             chartCtx.fillStyle = 'rgba(239, 68, 68, 0.02)'; // Whisper red overlay (very faint, 2%)
-            chartCtx.fillRect(xPixel, yMaxPixel, xMaxPixel - xPixel, yPixel - yMaxPixel);
+            chartCtx.fillRect(
+              Math.max(left, xPixel),
+              Math.max(top, yMaxPixel),
+              Math.max(0, xMaxPixel - xPixel),
+              Math.max(0, yPixel - yMaxPixel)
+            );
             chartCtx.restore();
           }
         };
@@ -758,8 +797,8 @@ export class DashboardComponent {
               },
               scales: {
                 x: {
-                  min: 0.5,
-                  max: 5.5,
+                  min: scaleMinX,
+                  max: scaleMaxX,
                   ticks: {
                     stepSize: 1,
                     color: '#64748B', // Muted grey labels
@@ -778,8 +817,8 @@ export class DashboardComponent {
                   }
                 },
                 y: {
-                  min: 0.5,
-                  max: 5.5,
+                  min: scaleMinY,
+                  max: scaleMaxY,
                   ticks: {
                     stepSize: 1,
                     color: '#64748B',
@@ -837,96 +876,90 @@ export class DashboardComponent {
           </div>
         `;
       } else {
-        const displayList = breachedKriList.slice(0, 6);
-
         breachedKriContainer.innerHTML = `
           <div class="dashboard-graph-card-header">
             <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
             <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
           </div>
-          <div class="kri-gauge-grid dashboard-fade-in">
-            ${displayList.map((kri, idx) => {
-              const currentNum = parseNumeric(kri.current);
-              const thresholdNum = parseNumeric(kri.threshold);
-              const unit = getUnit(kri.current);
-              
-              const delta = currentNum - thresholdNum;
-              const formattedDelta = `+${delta.toFixed(1).replace(/\.0$/, '')}${unit}`;
+          <div class="kri-gauge-scroll-container dashboard-fade-in">
+            <div class="kri-gauge-grid">
+              ${breachedKriList.map((kri, idx) => {
+                const currentNum = parseNumeric(kri.current);
+                const thresholdNum = parseNumeric(kri.threshold);
+                const unit = getUnit(kri.current);
+                
+                const delta = currentNum - thresholdNum;
+                const formattedDelta = `+${delta.toFixed(1).replace(/\.0$/, '')}${unit}`;
 
-              let maxVal = 100;
-              if (currentNum > 100 || thresholdNum > 100) {
-                maxVal = Math.ceil(Math.max(currentNum, thresholdNum) * 1.3);
-              } else if (thresholdNum <= 0) {
-                maxVal = 100;
-              } else {
-                maxVal = Math.max(10, Math.ceil(thresholdNum * 1.4), Math.ceil(currentNum * 1.1));
-              }
+                let maxVal = 100;
+                if (currentNum > 100 || thresholdNum > 100) {
+                  maxVal = Math.ceil(Math.max(currentNum, thresholdNum) * 1.3);
+                } else if (thresholdNum <= 0) {
+                  maxVal = 100;
+                } else {
+                  maxVal = Math.max(10, Math.ceil(thresholdNum * 1.4), Math.ceil(currentNum * 1.1));
+                }
 
-              const cx = 100;
-              const cy = 90;
-              const R = 70;
+                const cx = 100;
+                const cy = 90;
+                const R = 70;
 
-              const amberStartVal = 0.9 * thresholdNum;
+                const amberStartVal = 0.9 * thresholdNum;
 
-              const angleAmberStart = Math.max(0, Math.min(180, (amberStartVal / maxVal) * 180));
-              const radAmberStart = (180 - angleAmberStart) * Math.PI / 180;
-              const xAmberStart = cx + R * Math.cos(radAmberStart);
-              const yAmberStart = cy - R * Math.sin(radAmberStart);
+                const angleAmberStart = Math.max(0, Math.min(180, (amberStartVal / maxVal) * 180));
+                const radAmberStart = (180 - angleAmberStart) * Math.PI / 180;
+                const xAmberStart = cx + R * Math.cos(radAmberStart);
+                const yAmberStart = cy - R * Math.sin(radAmberStart);
 
-              const angleThresh = Math.max(0, Math.min(180, (thresholdNum / maxVal) * 180));
-              const radThresh = (180 - angleThresh) * Math.PI / 180;
-              const xThresh = cx + R * Math.cos(radThresh);
-              const yThresh = cy - R * Math.sin(radThresh);
+                const angleThresh = Math.max(0, Math.min(180, (thresholdNum / maxVal) * 180));
+                const radThresh = (180 - angleThresh) * Math.PI / 180;
+                const xThresh = cx + R * Math.cos(radThresh);
+                const yThresh = cy - R * Math.sin(radThresh);
 
-              const angleNeedle = Math.max(0, Math.min(180, (currentNum / maxVal) * 180));
-              const radNeedle = (180 - angleNeedle) * Math.PI / 180;
-              const xNeedle = cx + (R - 12) * Math.cos(radNeedle);
-              const yNeedle = cy - (R - 12) * Math.sin(radNeedle);
+                const angleNeedle = Math.max(0, Math.min(180, (currentNum / maxVal) * 180));
+                const radNeedle = (180 - angleNeedle) * Math.PI / 180;
+                const xNeedle = cx + (R - 12) * Math.cos(radNeedle);
+                const yNeedle = cy - (R - 12) * Math.sin(radNeedle);
 
-              return `
-                <div class="kri-gauge-card">
-                  <div class="kri-gauge-title">${kri.kriName}</div>
-                  
-                  <div style="position: relative; width: 100%; max-width: 160px; height: 88px; margin: 0 auto 12px;">
-                    <svg viewBox="0 0 200 110" width="100%" height="100%">
-                      <!-- Unfilled portion background track (F1F5F9) -->
-                      <path d="M 30 90 A 70 70 0 0 1 170 90" fill="none" stroke="#F1F5F9" stroke-width="12" stroke-linecap="round" />
-                      
-                      <!-- Safe Zone Arc (Green) -->
-                      <path d="M 30 90 A 70 70 0 0 1 ${xAmberStart} ${yAmberStart}" fill="none" stroke="#6EE7B7" stroke-width="12" />
-                      
-                      <!-- Warning Zone Arc (Amber) -->
-                      <path d="M ${xAmberStart} ${yAmberStart} A 70 70 0 0 1 ${xThresh} ${yThresh}" fill="none" stroke="#FCD34D" stroke-width="12" />
-                      
-                      <!-- Breach Zone Arc (Red) -->
-                      <path d="M ${xThresh} ${yThresh} A 70 70 0 0 1 170 90" fill="none" stroke="#FCA5A5" stroke-width="12" stroke-linecap="round" />
-                      
-                      <!-- Threshold line marker -->
-                      <line x1="${cx + (R - 14) * Math.cos(radThresh)}" y1="${cy - (R - 14) * Math.sin(radThresh)}" 
-                            x2="${cx + (R + 14) * Math.cos(radThresh)}" y2="${cy - (R + 14) * Math.sin(radThresh)}" 
-                            stroke="#0F172A" stroke-width="2" />
-                      
-                      <!-- Needle (Thin sharp line) -->
-                      <line x1="${cx}" y1="${cy}" x2="${xNeedle}" y2="${yNeedle}" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" />
-                      
-                      <!-- Needle pin center anchor -->
-                      <circle cx="${cx}" cy="${cy}" r="5" fill="#0F172A" />
-                    </svg>
+                return `
+                  <div class="kri-gauge-card">
+                    <div class="kri-gauge-title" title="${kri.kriName}">${kri.kriName}</div>
+                    
+                    <div style="position: relative; width: 100%; max-width: 120px; height: 66px; margin: 0 auto 8px;">
+                      <svg viewBox="0 0 200 110" width="100%" height="100%">
+                        <!-- Unfilled portion background track (F1F5F9) -->
+                        <path d="M 30 90 A 70 70 0 0 1 170 90" fill="none" stroke="#F1F5F9" stroke-width="12" stroke-linecap="round" />
+                        
+                        <!-- Safe Zone Arc (Green) -->
+                        <path d="M 30 90 A 70 70 0 0 1 ${xAmberStart} ${yAmberStart}" fill="none" stroke="#6EE7B7" stroke-width="12" />
+                        
+                        <!-- Warning Zone Arc (Amber) -->
+                        <path d="M ${xAmberStart} ${yAmberStart} A 70 70 0 0 1 ${xThresh} ${yThresh}" fill="none" stroke="#FCD34D" stroke-width="12" />
+                        
+                        <!-- Breach Zone Arc (Red) -->
+                        <path d="M ${xThresh} ${yThresh} A 70 70 0 0 1 170 90" fill="none" stroke="#FCA5A5" stroke-width="12" stroke-linecap="round" />
+                        
+                        <!-- Threshold marker -->
+                        <line x1="${cx + (R - 14) * Math.cos(radThresh)}" y1="${cy - (R - 14) * Math.sin(radThresh)}" 
+                              x2="${cx + (R + 14) * Math.cos(radThresh)}" y2="${cy - (R + 14) * Math.sin(radThresh)}" 
+                              stroke="#0F172A" stroke-width="2" />
+                        
+                        <!-- Needle (Thin sharp line) -->
+                        <line x1="${cx}" y1="${cy}" x2="${xNeedle}" y2="${yNeedle}" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" />
+                        
+                        <!-- Needle pin center anchor -->
+                        <circle cx="${cx}" cy="${cy}" r="5" fill="#0F172A" />
+                      </svg>
+                    </div>
+                    
+                    <!-- Breach Delta prominently -->
+                    <div style="font-size: 16px; font-weight: 700; color: #EF4444; line-height: 1;">
+                      ${formattedDelta}
+                    </div>
                   </div>
-                  
-                  <!-- Breach Delta: Most prominent red number (18px bold) -->
-                  <div style="font-size: 18px; font-weight: 700; color: #EF4444; margin-bottom: 2px; line-height: 1.2;">
-                    ${formattedDelta}
-                  </div>
-                  <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">
-                    Current: <strong>${kri.current}</strong>
-                  </div>
-                  <div style="font-size: 10px; color: var(--text-muted);">
-                    Threshold: ${kri.threshold}
-                  </div>
-                </div>
-              `;
-            }).join('')}
+                `;
+              }).join('')}
+            </div>
           </div>
         `;
       }
