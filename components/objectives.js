@@ -1,6 +1,8 @@
 // Strategic Objectives Module - Visualizing Goal Thread Exposure (F1)
 
 import { StorageService } from '../services/storageService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
+
 
 export class ObjectivesComponent {
   constructor(appState, onStateChange) {
@@ -46,6 +48,9 @@ export class ObjectivesComponent {
           <p class="page-subtitle">Map enterprise risks to strategic target objectives | Visualize aggregate threat profiles</p>
         </div>
       </div>
+
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
 
       <div class="register-layout">
         
@@ -109,6 +114,12 @@ export class ObjectivesComponent {
     `;
 
     this.bindEvents(container);
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('objectives', insightContainer, this.state);
+    }
   }
 
   renderDrilldown(obj, risks) {
@@ -143,8 +154,15 @@ export class ObjectivesComponent {
         <div style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;margin-bottom:16px;">
           ${linked.length ? linked.map(r => `
             <div style="padding:8px 10px;background:rgba(0,0,0,0.015);border:1px solid var(--border-color);border-radius:6px;display:flex;justify-content:space-between;align-items:center;font-size:11px;">
-              <div>
-                <strong style="color:var(--text-primary);">[${r.id}] ${r.title}</strong>
+              <div class="ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}" style="cursor:pointer;flex-grow:1;">
+                <strong style="color:var(--text-primary);display:flex;align-items:center;gap:4px;">
+                  <span>[${r.id}] ${r.title}</span>
+                  <button class="ai-explain-icon-btn" aria-label="AI Explain">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                    </svg>
+                  </button>
+                </strong>
                 <div style="color:var(--text-muted);font-size:9px;">Category: ${r.category} | Owner: ${r.owner}</div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
@@ -243,6 +261,24 @@ export class ObjectivesComponent {
           this.state.risks = await StorageService.getRisks();
           this.render(container);
           this.onStateChange({ risks: this.state.risks });
+        }
+      });
+    });
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        
+        let item = null;
+        if (type === 'risk') {
+          item = this.state.risks.find(r => r.id === id);
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
         }
       });
     });

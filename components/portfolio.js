@@ -1,6 +1,8 @@
 // Portfolio Aggregator & Value Mapper - Strategic EV Cascade Mapping (F5 & F6)
 
 import { StorageService } from '../services/storageService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
+
 
 export class PortfolioComponent {
   constructor(appState, onStateChange) {
@@ -132,6 +134,9 @@ export class PortfolioComponent {
         </div>
       </div>
 
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
+
       <!-- PORTFOLIO COUNTER CARDS -->
       <div class="ticker-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-bottom: 24px;">
         ${Object.entries(portfolios).map(([key, port]) => {
@@ -202,8 +207,8 @@ export class PortfolioComponent {
               <div class="cascade-flow-wrap" style="display:flex; flex-direction:column; gap:20px; position:relative;">
                 
                 <!-- Step 1: Risk Node -->
-                <div class="cascade-step-card" style="position:relative; padding:16px; border:1px solid var(--color-above-appetite); background: rgba(225,29,72,0.01); border-radius:10px;">
-                  <span class="profile-role-badge above" style="font-size: 8px; margin-bottom: 4px;">1. Threat Vector Element</span>
+                <div class="cascade-step-card ai-explain-trigger" data-explain-type="risk" data-explain-id="${activeRisk.id}" style="position:relative; padding:16px; border:1px solid var(--color-above-appetite); background: rgba(225,29,72,0.01); border-radius:10px; cursor:pointer;">
+                  <span class="profile-role-badge above" style="font-size: 8px; margin-bottom: 4px;">1. Threat Vector Element <span style="font-size:9px;margin-left:4px;">(Click to Explain)</span></span>
                   <strong style="color:var(--text-primary); font-size:13px; display:block;">${cascade.risk}</strong>
                   <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">
                     Residual Score: <strong>${activeRisk.residualScore}</strong> | Status: <strong style="color:var(--color-above-appetite);">${activeRisk.appetiteStatus}</strong>
@@ -280,5 +285,28 @@ export class PortfolioComponent {
         this.render(container);
       });
     });
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        
+        let item = null;
+        if (type === 'risk') {
+          item = this.state.risks.find(r => r.id === id);
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('portfolio', insightContainer, this.state);
+    }
   }
 }

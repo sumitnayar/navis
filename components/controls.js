@@ -1,6 +1,7 @@
 // Controls Library and KRI Engine Component - Operational Security Mesh
 
 import { StorageService } from '../services/storageService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
 
 export class ControlsComponent {
   constructor(appState, onStateChange) {
@@ -32,6 +33,9 @@ export class ControlsComponent {
           <p class="page-subtitle">Map risk mitigation controls | Track threshold metrics and operational breaches</p>
         </div>
       </div>
+
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
 
       <div class="register-layout">
         
@@ -96,7 +100,14 @@ export class ControlsComponent {
                 <tbody>
                   ${allControls.length ? allControls.map(c => `
                     <tr>
-                      <td style="font-weight:600;color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}</td>
+                      <td style="font-weight:600;color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+                        <span>${c.name}</span>
+                        <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="control" data-explain-name="${c.name}" data-explain-risk="${c.riskId}" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:inline-flex;align-items:center;">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                          </svg>
+                        </button>
+                      </td>
                       <td>
                         <span class="profile-role-badge" style="font-size:9px;">[${c.riskId}]</span>
                       </td>
@@ -186,7 +197,14 @@ export class ControlsComponent {
                   ${allKRIs.length ? allKRIs.map(k => `
                     <tr>
                       <td style="font-weight:600;color:var(--text-primary);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        <div>${k.name}</div>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                          <span>${k.name}</span>
+                          <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="kri" data-explain-name="${k.name}" data-explain-risk="${k.riskId}" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:inline-flex;align-items:center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                            </svg>
+                          </button>
+                        </div>
                         <div style="font-size:9px;color:var(--text-secondary);margin-top:2px;">Risk: [${k.riskId}]</div>
                       </td>
                       <td>${k.current}</td>
@@ -297,6 +315,45 @@ export class ControlsComponent {
           this.onStateChange({ risks: this.state.risks });
         }
       });
+    }
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = trigger.dataset.explainType;
+        const name = trigger.dataset.explainName;
+        const riskId = trigger.dataset.explainRisk;
+        
+        let item = null;
+        if (type === 'control') {
+          const risk = this.state.risks.find(r => r.id === riskId);
+          const ctrl = risk?.controls?.find(c => c.name === name);
+          if (ctrl) {
+            item = { ...ctrl, riskTitle: risk.title, riskId: risk.id };
+          } else {
+            item = { name, effectiveness: 'Active', status: 'Active', riskTitle: risk?.title || 'Unknown Risk', riskId };
+          }
+        } else if (type === 'kri') {
+          const risk = this.state.risks.find(r => r.id === riskId);
+          const kri = risk?.kris?.find(k => k.name === name);
+          if (kri) {
+            item = { ...kri, riskTitle: risk.title, riskId: risk.id };
+          } else {
+            item = { name, current: 'N/A', threshold: 'N/A', status: 'OK', riskTitle: risk?.title || 'Unknown Risk', riskId };
+          }
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('controls', insightContainer, this.state);
     }
   }
 }

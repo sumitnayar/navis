@@ -1,6 +1,7 @@
 // Centralized 3-tier Taxonomy Manager with version checks (F2)
 
 import { StorageService } from '../services/storageService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
 
 export class TaxonomyComponent {
   constructor(appState, onStateChange) {
@@ -120,6 +121,9 @@ export class TaxonomyComponent {
           </span>
         </div>
       </div>
+
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
 
       <div class="register-layout">
         
@@ -242,8 +246,13 @@ export class TaxonomyComponent {
               ${filteredRisks.length ? filteredRisks.map(r => `
                 <div style="padding: 10px; background: rgba(0,0,0,0.015); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px;">
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                    <strong style="color: var(--text-primary); cursor: pointer;" class="taxonomy-risk-link" data-risk-id="${r.id}">
-                      [${r.id}] ${r.title}
+                    <strong style="color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 4px;" class="taxonomy-risk-link" data-risk-id="${r.id}">
+                      <span>[${r.id}] ${r.title}</span>
+                      <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                        </svg>
+                      </button>
                     </strong>
                     <span class="status-badge ${r.appetiteStatus === 'Above Appetite' ? 'above' : r.appetiteStatus === 'Near Appetite' ? 'near' : 'within'}" style="font-size: 8px; padding: 1px 4px;">
                       ${r.residualScore}
@@ -374,7 +383,8 @@ export class TaxonomyComponent {
     // 6. Deep Link risk to Register Form
     const riskLinks = container.querySelectorAll('.taxonomy-risk-link');
     riskLinks.forEach(lnk => {
-      lnk.addEventListener('click', () => {
+      lnk.addEventListener('click', (e) => {
+        if (e.target.closest('.ai-explain-trigger')) return;
         const riskId = lnk.dataset.riskId;
         this.onStateChange({
           editingRiskId: riskId,
@@ -382,5 +392,29 @@ export class TaxonomyComponent {
         });
       });
     });
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        
+        let item = null;
+        if (type === 'risk') {
+          item = this.state.risks.find(r => r.id === id);
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('taxonomy', insightContainer, this.state);
+    }
   }
 }

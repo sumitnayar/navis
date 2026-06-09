@@ -1,6 +1,8 @@
 // Board Scenario Planner Lab - Interactive simulations of major enterprise threats (F4)
 
 import { StorageService } from '../services/storageService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
+
 
 export class ScenarioComponent {
   constructor(appState, onStateChange) {
@@ -93,6 +95,9 @@ export class ScenarioComponent {
         </div>
       </div>
 
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
+
       <div class="register-layout">
         
         <!-- LEFT: SELECTION & STRESS CONTROLS -->
@@ -170,7 +175,7 @@ export class ScenarioComponent {
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
             
             <!-- Best Case Card -->
-            <div class="glass-panel" style="border-top: 4px solid var(--color-within-appetite); padding: 16px;">
+            <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="best" style="border-top: 4px solid var(--color-within-appetite); padding: 16px; cursor: pointer;">
               <span class="profile-role-badge within" style="font-size: 9px; margin-bottom: 6px;">Best Case</span>
               <h3 style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-within-appetite);">
                 ${scaledRevenue.best}
@@ -191,7 +196,7 @@ export class ScenarioComponent {
             </div>
 
             <!-- Expected Case Card -->
-            <div class="glass-panel" style="border-top: 4px solid var(--color-near-appetite); padding: 16px; background: rgba(217, 119, 6, 0.02);">
+            <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="expected" style="border-top: 4px solid var(--color-near-appetite); padding: 16px; background: rgba(217, 119, 6, 0.02); cursor: pointer;">
               <span class="profile-role-badge near" style="font-size: 9px; margin-bottom: 6px;">Expected Case</span>
               <h3 style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-near-appetite);">
                 ${scaledRevenue.expected}
@@ -212,7 +217,7 @@ export class ScenarioComponent {
             </div>
 
             <!-- Worst Case Card -->
-            <div class="glass-panel" style="border-top: 4px solid var(--color-above-appetite); padding: 16px; background: rgba(225, 29, 72, 0.02);">
+            <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="worst" style="border-top: 4px solid var(--color-above-appetite); padding: 16px; background: rgba(225, 29, 72, 0.02); cursor: pointer;">
               <span class="profile-role-badge above" style="font-size: 9px; margin-bottom: 6px;">Worst Case</span>
               <h3 style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-above-appetite);">
                 ${scaledRevenue.worst}
@@ -290,6 +295,32 @@ export class ScenarioComponent {
         // to prevent slider focus glitch, let's just do a normal render for simplicity:
         this.render(container);
       });
+    }
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        
+        let item = null;
+        if (type === 'scenario') {
+          item = this.state.scenarios.find(s => s.id === this.selectedScenarioId);
+          if (item) {
+            item = { ...item, selectedCase: id, simulatedSeverity: this.simulatedSeverity };
+          }
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('scenario', insightContainer, this.state);
     }
   }
 }

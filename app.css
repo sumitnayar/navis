@@ -1962,3 +1962,86 @@ body.app-page {
 .status-badge.within::before {
   background-color: #059669 !important;
 }
+
+/* AI Insight Cards styling */
+.ai-insight-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(0, 181, 181, 0.03) 100%);
+  border: 1px solid rgba(0, 181, 181, 0.15) !important;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.ai-insight-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 181, 181, 0.05);
+  border-color: rgba(0, 181, 181, 0.3) !important;
+}
+
+.ai-insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ai-insight-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-header);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-indigo);
+  margin: 0;
+}
+
+.ai-insight-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-insight-body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(0, 181, 181, 0.15);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+}
+
+/* Click-to-explain triggers */
+.ai-explain-trigger {
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.ai-explain-trigger:hover {
+  color: var(--color-indigo) !important;
+  text-decoration: underline;
+}
+
+.ai-explain-icon-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.ai-explain-icon-btn:hover {
+  color: var(--color-indigo);
+}
+

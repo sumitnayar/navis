@@ -1,5 +1,7 @@
 // Risk Relationship Network Graph Component - Visualizing Compounding Cascades
 
+import { AIInsightService } from '../services/aiInsightService.js';
+
 export class NetworkComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -105,6 +107,9 @@ export class NetworkComponent {
           <p class="page-subtitle">Visualizing systemic relationship meshes: <strong>Parent → Related → Downstream Child Chains</strong></p>
         </div>
       </div>
+
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
 
       <div class="register-layout ${this.isExpanded ? 'map-expanded' : ''}">
         
@@ -306,7 +311,14 @@ export class NetworkComponent {
             ${selectedRisk ? `
               <div>
                 <span class="profile-role-badge" style="margin-bottom:6px;">${selectedRisk.category}</span>
-                <h3 style="font-size:18px;line-height:1.2;margin-bottom:8px;">${selectedRisk.title}</h3>
+                <h3 style="font-size:18px;line-height:1.2;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                  <span>${selectedRisk.title}</span>
+                  <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="risk" data-explain-id="${selectedRisk.id}" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                    </svg>
+                  </button>
+                </h3>
                 
                 <div style="display:flex;gap:10px;margin-bottom:12px;">
                   <span class="status-badge ${selectedRisk.appetiteStatus === 'Above Appetite' ? 'above' : selectedRisk.appetiteStatus === 'Near Appetite' ? 'near' : 'within'}" style="font-size:10px;">
@@ -417,6 +429,30 @@ export class NetworkComponent {
           editingRiskId: this.selectedNodeId // Seed active edit in register
         });
       });
+    }
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        
+        let item = null;
+        if (type === 'risk') {
+          item = this.state.risks.find(r => r.id === id);
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('network', insightContainer, this.state);
     }
   }
 }

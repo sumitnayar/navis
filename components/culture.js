@@ -1,6 +1,7 @@
 // Risk Culture Scorecard - Visualizing Corporate Risk Awareness Trends (F8 & F9)
 
 import { StorageService } from '../services/storageService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
 
 export class CultureComponent {
   constructor(appState, onStateChange) {
@@ -65,6 +66,9 @@ export class CultureComponent {
           <p class="page-subtitle">Track corporate risk awareness indices | Evaluate policy compliance and whistleblowing indicators</p>
         </div>
       </div>
+
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
 
       <div class="register-layout">
         
@@ -184,7 +188,14 @@ export class CultureComponent {
                 
                 <div style="padding:14px; background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                   <div>
-                    <strong style="font-size:13px; color:var(--text-primary);">Policy Acknowledgement</strong>
+                    <strong style="font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:4px;">
+                      <span>Policy Acknowledgement</span>
+                      <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="culture" data-explain-id="policy" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                        </svg>
+                      </button>
+                    </strong>
                     <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Target: >95% employees | Weight: 30%</div>
                   </div>
                   <span class="status-badge ${metrics.policyAcknowledgementRate >= 95 ? 'within' : 'near'}" style="font-size:11px; font-weight:700;">
@@ -194,7 +205,14 @@ export class CultureComponent {
 
                 <div style="padding:14px; background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                   <div>
-                    <strong style="font-size:13px; color:var(--text-primary);">Security Awareness Training</strong>
+                    <strong style="font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:4px;">
+                      <span>Security Awareness Training</span>
+                      <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="culture" data-explain-id="training" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                        </svg>
+                      </button>
+                    </strong>
                     <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Target: >90% completion | Weight: 30%</div>
                   </div>
                   <span class="status-badge ${metrics.trainingCompletionRate >= 90 ? 'within' : 'near'}" style="font-size:11px; font-weight:700;">
@@ -204,7 +222,14 @@ export class CultureComponent {
 
                 <div style="padding:14px; background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                   <div>
-                    <strong style="font-size:13px; color:var(--text-primary);">Incident Reporting Velocity</strong>
+                    <strong style="font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:4px;">
+                      <span>Incident Reporting Velocity</span>
+                      <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="culture" data-explain-id="reporting" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                        </svg>
+                      </button>
+                    </strong>
                     <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Target: <3 days to alert | Weight: 20%</div>
                   </div>
                   <span class="status-badge ${metrics.incidentReportVelocityDays <= 3 ? 'within' : 'near'}" style="font-size:11px; font-weight:700;">
@@ -214,7 +239,14 @@ export class CultureComponent {
 
                 <div style="padding:14px; background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                   <div>
-                    <strong style="font-size:13px; color:var(--text-primary);">Near-Miss Proactive Logging</strong>
+                    <strong style="font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:4px;">
+                      <span>Near-Miss Proactive Logging</span>
+                      <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="culture" data-explain-id="near-miss" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                        </svg>
+                      </button>
+                    </strong>
                     <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Healthy transparency check | Weight: 10%</div>
                   </div>
                   <span class="status-badge within" style="font-size:11px; font-weight:700;">
@@ -224,7 +256,14 @@ export class CultureComponent {
 
                 <div style="padding:14px; background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                   <div>
-                    <strong style="font-size:13px; color:var(--text-primary);">Active Whistleblowing Disclosures</strong>
+                    <strong style="font-size:13px; color:var(--text-primary); display:flex; align-items:center; gap:4px;">
+                      <span>Active Whistleblowing Disclosures</span>
+                      <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="culture" data-explain-id="whistleblower" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                        </svg>
+                      </button>
+                    </strong>
                     <div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Active corporate complaints | Weight: 10%</div>
                   </div>
                   <span class="status-badge ${metrics.whistleblowerCasesActive === 0 ? 'within' : 'above'}" style="font-size:11px; font-weight:700;">
@@ -293,6 +332,40 @@ export class CultureComponent {
 
         this.onStateChange({ cultureMetrics: this.state.cultureMetrics });
       });
+    }
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        
+        let item = null;
+        if (type === 'culture') {
+          if (id === 'policy') {
+            item = { name: 'Policy Acknowledgement Rate', score: `${metrics.policyAcknowledgementRate}%`, target: '>95%' };
+          } else if (id === 'training') {
+            item = { name: 'Security Awareness Training', score: `${metrics.trainingCompletionRate}%`, target: '>90%' };
+          } else if (id === 'reporting') {
+            item = { name: 'Incident Reporting Velocity', score: `${metrics.incidentReportVelocityDays} Days`, target: '<3 days' };
+          } else if (id === 'near-miss') {
+            item = { name: 'Near-Miss Proactive Logging', score: `${metrics.nearMissLoggedCount} Cases`, target: 'Continuous' };
+          } else if (id === 'whistleblower') {
+            item = { name: 'Active Whistleblowing Disclosures', score: `${metrics.whistleblowerCasesActive} Active`, target: '0 cases' };
+          }
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('culture', insightContainer, this.state);
     }
   }
 }

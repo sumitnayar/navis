@@ -1,6 +1,8 @@
 // Board Dashboard Component - The Central Landing Page ("5-Minute Posture" View)
 
 import { AIService } from '../services/aiService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
+
 
 export class DashboardComponent {
   constructor(appState, onStateChange) {
@@ -59,6 +61,7 @@ export class DashboardComponent {
     const isLoading = this.state.isLoading;
     const metrics = this.calculateMetrics();
     const settings = this.state.settings || {};
+    const isAI = AIInsightService.isAIConfigured(this.state);
 
     // Top worsening/improving lists
     const worseningRisks = risks.filter(r => r.trend === 'Deteriorating').slice(0, 3);
@@ -81,7 +84,46 @@ export class DashboardComponent {
         </div>
       </div>
 
+      <!-- BOARD ATTENTION BRIEF (AI INSIGHT LAYER) -->
+      <div class="dashboard-graph-card" id="board-attention-brief-card" style="border-color: rgba(239, 68, 68, 0.15) !important; background: linear-gradient(135deg, rgba(239, 68, 68, 0.02) 0%, rgba(99, 102, 241, 0.02) 100%);">
+        <div class="dashboard-graph-card-header" id="board-brief-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+          <div>
+            <h3 class="dashboard-graph-card-title" style="display: flex; align-items: center; gap: 8px; margin: 0; color: #EF4444;">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 18px; height: 18px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <span>Board Attention Brief</span>
+              <span class="status-badge ${isAI ? 'within' : 'near'}" style="font-size: 9px; padding: 2px 6px; font-weight: normal; margin-left: 8px;">
+                ${isAI ? 'Live Gemini AI' : 'Simulation Mode'}
+              </span>
+            </h3>
+            <p class="dashboard-graph-card-subtitle" style="margin-top: 4px;">Top risk alerts and early warning indicators requiring immediate board oversight</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;" class="no-print">
+            <button class="btn btn-secondary btn-small" id="btn-regenerate-brief-top" style="padding: 2px 8px; font-size: 10px; z-index: 2; position: relative;">Regenerate AI Insights</button>
+            <span style="font-size: 10px; color: var(--text-muted);" id="brief-collapse-lbl">Expand Analysis</span>
+            <svg id="board-brief-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 16px; height: 16px; transition: transform 0.2s ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
+        </div>
+        
+        <div id="board-brief-body" style="transition: max-height 0.3s ease-in-out, margin-top 0.3s ease-in-out; overflow: hidden; max-height: 0px; margin-top: 0;">
+          <div style="background: rgba(0,0,0,0.015); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; font-size: 13px; line-height: 1.6; border-top: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(239,68,68,0.15);">
+            <div id="board-brief-content">
+              <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center; min-height: 120px;">
+                <div class="skeleton-loading" style="width: 95%; height: 14px; border-radius: 4px;"></div>
+                <div class="skeleton-loading" style="width: 90%; height: 14px; border-radius: 4px;"></div>
+                <div class="skeleton-loading" style="width: 85%; height: 14px; border-radius: 4px;"></div>
+                <div class="skeleton-loading" style="width: 70%; height: 14px; border-radius: 4px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- EXECUTIVE COUNTER TICKER -->
+
       <div class="ticker-grid">
         <div class="ticker-card above">
           <span class="ticker-label">Risks Above Appetite</span>
@@ -291,8 +333,15 @@ export class DashboardComponent {
                   </div>
                 `).join('')}
               ` : worseningRisks.length ? worseningRisks.map(r => `
-                <div style="padding:10px;background:rgba(255,42,84,0.03);border:1px solid rgba(255,42,84,0.1);border-radius:6px;">
-                  <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
+                <div class="ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}" style="padding:10px;background:rgba(255,42,84,0.03);border:1px solid rgba(255,42,84,0.1);border-radius:6px;cursor:pointer;">
+                  <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;justify-content:space-between;align-items:center;">
+                    <span>${r.title}</span>
+                    <button class="ai-explain-icon-btn" aria-label="AI Explain">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 12px; height: 12px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                      </svg>
+                    </button>
+                  </div>
                   <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
                     <span>Residual Score: ${r.residualScore}</span>
                     <span class="trend-tag deteriorating">↑ Worsening</span>
@@ -317,8 +366,15 @@ export class DashboardComponent {
                   </div>
                 `).join('')}
               ` : improvingRisks.length ? improvingRisks.map(r => `
-                <div style="padding:10px;background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.1);border-radius:6px;">
-                  <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
+                <div class="ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}" style="padding:10px;background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.1);border-radius:6px;cursor:pointer;">
+                  <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;justify-content:space-between;align-items:center;">
+                    <span>${r.title}</span>
+                    <button class="ai-explain-icon-btn" aria-label="AI Explain">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 12px; height: 12px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                      </svg>
+                    </button>
+                  </div>
                   <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
                     <span>Residual Score: ${r.residualScore}</span>
                     <span class="trend-tag improving">↓ Improving</span>
@@ -446,6 +502,17 @@ export class DashboardComponent {
 
     if (isLoading) {
       return;
+    }
+
+    // Load Board Attention Brief
+    const briefContentContainer = container.querySelector('#board-brief-content');
+    if (briefContentContainer) {
+      AIInsightService.getBoardAttentionBrief(this.state).then(brief => {
+        briefContentContainer.innerHTML = AIInsightService.formatMarkdown(brief);
+      }).catch(err => {
+        console.error("Failed to load Board Attention Brief:", err);
+        briefContentContainer.innerHTML = `<p style="color: var(--color-above-appetite);">Failed to load AI Board Attention Brief. Click regenerate to retry.</p>`;
+      });
     }
     
     // Clear skeletons and fade in the layout
@@ -1017,6 +1084,94 @@ export class DashboardComponent {
         }
       });
     }
+
+    // Toggle collapse on board attention brief header click
+    const boardBriefHeader = container.querySelector('#board-brief-header');
+    const boardBriefBody = container.querySelector('#board-brief-body');
+    const boardBriefChevron = container.querySelector('#board-brief-chevron');
+    const boardBriefLbl = container.querySelector('#brief-collapse-lbl');
+    const regenBriefBtnTop = container.querySelector('#btn-regenerate-brief-top');
+    
+    let isBriefCollapsed = true; // start collapsed by default
+    
+    if (boardBriefHeader && boardBriefBody && boardBriefChevron && boardBriefLbl) {
+      boardBriefHeader.addEventListener('click', (event) => {
+        if (event.target === regenBriefBtnTop) return;
+        isBriefCollapsed = !isBriefCollapsed;
+        if (isBriefCollapsed) {
+          boardBriefBody.style.maxHeight = '0px';
+          boardBriefBody.style.marginTop = '0';
+          boardBriefChevron.style.transform = 'rotate(0deg)';
+          boardBriefLbl.textContent = 'Expand Analysis';
+        } else {
+          boardBriefBody.style.maxHeight = '2000px';
+          boardBriefBody.style.marginTop = '16px';
+          boardBriefChevron.style.transform = 'rotate(180deg)';
+          boardBriefLbl.textContent = 'Collapse Analysis';
+        }
+      });
+    }
+
+    if (regenBriefBtnTop && boardBriefBody) {
+      regenBriefBtnTop.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        regenBriefBtnTop.disabled = true;
+        regenBriefBtnTop.textContent = 'Analyzing...';
+        
+        const contentArea = container.querySelector('#board-brief-content');
+        if (contentArea) {
+          contentArea.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center; min-height: 120px;">
+              <div class="skeleton-loading" style="width: 95%; height: 14px; border-radius: 4px;"></div>
+              <div class="skeleton-loading" style="width: 90%; height: 14px; border-radius: 4px;"></div>
+              <div class="skeleton-loading" style="width: 85%; height: 14px; border-radius: 4px;"></div>
+            </div>
+          `;
+        }
+        
+        if (isBriefCollapsed) {
+          isBriefCollapsed = false;
+          boardBriefBody.style.maxHeight = '2000px';
+          boardBriefBody.style.marginTop = '16px';
+          boardBriefChevron.style.transform = 'rotate(180deg)';
+          boardBriefLbl.textContent = 'Collapse Analysis';
+        }
+        
+        try {
+          const freshBrief = await AIInsightService.getBoardAttentionBrief(this.state, true);
+          if (contentArea) {
+            contentArea.innerHTML = AIInsightService.formatMarkdown(freshBrief);
+          }
+        } catch (e) {
+          if (contentArea) {
+            contentArea.innerHTML = `<p style="color: var(--color-above-appetite);">Failed to regenerate Board Attention Brief.</p>`;
+          }
+        } finally {
+          regenBriefBtnTop.disabled = false;
+          regenBriefBtnTop.textContent = 'Regenerate AI Insights';
+        }
+      });
+    }
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        
+        let item = null;
+        if (type === 'risk') {
+          item = this.state.risks.find(r => r.id === id);
+        } else if (type === 'objective') {
+          item = this.state.objectives.find(o => o.id === id);
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
   }
 
   bindHeatmapClearEvent(container, heatmapChartInstance) {

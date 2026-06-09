@@ -1,6 +1,7 @@
 // Action Tracker Component - Establishing Board Accountability
 
 import { StorageService } from '../services/storageService.js';
+import { AIInsightService } from '../services/aiInsightService.js';
 
 export class ActionsComponent {
   constructor(appState, onStateChange) {
@@ -27,6 +28,9 @@ export class ActionsComponent {
           <p class="page-subtitle">Assign operational actions to owners | Track due dates and audit completion velocities</p>
         </div>
       </div>
+
+      <!-- AI INSIGHT CONTAINER -->
+      <div id="ai-insight-container"></div>
 
       <div class="register-layout">
         
@@ -112,8 +116,13 @@ export class ActionsComponent {
                                ${isCompleted ? 'checked' : ''} />
                       </div>
                       <div>
-                        <div style="font-weight:600;font-size:13px;color:${isCompleted ? 'var(--text-muted)' : 'var(--text-primary)'};text-decoration:${isCompleted ? 'line-through' : 'none'};">
-                          ${a.title}
+                        <div style="font-weight:600;font-size:13px;color:${isCompleted ? 'var(--text-muted)' : 'var(--text-primary)'};text-decoration:${isCompleted ? 'line-through' : 'none'};display:flex;align-items:center;gap:4px;">
+                          <span>${a.title}</span>
+                          <button class="ai-explain-icon-btn ai-explain-trigger" data-explain-type="action" data-explain-id="${a.id}" data-explain-risk="${a.riskId}" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
+                            </svg>
+                          </button>
                         </div>
                         <div style="font-size:10px;color:var(--text-secondary);margin-top:4px;">
                           Mapped Risk: <span style="font-weight:600;">[${a.riskId}] ${a.riskTitle}</span>
@@ -246,6 +255,35 @@ export class ActionsComponent {
           this.onStateChange({ risks: this.state.risks });
         }
       });
+    }
+
+    // Click-to-Explain Bindings
+    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = trigger.dataset.explainType;
+        const id = trigger.dataset.explainId;
+        const riskId = trigger.dataset.explainRisk;
+        
+        let item = null;
+        if (type === 'action') {
+          const risk = this.state.risks.find(r => r.id === riskId);
+          const act = risk?.actions?.find(a => a.id === id);
+          if (act) {
+            item = { ...act, riskTitle: risk.title, riskId: risk.id };
+          }
+        }
+        
+        if (item) {
+          AIInsightService.showExplanationModal(type, item, this.state);
+        }
+      });
+    });
+
+    // Render page-level AI insights card
+    const insightContainer = container.querySelector('#ai-insight-container');
+    if (insightContainer) {
+      AIInsightService.renderPageInsightCard('actions', insightContainer, this.state);
     }
   }
 }
