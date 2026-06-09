@@ -208,7 +208,7 @@ export class DashboardComponent {
                   <div class="skeleton-loading" style="width: 30px; height: 20px;"></div>
                   <div class="skeleton-loading" style="width: 50px; height: 12px; border-radius: 4px;"></div>
                 </div>
-                <div style="height: 80px; width: 100%;">
+                <div style="height: 60px; width: 100%;">
                   <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 4px;"></div>
                 </div>
               </div>
@@ -513,7 +513,7 @@ export class DashboardComponent {
                   <span style="font-size: 20px; font-weight: 800; color: var(--text-primary);">${r.residualScore}</span>
                   <span class="status-badge ${badgeClass}" style="font-size: 8px; padding: 1px 4px; font-weight: bold;">${trendLabel}</span>
                 </div>
-                <div style="height: 80px; width: 100%; position: relative;">
+                <div style="height: 60px; width: 100%; position: relative;">
                   <canvas id="velocity-chart-${idx}"></canvas>
                 </div>
               </div>
@@ -604,8 +604,8 @@ export class DashboardComponent {
                 x: { display: false },
                 y: {
                   display: true,
-                  min: 0,
-                  max: 25,
+                  min: Math.max(0, Math.min(...historyPoints) - 1),
+                  max: Math.max(...historyPoints) + 1,
                   ticks: { display: false },
                   grid: {
                     color: 'rgba(0, 0, 0, 0.03)',

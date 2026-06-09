@@ -1805,8 +1805,8 @@ body.app-page {
 }
 
 .risk-velocity-card canvas {
-  max-height: 80px !important;
-  height: 80px !important;
+  max-height: 60px !important;
+  height: 60px !important;
 }
 
 .kri-gauge-grid {
