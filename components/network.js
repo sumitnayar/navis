@@ -130,10 +130,10 @@ export class NetworkComponent {
               <svg class="network-svg" viewBox="0 0 800 360" id="risk-network-svg">
                 <!-- SVG MARKER FOR LINE ARROWS -->
                 <defs>
-                  <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                  <marker id="arrow" viewBox="0 0 10 10" refX="25" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto">
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(71, 85, 105, 0.25)" />
                   </marker>
-                  <marker id="arrow-highlight" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+                  <marker id="arrow-highlight" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-indigo)" />
                   </marker>
                 </defs>
