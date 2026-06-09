@@ -63,14 +63,27 @@ function getCurrentPath() {
 
 class RiskOSApplication {
   constructor() {
+    const defaultSettings = {
+      brandName: 'NAVIS',
+      geminiApiKey: '',
+      companyName: 'ScaleFlow Technologies Pvt Ltd',
+      revenueBracket: '₹280 Cr (FY26)',
+      ipoTimeline: 'Target Q3 FY27 (NSE/BSE Mainboard)',
+      soc2Status: 'SOC 2 Type II Certified',
+      businessUnits: ['Enterprise Sales', 'Engineering & Infrastructure', 'Security Operations', 'Finance Operations', 'Legal & HR', 'Product Management'],
+      locations: ['Bangalore HQ', 'Chennai Dev Center', 'US Delaware Entity'],
+      activeUserRole: 'CRO (Chief Risk Officer)'
+    };
+
     this.state = {
       risks: [],
-      settings: {},
+      settings: defaultSettings,
       objectives: [],
       scenarios: [],
       cultureMetrics: {},
       activeTab: 'dashboard',
-      editingRiskId: null
+      editingRiskId: null,
+      isLoading: true
     };
 
     this.components = {};
@@ -606,53 +619,77 @@ class RiskOSApplication {
     this.showAuthenticatedApp();
 
     if (!this.appHasInitialized) {
-      await this.initializeAuthenticatedState();
-    }
+      StorageService.init();
+      
+      this.components = {
+        dashboard: DashboardComponent,
+        boardQA: BoardQAComponent,
+        objectives: ObjectivesComponent,
+        scenario: ScenarioComponent,
+        portfolio: PortfolioComponent,
+        network: NetworkComponent,
+        register: RegisterComponent,
+        taxonomy: TaxonomyComponent,
+        assurance: AssuranceComponent,
+        controls: ControlsComponent,
+        actions: ActionsComponent,
+        culture: CultureComponent,
+        settings: SettingsComponent
+      };
 
-    this.routeTo(tabId, { updateUrl: false });
+      this.updateBrandVisuals();
+      this.bindSidebarEvents();
+      this.appHasInitialized = true;
+
+      // 1. Render skeletons immediately (no blocking)
+      this.routeTo(tabId, { updateUrl: false });
+
+      // 2. Fetch data in the background asynchronously
+      Promise.all([
+        StorageService.getRisks(),
+        StorageService.getSettings(),
+        StorageService.getObjectives(),
+        StorageService.getScenarios(),
+        StorageService.getCultureMetrics()
+      ]).then(([risks, settings, objectives, scenarios, cultureMetrics]) => {
+        this.state.risks = risks;
+        this.state.settings = settings;
+        this.state.objectives = objectives;
+        this.state.scenarios = scenarios;
+        this.state.cultureMetrics = cultureMetrics;
+        this.state.isLoading = false;
+
+        this.updateBrandVisuals();
+        this.renderSidebar();
+
+        // Check Gemini config status in the background
+        fetch('/api/gemini').then(resp => {
+          if (resp.ok) return resp.json();
+          return { configured: false };
+        }).then(status => {
+          this.state.serverGeminiConfigured = !!status.configured;
+          this.updateBrandVisuals();
+        }).catch(() => {
+          this.state.serverGeminiConfigured = false;
+        });
+
+        // Re-render current active view with loaded data
+        if (this.activeComponentInstance) {
+          const mainContainer = document.querySelector('#page-render-container');
+          if (mainContainer) {
+            this.activeComponentInstance.render(mainContainer);
+          }
+        }
+      }).catch(err => {
+        console.error("Failed to load application data in background:", err);
+      });
+    } else {
+      this.routeTo(tabId, { updateUrl: false });
+    }
   }
 
   async initializeAuthenticatedState() {
-    StorageService.init();
-
-    this.state.risks = await StorageService.getRisks();
-    this.state.settings = await StorageService.getSettings();
-    this.state.objectives = await StorageService.getObjectives();
-    this.state.scenarios = await StorageService.getScenarios();
-    this.state.cultureMetrics = await StorageService.getCultureMetrics();
-
-    // Check secure server-side Gemini configuration status
-    try {
-      const resp = await fetch('/api/gemini');
-      if (resp.ok) {
-        const status = await resp.json();
-        this.state.serverGeminiConfigured = !!status.configured;
-      } else {
-        this.state.serverGeminiConfigured = false;
-      }
-    } catch (e) {
-      console.warn("Could not retrieve secure Gemini status from server:", e);
-      this.state.serverGeminiConfigured = false;
-    }
-
-    this.components = {
-      dashboard: DashboardComponent,
-      boardQA: BoardQAComponent,
-      objectives: ObjectivesComponent,
-      scenario: ScenarioComponent,
-      portfolio: PortfolioComponent,
-      network: NetworkComponent,
-      register: RegisterComponent,
-      taxonomy: TaxonomyComponent,
-      assurance: AssuranceComponent,
-      controls: ControlsComponent,
-      actions: ActionsComponent,
-      culture: CultureComponent,
-      settings: SettingsComponent
-    };
-
-    this.updateBrandVisuals();
-    this.bindSidebarEvents();
+    // Left as legacy placeholder to prevent references from crashing.
     this.appHasInitialized = true;
   }
 

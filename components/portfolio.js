@@ -209,9 +209,9 @@ export class PortfolioComponent {
                     Residual Score: <strong>${activeRisk.residualScore}</strong> | Status: <strong style="color:var(--color-above-appetite);">${activeRisk.appetiteStatus}</strong>
                   </div>
                   
-                  <!-- Connector Line -->
-                  <div style="position:absolute; left:50%; bottom:-20px; width:2px; height:20px; background:var(--color-indigo); display:flex; justify-content:center; align-items:center;">
-                    <div style="border: solid var(--color-indigo); border-width: 0 2px 2px 0; display: inline-block; padding: 2px; transform: rotate(45deg); margin-top:14px;"></div>
+                  <!-- Connector Arrow -->
+                  <div style="position:absolute; left:50%; transform: translateX(-50%); bottom:-32px; width:2px; height:32px; background:var(--color-indigo); z-index: 2;">
+                    <div style="position:absolute; bottom:0; left:50%; transform: translateX(-50%) rotate(45deg); border: solid var(--color-indigo); border-width: 0 2px 2px 0; padding: 3px;"></div>
                   </div>
                 </div>
 
@@ -220,9 +220,9 @@ export class PortfolioComponent {
                   <span class="profile-role-badge near" style="font-size: 8px; margin-bottom: 4px;">2. Operational Business Driver Threatened</span>
                   <strong style="color:var(--text-primary); font-size:13px; display:block;">${cascade.driver}</strong>
                   
-                  <!-- Connector Line -->
-                  <div style="position:absolute; left:50%; bottom:-20px; width:2px; height:20px; background:var(--color-indigo); display:flex; justify-content:center; align-items:center;">
-                    <div style="border: solid var(--color-indigo); border-width: 0 2px 2px 0; display: inline-block; padding: 2px; transform: rotate(45deg); margin-top:14px;"></div>
+                  <!-- Connector Arrow -->
+                  <div style="position:absolute; left:50%; transform: translateX(-50%); bottom:-32px; width:2px; height:32px; background:var(--color-indigo); z-index: 2;">
+                    <div style="position:absolute; bottom:0; left:50%; transform: translateX(-50%) rotate(45deg); border: solid var(--color-indigo); border-width: 0 2px 2px 0; padding: 3px;"></div>
                   </div>
                 </div>
 
@@ -231,9 +231,9 @@ export class PortfolioComponent {
                   <span class="profile-role-badge indigo" style="font-size: 8px; margin-bottom: 4px;">3. Vulnerable Corporate Goal Alignment</span>
                   <strong style="color:var(--text-primary); font-size:13px; display:block;">${cascade.objective}</strong>
                   
-                  <!-- Connector Line -->
-                  <div style="position:absolute; left:50%; bottom:-20px; width:2px; height:20px; background:var(--color-indigo); display:flex; justify-content:center; align-items:center;">
-                    <div style="border: solid var(--color-indigo); border-width: 0 2px 2px 0; display: inline-block; padding: 2px; transform: rotate(45deg); margin-top:14px;"></div>
+                  <!-- Connector Arrow -->
+                  <div style="position:absolute; left:50%; transform: translateX(-50%); bottom:-32px; width:2px; height:32px; background:var(--color-indigo); z-index: 2;">
+                    <div style="position:absolute; bottom:0; left:50%; transform: translateX(-50%) rotate(45deg); border: solid var(--color-indigo); border-width: 0 2px 2px 0; padding: 3px;"></div>
                   </div>
                 </div>
 

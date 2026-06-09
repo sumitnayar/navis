@@ -54,9 +54,10 @@ export class DashboardComponent {
   }
 
   render(container) {
-    const risks = this.state.risks;
+    const risks = this.state.risks || [];
+    const isLoading = this.state.isLoading;
     const metrics = this.calculateMetrics();
-    const settings = this.state.settings;
+    const settings = this.state.settings || {};
 
     // Top worsening/improving lists
     const worseningRisks = risks.filter(r => r.trend === 'Deteriorating').slice(0, 3);
@@ -67,7 +68,7 @@ export class DashboardComponent {
         <div class="page-title-wrap">
           <span class="profile-role-badge">Executive Risk Control Center</span>
           <h1>Board Risk Intelligence</h1>
-          <p class="page-subtitle">Real-time risk posture for <strong>${settings.companyName}</strong> | IPO Alignment Tracker</p>
+          <p class="page-subtitle">Real-time risk posture for <strong>${settings.companyName || 'NAVIS'}</strong> | IPO Alignment Tracker</p>
         </div>
         <div class="no-print">
           <button class="btn btn-secondary" id="btn-print-pack">
@@ -83,32 +84,145 @@ export class DashboardComponent {
       <div class="ticker-grid">
         <div class="ticker-card above">
           <span class="ticker-label">Risks Above Appetite</span>
-          <span class="ticker-value">${metrics.aboveAppetiteCount}</span>
+          ${isLoading ? `
+            <span class="ticker-value" style="display: flex; align-items: center; justify-content: center; height: 32px; margin-top: 6px;">
+              <span class="skeleton-loading" style="width: 40px; height: 28px;"></span>
+            </span>
+          ` : `
+            <span class="ticker-value">${metrics.aboveAppetiteCount}</span>
+          `}
           <span class="ticker-footer">Critical breaches requiring mitigation</span>
         </div>
         <div class="ticker-card near">
           <span class="ticker-label">Key KRI Breaches</span>
-          <span class="ticker-value">${metrics.breachedKRIs}</span>
+          ${isLoading ? `
+            <span class="ticker-value" style="display: flex; align-items: center; justify-content: center; height: 32px; margin-top: 6px;">
+              <span class="skeleton-loading" style="width: 40px; height: 28px;"></span>
+            </span>
+          ` : `
+            <span class="ticker-value">${metrics.breachedKRIs}</span>
+          `}
           <span class="ticker-footer">Operational thresholds crossed</span>
         </div>
         <div class="ticker-card indigo">
           <span class="ticker-label">Worsening Postures</span>
-          <span class="ticker-value">${metrics.worseningCount}</span>
+          ${isLoading ? `
+            <span class="ticker-value" style="display: flex; align-items: center; justify-content: center; height: 32px; margin-top: 6px;">
+              <span class="skeleton-loading" style="width: 40px; height: 28px;"></span>
+            </span>
+          ` : `
+            <span class="ticker-value">${metrics.worseningCount}</span>
+          `}
           <span class="ticker-footer">Increasing volatility vectors</span>
         </div>
         <div class="ticker-card within">
           <span class="ticker-label">Overdue Actions</span>
-          <span class="ticker-value" style="color: ${metrics.overdueActionsCount > 0 ? 'var(--color-above-appetite)' : 'var(--color-within-appetite)'}">
-            ${metrics.overdueActionsCount}
-          </span>
+          ${isLoading ? `
+            <span class="ticker-value" style="display: flex; align-items: center; justify-content: center; height: 32px; margin-top: 6px;">
+              <span class="skeleton-loading" style="width: 40px; height: 28px;"></span>
+            </span>
+          ` : `
+            <span class="ticker-value" style="color: ${metrics.overdueActionsCount > 0 ? 'var(--color-above-appetite)' : 'var(--color-within-appetite)'}">
+              ${metrics.overdueActionsCount}
+            </span>
+          `}
           <span class="ticker-footer">Slipped mitigation tasks</span>
         </div>
       </div>
 
-      <!-- MAIN DASHBOARD BODY GRID -->
+      <!-- 1. KRI BREACH MONITOR (FULL WIDTH) -->
+      <div class="dashboard-graph-card" id="kri-breach-container" style="margin-bottom: 24px;">
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
+          <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
+        </div>
+        <div class="kri-gauge-grid">
+          ${isLoading ? `
+            ${[1, 2, 3].map(() => `
+              <div class="kri-gauge-card">
+                <div class="kri-gauge-title">
+                  <div class="skeleton-loading" style="width: 120px; height: 14px; margin: 0 auto;"></div>
+                </div>
+                <div style="position: relative; width: 100%; max-width: 160px; height: 88px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
+                  <div class="skeleton-loading" style="width: 140px; height: 70px; border-radius: 70px 70px 0 0;"></div>
+                </div>
+                <div class="skeleton-loading" style="width: 60px; height: 20px; margin: 0 auto 6px; border-radius: 4px;"></div>
+                <div class="skeleton-loading" style="width: 90px; height: 10px; margin: 0 auto 4px; border-radius: 2px;"></div>
+                <div class="skeleton-loading" style="width: 80px; height: 10px; margin: 0 auto; border-radius: 2px;"></div>
+              </div>
+            `).join('')}
+          ` : `
+            <!-- Will be populated dynamically in initGraphs -->
+          `}
+        </div>
+      </div>
+
+      <!-- 2. RISK HEATMAP (FULL WIDTH) -->
+      <div class="dashboard-graph-card" id="risk-heatmap-container" style="margin-bottom: 24px;">
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title">Risk Heatmap</h3>
+          <p class="dashboard-graph-card-subtitle">Residual likelihood vs impact across active risk portfolio</p>
+        </div>
+        ${isLoading ? `
+          <div class="dashboard-fade-in" style="position: relative; height: 320px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.02); border-radius: 8px;">
+            <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 8px;"></div>
+          </div>
+          <!-- Heatmap legend placeholder -->
+          <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px; font-size: 11px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #FCA5A5; opacity: 0.5;"></span>
+              <span style="color: var(--text-secondary);">Above Appetite</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #FCD34D; opacity: 0.5;"></span>
+              <span style="color: var(--text-secondary);">Near Appetite</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #6EE7B7; opacity: 0.5;"></span>
+              <span style="color: var(--text-secondary);">Within Appetite</span>
+            </div>
+          </div>
+          <div id="heatmap-drilldown-container" style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+            <p style="font-size:11px;color:var(--text-muted);text-align:center;">Click on any plotted risk point in the heatmap scatter grid to pin and inspect item specifics.</p>
+          </div>
+        ` : `
+          <!-- Will be populated dynamically in initGraphs -->
+        `}
+      </div>
+
+      <!-- 3. RISK VELOCITY TRACKER (FULL WIDTH) -->
+      <div class="dashboard-graph-card" id="risk-velocity-container" style="margin-bottom: 24px;">
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title">Risk Velocity Tracker</h3>
+          <p class="dashboard-graph-card-subtitle">Residual score movement across top risks</p>
+        </div>
+        <div class="risk-velocity-grid">
+          ${isLoading ? `
+            ${[1, 2, 3, 4].map(() => `
+              <div class="risk-velocity-card">
+                <div style="margin-bottom: 8px;">
+                  <div class="skeleton-loading" style="width: 50px; height: 8px; margin-bottom: 4px;"></div>
+                  <div class="skeleton-loading" style="width: 120px; height: 12px; min-height: 28px;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                  <div class="skeleton-loading" style="width: 30px; height: 20px;"></div>
+                  <div class="skeleton-loading" style="width: 50px; height: 12px; border-radius: 4px;"></div>
+                </div>
+                <div style="height: 80px; width: 100%;">
+                  <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 4px;"></div>
+                </div>
+              </div>
+            `).join('')}
+          ` : `
+            <!-- Will be populated dynamically in initGraphs -->
+          `}
+        </div>
+      </div>
+
+      <!-- BOTTOM ROW: ANALYTICAL & QUALITATIVE ROW (TWO COLUMN GRID) -->
       <div class="dashboard-grid">
         
-        <!-- LEFT COLUMN -->
+        <!-- Left Column: Strategic Fragility Map & Risk Dynamics Tracker -->
         <div class="details-panel">
           
           <!-- DYNAMIC STRATEGIC FRAGILITY MAP -->
@@ -118,56 +232,35 @@ export class DashboardComponent {
               <span style="font-size:11px;color:var(--text-secondary);font-weight:normal;">Objectives Threatened</span>
             </h3>
             <div class="fragility-container">
-              ${Object.entries(metrics.fragilityPercentages).map(([key, percent]) => `
-                <div class="fragility-bar-row">
-                  <div class="fragility-bar-header">
-                    <span>${key.replace(/([A-Z])/g, ' $1')}</span>
-                    <span>${percent}% Fragility</span>
+              ${isLoading ? `
+                ${['Revenue Objectives', 'Market Growth', 'Customer Trust', 'Technology Stack', 'Talent & People'].map((name) => `
+                  <div class="fragility-bar-row">
+                    <div class="fragility-bar-header">
+                      <span>${name}</span>
+                      <span class="skeleton-loading" style="width: 50px; height: 12px; display: inline-block;"></span>
+                    </div>
+                    <div class="fragility-bar-outer">
+                      <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 3px;"></div>
+                    </div>
                   </div>
-                  <div class="fragility-bar-outer">
-                    <div class="fragility-bar-inner" style="width: ${percent}%"></div>
+                `).join('')}
+              ` : `
+                ${Object.entries(metrics.fragilityPercentages).map(([key, percent]) => `
+                  <div class="fragility-bar-row">
+                    <div class="fragility-bar-header">
+                      <span>${key.replace(/([A-Z])/g, ' $1')}</span>
+                      <span>${percent}% Fragility</span>
+                    </div>
+                    <div class="fragility-bar-outer">
+                      <div class="fragility-bar-inner" style="width: ${percent}%"></div>
+                    </div>
                   </div>
-                </div>
-              `).join('')}
+                `).join('')}
+              `}
             </div>
             <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; text-align: center;">
               *Fragility aggregates risk severity (L × I × V) mapped to objective dimensions. Lower is safer.
             </p>
-          </div>
-
-          <!-- RISK VELOCITY TRACKER -->
-          <div class="dashboard-graph-card" id="risk-velocity-container">
-            <div class="dashboard-graph-card-header">
-              <h3 class="dashboard-graph-card-title">Risk Velocity Tracker</h3>
-              <p class="dashboard-graph-card-subtitle">Residual score movement across top risks</p>
-            </div>
-            <div class="risk-velocity-grid">
-              ${[1, 2, 3, 4, 5].map(() => `
-                <div class="risk-velocity-card" style="height: 220px; justify-content: center; align-items: center;">
-                  <div class="skeleton-loading" style="width: 80px; height: 12px; margin-bottom: 8px;"></div>
-                  <div class="skeleton-loading" style="width: 40px; height: 20px; margin-bottom: 12px;"></div>
-                  <div class="skeleton-loading" style="width: 100%; height: 100px; border-radius: 6px;"></div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <!-- KRI BREACH MONITOR -->
-          <div class="dashboard-graph-card" id="kri-breach-container">
-            <div class="dashboard-graph-card-header">
-              <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
-              <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
-            </div>
-            <div class="kri-gauge-grid">
-              ${[1, 2, 3].map(() => `
-                <div class="kri-gauge-card" style="height: 260px; justify-content: center; align-items: center;">
-                  <div class="skeleton-loading" style="width: 120px; height: 14px; margin-bottom: 16px;"></div>
-                  <div class="skeleton-loading" style="width: 160px; height: 100px; border-radius: 50% 50% 0 0; margin-bottom: 16px;"></div>
-                  <div class="skeleton-loading" style="width: 80px; height: 18px; margin-bottom: 6px;"></div>
-                  <div class="skeleton-loading" style="width: 100px; height: 10px;"></div>
-                </div>
-              `).join('')}
-            </div>
           </div>
 
           <!-- RISK POSTURE TREND DYNAMICS -->
@@ -179,7 +272,17 @@ export class DashboardComponent {
               <div>
                 <h4 style="font-size:12px;color:var(--color-above-appetite);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Top Worsening Risk Items</h4>
                 <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${worseningRisks.length ? worseningRisks.map(r => `
+                  ${isLoading ? `
+                    ${[1, 2].map(() => `
+                      <div style="padding:10px;background:rgba(255,42,84,0.01);border:1px solid rgba(255,42,84,0.05);border-radius:6px;">
+                        <div class="skeleton-loading" style="width: 100%; height: 12px; margin-bottom: 6px;"></div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                          <div class="skeleton-loading" style="width: 60px; height: 10px;"></div>
+                          <div class="skeleton-loading" style="width: 50px; height: 10px;"></div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  ` : worseningRisks.length ? worseningRisks.map(r => `
                     <div style="padding:10px;background:rgba(255,42,84,0.03);border:1px solid rgba(255,42,84,0.1);border-radius:6px;">
                       <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
                       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
@@ -195,7 +298,17 @@ export class DashboardComponent {
               <div>
                 <h4 style="font-size:12px;color:var(--color-within-appetite);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Top Improving Risk Items</h4>
                 <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${improvingRisks.length ? improvingRisks.map(r => `
+                  ${isLoading ? `
+                    ${[1, 2].map(() => `
+                      <div style="padding:10px;background:rgba(16,185,129,0.01);border:1px solid rgba(16,185,129,0.05);border-radius:6px;">
+                        <div class="skeleton-loading" style="width: 100%; height: 12px; margin-bottom: 6px;"></div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                          <div class="skeleton-loading" style="width: 60px; height: 10px;"></div>
+                          <div class="skeleton-loading" style="width: 50px; height: 10px;"></div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  ` : improvingRisks.length ? improvingRisks.map(r => `
                     <div style="padding:10px;background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.1);border-radius:6px;">
                       <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
                       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
@@ -212,68 +325,43 @@ export class DashboardComponent {
 
         </div>
 
-        <!-- RIGHT COLUMN -->
+        <!-- Right Column: AI Board Narrative Brief -->
         <div class="details-panel">
           
-          <!-- UPGRADED RISK HEATMAP -->
-          <div class="dashboard-graph-card" id="risk-heatmap-container">
-            <div class="dashboard-graph-card-header">
-              <h3 class="dashboard-graph-card-title">Risk Heatmap</h3>
-              <p class="dashboard-graph-card-subtitle">Residual likelihood vs impact across active risk portfolio</p>
-            </div>
-            <div style="position: relative; height: 320px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center;">
-              <div class="skeleton-loading" style="width: 100%; height: 300px; border-radius: 8px;"></div>
-            </div>
-            
-            <!-- Heatmap legend -->
-            <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px; font-size: 11px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #E11D48;"></span>
-                <span style="color: var(--text-secondary);">Above Appetite</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #D97706;"></span>
-                <span style="color: var(--text-secondary);">Near Appetite</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #059669;"></span>
-                <span style="color: var(--text-secondary);">Within Appetite</span>
-              </div>
-            </div>
-
-            <!-- Heatmap Drill-down View -->
-            <div id="heatmap-drilldown-container" style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
-              <p style="font-size:11px;color:var(--text-muted);text-align:center;">Click on any plotted risk point in the heatmap scatter grid to pin and inspect item specifics.</p>
-            </div>
-          </div>
-
           <!-- ONE-CLICK BOARD NARRATIVE BRIEF -->
-          <div class="glass-panel">
-            <h3 class="dashboard-card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="glass-panel" style="height: 100%; display: flex; flex-direction: column;">
+            <h3 class="dashboard-card-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
               <span style="display:flex;align-items:center;gap:8px;">
                 AI Board Narrative Brief
                 <span class="status-badge ${settings.geminiApiKey ? 'within' : 'near'}" style="font-size:9px;padding:2px 6px;font-weight:normal;">
                   ${settings.geminiApiKey ? 'Live Gemini AI' : 'Simulation Mode'}
                 </span>
               </span>
-              <button class="btn btn-primary btn-small no-print" id="btn-generate-brief">
+              <button class="btn btn-primary btn-small no-print" id="btn-generate-brief" ${isLoading ? 'disabled' : ''}>
                 ${this.isGeneratingBrief ? 'Analyzing...' : 'Generate Brief'}
               </button>
             </h3>
 
-            <div style="background:rgba(0,0,0,0.15);border:1px solid var(--border-color);border-radius:10px;padding:16px;min-height:220px;max-height:280px;overflow-y:auto;font-size:12px;">
-              ${this.isGeneratingBrief ? `
+            <div style="background:rgba(0,0,0,0.15);border:1px solid var(--border-color);border-radius:10px;padding:16px;flex-grow:1;min-height:220px;overflow-y:auto;font-size:12px;display:flex;flex-direction:column;">
+              ${isLoading ? `
+                <div style="display:flex;flex-direction:column;gap:10px;height:100%;justify-content:center;">
+                  <div class="skeleton-loading" style="width: 90%; height: 14px; border-radius: 4px;"></div>
+                  <div class="skeleton-loading" style="width: 80%; height: 14px; border-radius: 4px;"></div>
+                  <div class="skeleton-loading" style="width: 85%; height: 14px; border-radius: 4px;"></div>
+                  <div class="skeleton-loading" style="width: 60%; height: 14px; border-radius: 4px;"></div>
+                </div>
+              ` : this.isGeneratingBrief ? `
                 <div class="chat-bubble-loader" style="height:150px;">
                   <span></span><span></span><span></span>
                 </div>
               ` : `
-                <div class="board-brief-markdown">
+                <div class="board-brief-markdown" style="flex-grow:1;">
                   ${this.briefContent ? this.formatMarkdown(this.briefContent) : `
-                    <div style="text-align:center;color:var(--text-muted);padding-top:50px;">
+                    <div style="text-align:center;color:var(--text-muted);padding-top:50px;margin:auto;">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:40px;height:40px;margin:0 auto 10px;opacity:0.5;">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                       </svg>
-                      Click "Generate Brief" to aggregate the active register and formulate a professional narrative summary for board review.
+                      Click "Generate Brief" to formulate a professional narrative summary for board review.
                     </div>
                   `}
                 </div>
@@ -342,6 +430,11 @@ export class DashboardComponent {
   // Render line charts, bubble charts and SVG gauges dynamically
   async initGraphs(container) {
     const risks = this.state.risks || [];
+    const isLoading = this.state.isLoading;
+
+    if (isLoading) {
+      return;
+    }
     
     // Clear skeletons and fade in the layout
     const velocityContainer = container.querySelector('#risk-velocity-container');
@@ -414,13 +507,13 @@ export class DashboardComponent {
               <div class="risk-velocity-card">
                 <div style="margin-bottom: 8px;">
                   <span class="profile-role-badge" style="font-size: 8px; color: var(--color-indigo); margin-bottom: 4px; display: inline-block;">${r.category}</span>
-                  <div style="font-weight: 700; font-size: 11px; line-height: 1.3; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 28px;">${r.title}</div>
+                  <div style="font-weight: 700; font-size: 11px; line-height: 1.3; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; width: 100%;" title="${r.title}">${r.title}</div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
                   <span style="font-size: 20px; font-weight: 800; color: var(--text-primary);">${r.residualScore}</span>
                   <span class="status-badge ${badgeClass}" style="font-size: 8px; padding: 1px 4px; font-weight: bold;">${trendLabel}</span>
                 </div>
-                <div style="height: 100px; width: 100%; position: relative;">
+                <div style="height: 80px; width: 100%; position: relative;">
                   <canvas id="velocity-chart-${idx}"></canvas>
                 </div>
               </div>
@@ -466,62 +559,66 @@ export class DashboardComponent {
         // Final point must match current residual score
         historyPoints[historyPoints.length - 1] = currentScore;
 
-        const lineColor = trend === 'Deteriorating' ? '#E11D48' : trend === 'Improving' ? '#059669' : '#D97706';
+        const lineColor = trend === 'Deteriorating' ? '#EF4444' : trend === 'Improving' ? '#059669' : '#D97706';
 
-        new window.Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: ['P1', 'P2', 'P3', 'P4', 'Current'],
-            datasets: [{
-              data: historyPoints,
-              borderColor: lineColor,
-              borderWidth: 2,
-              pointBackgroundColor: lineColor,
-              pointBorderColor: '#FFFFFF',
-              pointBorderWidth: 1.5,
-              pointRadius: 2.5,
-              pointHoverRadius: 4.5,
-              fill: false,
-              tension: 0.35
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                enabled: true,
-                intersect: false,
-                mode: 'index',
-                backgroundColor: '#0F172A',
-                titleColor: '#FFFFFF',
-                bodyColor: '#FFFFFF',
-                titleFont: { size: 9, family: 'Inter' },
-                bodyFont: { size: 10, family: 'Inter', weight: 'bold' },
-                padding: 6,
-                callbacks: {
-                  title: () => '',
-                  label: (context) => `Score: ${context.parsed.y}`
+        if (typeof window.Chart !== 'undefined') {
+          new window.Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ['P1', 'P2', 'P3', 'P4', 'Current'],
+              datasets: [{
+                data: historyPoints,
+                borderColor: lineColor,
+                borderWidth: 2,
+                pointBackgroundColor: lineColor,
+                pointBorderColor: '#FFFFFF',
+                pointBorderWidth: 1.5,
+                pointRadius: 2.5,
+                pointHoverRadius: 4.5,
+                fill: false,
+                tension: 0.35
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  enabled: true,
+                  intersect: false,
+                  mode: 'index',
+                  backgroundColor: '#0F172A',
+                  titleColor: '#FFFFFF',
+                  bodyColor: '#FFFFFF',
+                  titleFont: { size: 9, family: 'Inter' },
+                  bodyFont: { size: 10, family: 'Inter', weight: 'bold' },
+                  padding: 6,
+                  callbacks: {
+                    title: () => '',
+                    label: (context) => `Score: ${context.parsed.y}`
+                  }
+                }
+              },
+              scales: {
+                x: { display: false },
+                y: {
+                  display: true,
+                  min: 0,
+                  max: 25,
+                  ticks: { display: false },
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.03)',
+                    drawTicks: false
+                  },
+                  border: { display: false }
                 }
               }
-            },
-            scales: {
-              x: { display: false },
-              y: {
-                display: true,
-                min: 0,
-                max: 25,
-                ticks: { display: false },
-                grid: {
-                  color: 'rgba(0, 0, 0, 0.03)',
-                  drawTicks: false
-                },
-                border: { display: false }
-              }
             }
-          }
-        });
+          });
+        } else {
+          console.warn("Chart.js is not loaded. Skipping velocity sparkline chart initialization.");
+        }
       });
     }
 
@@ -537,15 +634,15 @@ export class DashboardComponent {
         </div>
         <div class="dashboard-fade-in" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px; font-size: 11px;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #E11D48;"></span>
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #FCA5A5;"></span>
             <span style="color: var(--text-secondary);">Above Appetite</span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #D97706;"></span>
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #FCD34D;"></span>
             <span style="color: var(--text-secondary);">Near Appetite</span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #059669;"></span>
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #6EE7B7;"></span>
             <span style="color: var(--text-secondary);">Within Appetite</span>
           </div>
         </div>
@@ -578,125 +675,129 @@ export class DashboardComponent {
             const xMaxPixel = x.getPixelForValue(5.5);
             const yMaxPixel = y.getPixelForValue(5.5);
 
-            chartCtx.fillStyle = 'rgba(239, 68, 68, 0.03)'; // Whisper red overlay
+            chartCtx.fillStyle = 'rgba(239, 68, 68, 0.02)'; // Whisper red overlay (very faint, 2%)
             chartCtx.fillRect(xPixel, yMaxPixel, xMaxPixel - xPixel, yPixel - yMaxPixel);
             chartCtx.restore();
           }
         };
 
-        const heatmapChartInstance = new window.Chart(ctx, {
-          type: 'bubble',
-          data: {
-            datasets: [{
-              data: bubbleData,
-              backgroundColor: (context) => {
-                const dataPoint = context.raw;
-                if (!dataPoint) return '#059669';
-                const status = dataPoint.riskObj.appetiteStatus;
-                return status === 'Above Appetite' ? '#E11D48' : status === 'Near Appetite' ? '#D97706' : '#059669';
-              },
-              borderColor: '#FFFFFF', // 2px white stroke to make overlapping distinct
-              borderWidth: 2,
-              hoverBorderColor: '#0F172A',
-              hoverBorderWidth: 2
-            }]
-          },
-          plugins: [quadrantPlugin],
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            onClick: (event, elements) => {
-              const ddContainer = container.querySelector('#heatmap-drilldown-container');
-              if (elements && elements.length > 0) {
-                const datasetIndex = elements[0].datasetIndex;
-                const index = elements[0].index;
-                const clickedPoint = heatmapChartInstance.data.datasets[datasetIndex].data[index];
-                
-                this.selectedHeatmapRiskIndex = clickedPoint.index;
-                
-                if (ddContainer) {
-                  ddContainer.innerHTML = this.renderHeatmapDrilldown(clickedPoint.riskObj);
-                  this.bindHeatmapClearEvent(container, heatmapChartInstance);
-                }
-              } else {
-                this.selectedHeatmapRiskIndex = null;
-                if (ddContainer) {
-                  ddContainer.innerHTML = this.renderHeatmapDrilldown(null);
-                }
-              }
-              heatmapChartInstance.update();
+        if (typeof window.Chart !== 'undefined') {
+          const heatmapChartInstance = new window.Chart(ctx, {
+            type: 'bubble',
+            data: {
+              datasets: [{
+                data: bubbleData,
+                backgroundColor: (context) => {
+                  const dataPoint = context.raw;
+                  if (!dataPoint) return '#6EE7B7';
+                  const status = dataPoint.riskObj.appetiteStatus;
+                  return status === 'Above Appetite' ? '#FCA5A5' : status === 'Near Appetite' ? '#FCD34D' : '#6EE7B7';
+                },
+                borderColor: '#FFFFFF', // 2px white stroke to make overlapping distinct
+                borderWidth: 2,
+                hoverBorderColor: '#0F172A',
+                hoverBorderWidth: 2
+              }]
             },
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                enabled: true,
-                backgroundColor: '#0F172A',
-                titleColor: '#FFFFFF',
-                bodyColor: '#FFFFFF',
-                titleFont: { size: 10, family: 'Inter', weight: 'bold' },
-                bodyFont: { size: 9, family: 'Inter' },
-                padding: 10,
-                callbacks: {
-                  title: (context) => {
-                    const rawPoint = context[0].raw;
-                    return rawPoint.riskObj.title;
+            plugins: [quadrantPlugin],
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              onClick: (event, elements) => {
+                const ddContainer = container.querySelector('#heatmap-drilldown-container');
+                if (elements && elements.length > 0) {
+                  const datasetIndex = elements[0].datasetIndex;
+                  const index = elements[0].index;
+                  const clickedPoint = heatmapChartInstance.data.datasets[datasetIndex].data[index];
+                  
+                  this.selectedHeatmapRiskIndex = clickedPoint.index;
+                  
+                  if (ddContainer) {
+                    ddContainer.innerHTML = this.renderHeatmapDrilldown(clickedPoint.riskObj);
+                    this.bindHeatmapClearEvent(container, heatmapChartInstance);
+                  }
+                } else {
+                  this.selectedHeatmapRiskIndex = null;
+                  if (ddContainer) {
+                    ddContainer.innerHTML = this.renderHeatmapDrilldown(null);
+                  }
+                }
+                heatmapChartInstance.update();
+              },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  enabled: true,
+                  backgroundColor: '#0F172A',
+                  titleColor: '#FFFFFF',
+                  bodyColor: '#FFFFFF',
+                  titleFont: { size: 10, family: 'Inter', weight: 'bold' },
+                  bodyFont: { size: 9, family: 'Inter' },
+                  padding: 10,
+                  callbacks: {
+                    title: (context) => {
+                      const rawPoint = context[0].raw;
+                      return rawPoint.riskObj.title;
+                    },
+                    label: (context) => {
+                      const rawPoint = context.raw;
+                      return [
+                        `Residual Score: ${rawPoint.riskObj.residualScore}`,
+                        `Likelihood: L${rawPoint.x}`,
+                        `Impact: I${rawPoint.y}`,
+                        `Status: ${rawPoint.riskObj.appetiteStatus}`
+                      ];
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  min: 0.5,
+                  max: 5.5,
+                  ticks: {
+                    stepSize: 1,
+                    color: '#64748B', // Muted grey labels
+                    font: { family: 'Inter', size: 10 }
                   },
-                  label: (context) => {
-                    const rawPoint = context.raw;
-                    return [
-                      `Residual Score: ${rawPoint.riskObj.residualScore}`,
-                      `Likelihood: L${rawPoint.x}`,
-                      `Impact: I${rawPoint.y}`,
-                      `Status: ${rawPoint.riskObj.appetiteStatus}`
-                    ];
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.04)',
+                    drawTicks: false
+                  },
+                  border: { color: 'rgba(0, 0, 0, 0.06)' },
+                  title: {
+                    display: true,
+                    text: 'Likelihood →',
+                    color: '#64748B',
+                    font: { family: 'Outfit', size: 11, weight: 'bold' }
+                  }
+                },
+                y: {
+                  min: 0.5,
+                  max: 5.5,
+                  ticks: {
+                    stepSize: 1,
+                    color: '#64748B',
+                    font: { family: 'Inter', size: 10 }
+                  },
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.04)',
+                    drawTicks: false
+                  },
+                  border: { color: 'rgba(0, 0, 0, 0.06)' },
+                  title: {
+                    display: true,
+                    text: 'Impact ↑',
+                    color: '#64748B',
+                    font: { family: 'Outfit', size: 11, weight: 'bold' }
                   }
                 }
               }
-            },
-            scales: {
-              x: {
-                min: 0.5,
-                max: 5.5,
-                ticks: {
-                  stepSize: 1,
-                  color: '#64748B', // Muted grey labels
-                  font: { family: 'Inter', size: 10 }
-                },
-                grid: {
-                  color: 'rgba(0, 0, 0, 0.04)',
-                  drawTicks: false
-                },
-                border: { color: 'rgba(0, 0, 0, 0.06)' },
-                title: {
-                  display: true,
-                  text: 'Likelihood →',
-                  color: '#64748B',
-                  font: { family: 'Outfit', size: 11, weight: 'bold' }
-                }
-              },
-              y: {
-                min: 0.5,
-                max: 5.5,
-                ticks: {
-                  stepSize: 1,
-                  color: '#64748B',
-                  font: { family: 'Inter', size: 10 }
-                },
-                grid: {
-                  color: 'rgba(0, 0, 0, 0.04)',
-                  drawTicks: false
-                },
-                border: { color: 'rgba(0, 0, 0, 0.06)' },
-                title: {
-                  display: true,
-                  text: 'Impact ↑',
-                  color: '#64748B',
-                  font: { family: 'Outfit', size: 11, weight: 'bold' }
-                }
-              }
             }
-          }
-        });
+          });
+        } else {
+          console.warn("Chart.js is not loaded. Skipping heatmap scatter chart initialization.");
+        }
       }
     }
 
@@ -760,6 +861,13 @@ export class DashboardComponent {
               const cy = 90;
               const R = 70;
 
+              const amberStartVal = 0.9 * thresholdNum;
+
+              const angleAmberStart = Math.max(0, Math.min(180, (amberStartVal / maxVal) * 180));
+              const radAmberStart = (180 - angleAmberStart) * Math.PI / 180;
+              const xAmberStart = cx + R * Math.cos(radAmberStart);
+              const yAmberStart = cy - R * Math.sin(radAmberStart);
+
               const angleThresh = Math.max(0, Math.min(180, (thresholdNum / maxVal) * 180));
               const radThresh = (180 - angleThresh) * Math.PI / 180;
               const xThresh = cx + R * Math.cos(radThresh);
@@ -774,16 +882,19 @@ export class DashboardComponent {
                 <div class="kri-gauge-card">
                   <div class="kri-gauge-title">${kri.kriName}</div>
                   
-                  <div style="position: relative; width: 100%; max-width: 200px; height: 110px; margin-bottom: 12px;">
+                  <div style="position: relative; width: 100%; max-width: 160px; height: 88px; margin: 0 auto 12px;">
                     <svg viewBox="0 0 200 110" width="100%" height="100%">
                       <!-- Unfilled portion background track (F1F5F9) -->
                       <path d="M 30 90 A 70 70 0 0 1 170 90" fill="none" stroke="#F1F5F9" stroke-width="12" stroke-linecap="round" />
                       
                       <!-- Safe Zone Arc (Green) -->
-                      <path d="M 30 90 A 70 70 0 0 1 ${xThresh} ${yThresh}" fill="none" stroke="#10B981" stroke-width="12" />
+                      <path d="M 30 90 A 70 70 0 0 1 ${xAmberStart} ${yAmberStart}" fill="none" stroke="#6EE7B7" stroke-width="12" />
+                      
+                      <!-- Warning Zone Arc (Amber) -->
+                      <path d="M ${xAmberStart} ${yAmberStart} A 70 70 0 0 1 ${xThresh} ${yThresh}" fill="none" stroke="#FCD34D" stroke-width="12" />
                       
                       <!-- Breach Zone Arc (Red) -->
-                      <path d="M ${xThresh} ${yThresh} A 70 70 0 0 1 170 90" fill="none" stroke="#EF4444" stroke-width="12" stroke-linecap="round" />
+                      <path d="M ${xThresh} ${yThresh} A 70 70 0 0 1 170 90" fill="none" stroke="#FCA5A5" stroke-width="12" stroke-linecap="round" />
                       
                       <!-- Threshold line marker -->
                       <line x1="${cx + (R - 14) * Math.cos(radThresh)}" y1="${cy - (R - 14) * Math.sin(radThresh)}" 
@@ -798,8 +909,8 @@ export class DashboardComponent {
                     </svg>
                   </div>
                   
-                  <!-- Breach Delta: Most prominent red number -->
-                  <div style="font-size: 24px; font-weight: 800; color: #EF4444; margin-bottom: 2px; line-height: 1.2;">
+                  <!-- Breach Delta: Most prominent red number (18px bold) -->
+                  <div style="font-size: 18px; font-weight: 700; color: #EF4444; margin-bottom: 2px; line-height: 1.2;">
                     ${formattedDelta}
                   </div>
                   <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">

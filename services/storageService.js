@@ -97,7 +97,7 @@ export class StorageService {
 
         return data.map(r => ({
           id: r.id,
-          title: r.title,
+          title: r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').trim() : '',
           category: r.category,
           l1: r.l1,
           l2: r.l2,
@@ -150,7 +150,11 @@ export class StorageService {
 
     // B. LOCAL OFFLINE DEMO MODE (localStorage)
     const data = localStorage.getItem(STORAGE_KEYS.RISKS);
-    return data ? JSON.parse(data) : [];
+    const risks = data ? JSON.parse(data) : [];
+    return risks.map(r => ({
+      ...r,
+      title: r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').trim() : ''
+    }));
   }
 
   static async getRiskById(id) {
