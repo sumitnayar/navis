@@ -1778,14 +1778,8 @@ body.app-page {
 /* Grids */
 .risk-velocity-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
-}
-
-@media (min-width: 1200px) {
-  .risk-velocity-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .risk-velocity-card {
@@ -1793,11 +1787,13 @@ body.app-page {
   border: 1px solid var(--border-color);
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  padding: 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   transition: transform 0.15s ease;
+  height: auto;
+  min-height: 0;
 }
 
 .risk-velocity-card:hover {
@@ -1805,8 +1801,8 @@ body.app-page {
 }
 
 .risk-velocity-card canvas {
-  max-height: 60px !important;
-  height: 60px !important;
+  max-height: 100px !important;
+  height: 100px !important;
 }
 
 .kri-gauge-grid {
@@ -1825,6 +1821,12 @@ body.app-page {
 @media (min-width: 992px) {
   .kri-gauge-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .kri-gauge-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
   }
 }
 

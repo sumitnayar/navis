@@ -9,6 +9,7 @@ export class DashboardComponent {
     this.selectedHeatmapRiskIndex = null;
     this.isGeneratingBrief = false;
     this.briefContent = "";
+    this.isBriefCollapsed = false;
   }
 
   // Calculate dynamic metrics from risk register
@@ -198,17 +199,17 @@ export class DashboardComponent {
         </div>
         <div class="risk-velocity-grid">
           ${isLoading ? `
-            ${[1, 2, 3, 4].map(() => `
-              <div class="risk-velocity-card">
-                <div style="margin-bottom: 8px;">
-                  <div class="skeleton-loading" style="width: 50px; height: 8px; margin-bottom: 4px;"></div>
-                  <div class="skeleton-loading" style="width: 120px; height: 12px; min-height: 28px;"></div>
+            ${[1, 2, 3, 4, 5].map(() => `
+              <div class="risk-velocity-card" style="height: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <div class="skeleton-loading" style="width: 50px; height: 8px;"></div>
+                  <div class="skeleton-loading" style="width: 50px; height: 10px; border-radius: 4px;"></div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
-                  <div class="skeleton-loading" style="width: 30px; height: 20px;"></div>
-                  <div class="skeleton-loading" style="width: 50px; height: 12px; border-radius: 4px;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                  <div class="skeleton-loading" style="width: 100px; height: 12px;"></div>
+                  <div class="skeleton-loading" style="width: 20px; height: 16px;"></div>
                 </div>
-                <div style="height: 60px; width: 100%;">
+                <div style="height: 100px; width: 100%;">
                   <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 4px;"></div>
                 </div>
               </div>
@@ -219,158 +220,162 @@ export class DashboardComponent {
         </div>
       </div>
 
-      <!-- BOTTOM ROW: ANALYTICAL & QUALITATIVE ROW (TWO COLUMN GRID) -->
-      <div class="dashboard-grid">
-        
-        <!-- Left Column: Strategic Fragility Map & Risk Dynamics Tracker -->
-        <div class="details-panel">
+      <!-- 4. STRATEGIC FRAGILITY MAP (FULL WIDTH) -->
+      <div class="dashboard-graph-card" id="fragility-map-container" style="margin-bottom: 24px;">
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title">Strategic Fragility Map</h3>
+          <p class="dashboard-graph-card-subtitle">Aggregated risk severity mapped to core strategic objective categories</p>
+        </div>
+        <div class="fragility-container">
+          ${isLoading ? `
+            ${['Revenue Objectives', 'Market Growth', 'Customer Trust', 'Technology Stack', 'Talent & People'].map((name) => `
+              <div class="fragility-bar-row">
+                <div class="fragility-bar-header">
+                  <span>${name}</span>
+                  <span class="skeleton-loading" style="width: 50px; height: 12px; display: inline-block;"></span>
+                </div>
+                <div class="fragility-bar-outer">
+                  <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 3px;"></div>
+                </div>
+              </div>
+            `).join('')}
+          ` : `
+            ${Object.entries(metrics.fragilityPercentages).map(([key, percent]) => {
+              const displayName = (key.charAt(0).toUpperCase() + key.slice(1)).replace(/([A-Z])/g, ' $1');
+              return `
+                <div class="fragility-bar-row">
+                  <div class="fragility-bar-header">
+                    <span>${displayName}</span>
+                    <span>${percent}% Fragility</span>
+                  </div>
+                  <div class="fragility-bar-outer">
+                    <div class="fragility-bar-inner" style="width: ${percent}%"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          `}
+        </div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; text-align: center;">
+          *Fragility aggregates risk severity (L × I × V) mapped to objective dimensions. Lower is safer.
+        </p>
+      </div>
+
+      <!-- 5. RISK DYNAMICS TRACKER (FULL WIDTH) -->
+      <div class="dashboard-graph-card" id="dynamics-tracker-container" style="margin-bottom: 24px;">
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title">Risk Dynamics Tracker</h3>
+          <p class="dashboard-graph-card-subtitle">Detailed categorization of risk posture trend changes</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
           
-          <!-- DYNAMIC STRATEGIC FRAGILITY MAP -->
-          <div class="glass-panel">
-            <h3 class="dashboard-card-title">
-              <span>Strategic Fragility Map</span>
-              <span style="font-size:11px;color:var(--text-secondary);font-weight:normal;">Objectives Threatened</span>
-            </h3>
-            <div class="fragility-container">
+          <!-- Column Worsening -->
+          <div>
+            <h4 style="font-size:12px;color:var(--color-above-appetite);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Top Worsening Risk Items</h4>
+            <div style="display:flex;flex-direction:column;gap:8px;">
               ${isLoading ? `
-                ${['Revenue Objectives', 'Market Growth', 'Customer Trust', 'Technology Stack', 'Talent & People'].map((name) => `
-                  <div class="fragility-bar-row">
-                    <div class="fragility-bar-header">
-                      <span>${name}</span>
-                      <span class="skeleton-loading" style="width: 50px; height: 12px; display: inline-block;"></span>
-                    </div>
-                    <div class="fragility-bar-outer">
-                      <div class="skeleton-loading" style="width: 100%; height: 100%; border-radius: 3px;"></div>
+                ${[1, 2].map(() => `
+                  <div style="padding:10px;background:rgba(255,42,84,0.01);border:1px solid rgba(255,42,84,0.05);border-radius:6px;">
+                    <div class="skeleton-loading" style="width: 100%; height: 12px; margin-bottom: 6px;"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <div class="skeleton-loading" style="width: 60px; height: 10px;"></div>
+                      <div class="skeleton-loading" style="width: 50px; height: 10px;"></div>
                     </div>
                   </div>
                 `).join('')}
-              ` : `
-                ${Object.entries(metrics.fragilityPercentages).map(([key, percent]) => `
-                  <div class="fragility-bar-row">
-                    <div class="fragility-bar-header">
-                      <span>${key.replace(/([A-Z])/g, ' $1')}</span>
-                      <span>${percent}% Fragility</span>
-                    </div>
-                    <div class="fragility-bar-outer">
-                      <div class="fragility-bar-inner" style="width: ${percent}%"></div>
-                    </div>
+              ` : worseningRisks.length ? worseningRisks.map(r => `
+                <div style="padding:10px;background:rgba(255,42,84,0.03);border:1px solid rgba(255,42,84,0.1);border-radius:6px;">
+                  <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
+                    <span>Residual Score: ${r.residualScore}</span>
+                    <span class="trend-tag deteriorating">↑ Worsening</span>
                   </div>
-                `).join('')}
-              `}
+                </div>
+              `).join('') : '<div style="font-size:11px;color:var(--text-muted);">No deteriorating trends.</div>'}
             </div>
-            <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; text-align: center;">
-              *Fragility aggregates risk severity (L × I × V) mapped to objective dimensions. Lower is safer.
-            </p>
           </div>
 
-          <!-- RISK POSTURE TREND DYNAMICS -->
-          <div class="glass-panel">
-            <h3 class="dashboard-card-title">Risk Dynamics Tracker</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-              
-              <!-- Column Worsening -->
-              <div>
-                <h4 style="font-size:12px;color:var(--color-above-appetite);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Top Worsening Risk Items</h4>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${isLoading ? `
-                    ${[1, 2].map(() => `
-                      <div style="padding:10px;background:rgba(255,42,84,0.01);border:1px solid rgba(255,42,84,0.05);border-radius:6px;">
-                        <div class="skeleton-loading" style="width: 100%; height: 12px; margin-bottom: 6px;"></div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                          <div class="skeleton-loading" style="width: 60px; height: 10px;"></div>
-                          <div class="skeleton-loading" style="width: 50px; height: 10px;"></div>
-                        </div>
-                      </div>
-                    `).join('')}
-                  ` : worseningRisks.length ? worseningRisks.map(r => `
-                    <div style="padding:10px;background:rgba(255,42,84,0.03);border:1px solid rgba(255,42,84,0.1);border-radius:6px;">
-                      <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
-                      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
-                        <span>Residual Score: ${r.residualScore}</span>
-                        <span class="trend-tag deteriorating">↑ Worsening</span>
-                      </div>
+          <!-- Column Improving -->
+          <div>
+            <h4 style="font-size:12px;color:var(--color-within-appetite);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Top Improving Risk Items</h4>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              ${isLoading ? `
+                ${[1, 2].map(() => `
+                  <div style="padding:10px;background:rgba(16,185,129,0.01);border:1px solid rgba(16,185,129,0.05);border-radius:6px;">
+                    <div class="skeleton-loading" style="width: 100%; height: 12px; margin-bottom: 6px;"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <div class="skeleton-loading" style="width: 60px; height: 10px;"></div>
+                      <div class="skeleton-loading" style="width: 50px; height: 10px;"></div>
                     </div>
-                  `).join('') : '<div style="font-size:11px;color:var(--text-muted);">No deteriorating trends.</div>'}
+                  </div>
+                `).join('')}
+              ` : improvingRisks.length ? improvingRisks.map(r => `
+                <div style="padding:10px;background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.1);border-radius:6px;">
+                  <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
+                    <span>Residual Score: ${r.residualScore}</span>
+                    <span class="trend-tag improving">↓ Improving</span>
+                  </div>
                 </div>
-              </div>
-
-              <!-- Column Improving -->
-              <div>
-                <h4 style="font-size:12px;color:var(--color-within-appetite);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Top Improving Risk Items</h4>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${isLoading ? `
-                    ${[1, 2].map(() => `
-                      <div style="padding:10px;background:rgba(16,185,129,0.01);border:1px solid rgba(16,185,129,0.05);border-radius:6px;">
-                        <div class="skeleton-loading" style="width: 100%; height: 12px; margin-bottom: 6px;"></div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                          <div class="skeleton-loading" style="width: 60px; height: 10px;"></div>
-                          <div class="skeleton-loading" style="width: 50px; height: 10px;"></div>
-                        </div>
-                      </div>
-                    `).join('')}
-                  ` : improvingRisks.length ? improvingRisks.map(r => `
-                    <div style="padding:10px;background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.1);border-radius:6px;">
-                      <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.title}</div>
-                      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:4px;">
-                        <span>Residual Score: ${r.residualScore}</span>
-                        <span class="trend-tag improving">↓ Improving</span>
-                      </div>
-                    </div>
-                  `).join('') : '<div style="font-size:11px;color:var(--text-muted);">No active mitigations reporting improvement.</div>'}
-                </div>
-              </div>
-
+              `).join('') : '<div style="font-size:11px;color:var(--text-muted);">No active mitigations reporting improvement.</div>'}
             </div>
           </div>
 
         </div>
+      </div>
 
-        <!-- Right Column: AI Board Narrative Brief -->
-        <div class="details-panel">
-          
-          <!-- ONE-CLICK BOARD NARRATIVE BRIEF -->
-          <div class="glass-panel" style="height: 100%; display: flex; flex-direction: column;">
-            <h3 class="dashboard-card-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-              <span style="display:flex;align-items:center;gap:8px;">
-                AI Board Narrative Brief
-                <span class="status-badge ${settings.geminiApiKey ? 'within' : 'near'}" style="font-size:9px;padding:2px 6px;font-weight:normal;">
-                  ${settings.geminiApiKey ? 'Live Gemini AI' : 'Simulation Mode'}
-                </span>
+      <!-- 6. AI BOARD NARRATIVE BRIEF (FULL WIDTH COLLAPSIBLE) -->
+      <div class="dashboard-graph-card" id="ai-brief-container" style="margin-bottom: 24px;">
+        <div class="dashboard-graph-card-header" id="ai-brief-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+          <div>
+            <h3 class="dashboard-graph-card-title" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px; color: var(--color-indigo);">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              <span>AI Board Narrative Brief</span>
+              <span class="status-badge ${settings.geminiApiKey ? 'within' : 'near'}" style="font-size: 9px; padding: 2px 6px; font-weight: normal; margin-left: 8px;">
+                ${settings.geminiApiKey ? 'Live Gemini AI' : 'Simulation Mode'}
               </span>
-              <button class="btn btn-primary btn-small no-print" id="btn-generate-brief" ${isLoading ? 'disabled' : ''}>
-                ${this.isGeneratingBrief ? 'Analyzing...' : 'Generate Brief'}
-              </button>
             </h3>
-
-            <div style="background:rgba(0,0,0,0.15);border:1px solid var(--border-color);border-radius:10px;padding:16px;flex-grow:1;min-height:220px;overflow-y:auto;font-size:12px;display:flex;flex-direction:column;">
-              ${isLoading ? `
-                <div style="display:flex;flex-direction:column;gap:10px;height:100%;justify-content:center;">
-                  <div class="skeleton-loading" style="width: 90%; height: 14px; border-radius: 4px;"></div>
-                  <div class="skeleton-loading" style="width: 80%; height: 14px; border-radius: 4px;"></div>
-                  <div class="skeleton-loading" style="width: 85%; height: 14px; border-radius: 4px;"></div>
-                  <div class="skeleton-loading" style="width: 60%; height: 14px; border-radius: 4px;"></div>
-                </div>
-              ` : this.isGeneratingBrief ? `
-                <div class="chat-bubble-loader" style="height:150px;">
-                  <span></span><span></span><span></span>
-                </div>
-              ` : `
-                <div class="board-brief-markdown" style="flex-grow:1;">
-                  ${this.briefContent ? this.formatMarkdown(this.briefContent) : `
-                    <div style="text-align:center;color:var(--text-muted);padding-top:50px;margin:auto;">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:40px;height:40px;margin:0 auto 10px;opacity:0.5;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                      </svg>
-                      Click "Generate Brief" to formulate a professional narrative summary for board review.
-                    </div>
-                  `}
-                </div>
-              `}
-            </div>
+            <p class="dashboard-graph-card-subtitle" style="margin-top: 4px;">Executive qualitative commentary and risk posture summarization</p>
           </div>
-
+          <div style="display: flex; align-items: center; gap: 12px;" class="no-print">
+            <button class="btn btn-primary btn-small" id="btn-generate-brief" ${isLoading ? 'disabled' : ''} style="position: relative; z-index: 2;">
+              ${this.isGeneratingBrief ? 'Analyzing...' : 'Generate Brief'}
+            </button>
+            <svg id="ai-brief-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 16px; height: 16px; transition: transform 0.2s ease; transform: ${this.isBriefCollapsed ? 'rotate(180deg)' : 'rotate(0deg)'};">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
         </div>
-
+        
+        <div id="ai-brief-body" style="transition: max-height 0.3s ease-in-out, margin-top 0.3s ease-in-out; overflow: hidden; max-height: ${this.isBriefCollapsed ? '0px' : '2000px'}; margin-top: ${this.isBriefCollapsed ? '0' : '16px'};">
+          <div style="background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; font-size: 13px; line-height: 1.6;">
+            ${isLoading ? `
+              <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center; min-height: 120px;">
+                <div class="skeleton-loading" style="width: 95%; height: 14px; border-radius: 4px;"></div>
+                <div class="skeleton-loading" style="width: 90%; height: 14px; border-radius: 4px;"></div>
+                <div class="skeleton-loading" style="width: 85%; height: 14px; border-radius: 4px;"></div>
+                <div class="skeleton-loading" style="width: 70%; height: 14px; border-radius: 4px;"></div>
+              </div>
+            ` : this.isGeneratingBrief ? `
+              <div class="chat-bubble-loader" style="height: 120px; display: flex; align-items: center; justify-content: center;">
+                <span></span><span></span><span></span>
+              </div>
+            ` : `
+              <div class="board-brief-markdown">
+                ${this.briefContent ? this.formatMarkdown(this.briefContent) : `
+                  <div style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 40px; height: 40px; margin: 0 auto 10px; opacity: 0.5;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                    Click "Generate Brief" to formulate a professional narrative summary for board review.
+                  </div>
+                `}
+              </div>
+            `}
+          </div>
+        </div>
       </div>
     `;
 
@@ -504,16 +509,16 @@ export class DashboardComponent {
             const trendLabel = r.trend === 'Deteriorating' ? 'Worsening' : r.trend === 'Improving' ? 'Improving' : 'Stable';
             const badgeClass = r.trend === 'Deteriorating' ? 'above' : r.trend === 'Improving' ? 'within' : 'near';
             return `
-              <div class="risk-velocity-card">
-                <div style="margin-bottom: 8px;">
-                  <span class="profile-role-badge" style="font-size: 8px; color: var(--color-indigo); margin-bottom: 4px; display: inline-block;">${r.category}</span>
-                  <div style="font-weight: 700; font-size: 11px; line-height: 1.3; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; width: 100%;" title="${r.title}">${r.title}</div>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
-                  <span style="font-size: 20px; font-weight: 800; color: var(--text-primary);">${r.residualScore}</span>
+              <div class="risk-velocity-card" style="height: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span class="profile-role-badge" style="font-size: 8px; color: var(--color-indigo); margin: 0;">${r.category}</span>
                   <span class="status-badge ${badgeClass}" style="font-size: 8px; padding: 1px 4px; font-weight: bold;">${trendLabel}</span>
                 </div>
-                <div style="height: 60px; width: 100%; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                  <div style="font-weight: 700; font-size: 11px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; margin-right: 8px;" title="${r.title}">${r.title}</div>
+                  <span style="font-size: 16px; font-weight: 800; color: var(--text-primary); line-height: 1;">${r.residualScore}</span>
+                </div>
+                <div style="height: 100px; width: 100%; position: relative;">
                   <canvas id="velocity-chart-${idx}"></canvas>
                 </div>
               </div>
@@ -940,9 +945,11 @@ export class DashboardComponent {
     // Generate Brief button
     const genBriefBtn = container.querySelector('#btn-generate-brief');
     if (genBriefBtn) {
-      genBriefBtn.addEventListener('click', async () => {
+      genBriefBtn.addEventListener('click', async (event) => {
+        event.stopPropagation(); // Prevent toggling collapse!
         if (this.isGeneratingBrief) return;
         this.isGeneratingBrief = true;
+        this.isBriefCollapsed = false; // Keep it expanded during generation
         this.render(container); // Re-render to show loader
 
         try {
@@ -953,6 +960,27 @@ export class DashboardComponent {
         } finally {
           this.isGeneratingBrief = false;
           this.render(container); // Re-render to show brief
+        }
+      });
+    }
+
+    // Toggle collapse on header click
+    const aiBriefHeader = container.querySelector('#ai-brief-header');
+    if (aiBriefHeader) {
+      aiBriefHeader.addEventListener('click', () => {
+        this.isBriefCollapsed = !this.isBriefCollapsed;
+        const body = container.querySelector('#ai-brief-body');
+        const chevron = container.querySelector('#ai-brief-chevron');
+        if (body && chevron) {
+          if (this.isBriefCollapsed) {
+            body.style.maxHeight = '0px';
+            body.style.marginTop = '0';
+            chevron.style.transform = 'rotate(0deg)';
+          } else {
+            body.style.maxHeight = '2000px';
+            body.style.marginTop = '16px';
+            chevron.style.transform = 'rotate(180deg)';
+          }
         }
       });
     }
