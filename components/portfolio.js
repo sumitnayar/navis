@@ -10,6 +10,24 @@ export class PortfolioComponent {
     this.onStateChange = onStateChange;
     this.selectedPortfolioKey = 'cyber'; // cyber, strategic, financial, regulatory
     this.selectedRiskId = null;
+
+    // Parse deep-link params
+    const _pParams = new URLSearchParams(window.location.search);
+    const _pRiskId = _pParams.get('riskId');
+    if (_pRiskId) {
+      this._fromDashboard = true;
+      this.selectedRiskId = _pRiskId;
+      this._deepLinkRiskId = _pRiskId;
+    } else {
+      this._fromDashboard = false;
+      this._deepLinkRiskId = null;
+    }
+  }
+
+  clearFilters() {
+    this._fromDashboard = false;
+    this._deepLinkRiskId = null;
+    this.selectedRiskId = null;
   }
 
   // Pre-configured Portfolio aggregations
@@ -115,6 +133,17 @@ export class PortfolioComponent {
   render(container) {
     const risks = this.state.risks || [];
     const portfolios = this.getPortfolios(risks);
+
+    // Auto-select the correct portfolio for a deep-linked risk
+    if (this._deepLinkRiskId) {
+      for (const [key, port] of Object.entries(portfolios)) {
+        if (port.risks.some(r => r.id === this._deepLinkRiskId)) {
+          this.selectedPortfolioKey = key;
+          break;
+        }
+      }
+    }
+
     const activePort = portfolios[this.selectedPortfolioKey];
     
     // Default risk selection for value mapper
@@ -176,6 +205,7 @@ export class PortfolioComponent {
                 return `
                   <div class="glass-panel clickable-risk ${isSelected ? 'selected' : ''}" 
                        data-id="${r.id}"
+                       data-risk-id="${r.id}"
                        style="cursor:pointer; padding: 12px; border:1px solid ${isSelected ? 'var(--color-indigo)' : 'var(--border-color)'};">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 4px;">
                       <strong style="font-size:12px; color:var(--text-primary);">[${r.id}] ${r.title}</strong>
@@ -260,6 +290,22 @@ export class PortfolioComponent {
 
       </div>
     `;
+
+    if (this._fromDashboard) {
+      AIInsightService.renderBackToDashboardBanner(this, container, `Portfolio — Risk ${this._deepLinkRiskId}`);
+    }
+
+    // Highlight the target risk pill
+    if (this._deepLinkRiskId) {
+      setTimeout(() => {
+        const pill = container.querySelector(`[data-risk-id="${this._deepLinkRiskId}"]`);
+        if (pill) {
+          pill.style.outline = '2px solid var(--color-above-appetite)';
+          pill.style.boxShadow = '0 0 8px rgba(239,68,68,0.25)';
+          pill.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
 
     this.bindEvents(container, portfolios);
   }

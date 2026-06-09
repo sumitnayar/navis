@@ -10,6 +10,20 @@ export class ScenarioComponent {
     this.onStateChange = onStateChange;
     this.selectedScenarioId = null;
     this.simulatedSeverity = 100; // severity slider: 50% to 200%
+
+    // Parse deep-link param
+    const _sParams = new URLSearchParams(window.location.search);
+    const _template = _sParams.get('template');
+    if (_template) {
+      this.selectedScenarioId = _template;
+      this._fromDashboard = true;
+    } else {
+      this._fromDashboard = false;
+    }
+  }
+
+  clearFilters() {
+    this._fromDashboard = false;
   }
 
   // Parse cash/revenue strings (e.g., "-₹1.8Cr" or "-₹60L") to numeric values for scaling
@@ -271,6 +285,10 @@ export class ScenarioComponent {
 
       </div>
     `;
+
+    if (this._fromDashboard) {
+      AIInsightService.renderBackToDashboardBanner(this, container, `Scenario Planner — Template ${this.selectedScenarioId}`);
+    }
 
     this.bindEvents(container);
   }

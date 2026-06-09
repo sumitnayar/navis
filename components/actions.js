@@ -8,17 +8,32 @@ export class ActionsComponent {
     this.state = appState;
     this.onStateChange = onStateChange;
     this.isAddingAction = false;
+    this.filterToOverdueActions = false;
+  }
+
+  clearFilters() {
+    this.filterToOverdueActions = false;
   }
 
   render(container) {
     const risks = this.state.risks;
     
+    // Check search query parameters
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('status') === 'overdue') {
+      this.filterToOverdueActions = true;
+    }
+    
     // Extract actions from all risks
-    const allActions = risks.flatMap(r => 
+    let allActions = risks.flatMap(r => 
       (r.actions || []).map(a => ({ ...a, riskId: r.id, riskTitle: r.title }))
     );
 
     const today = new Date();
+
+    if (this.filterToOverdueActions) {
+      allActions = allActions.filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today);
+    }
 
     container.innerHTML = `
       <div class="page-header">
@@ -102,7 +117,7 @@ export class ActionsComponent {
                 else if (a.priority === 'Medium') prioColor = 'var(--color-near-appetite)';
 
                 return `
-                  <div style="padding:16px;background:rgba(255,255,255,0.015);border:1px solid ${isOverdue ? 'rgba(255,42,84,0.15)' : 'var(--border-color)'};border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:16px;position:relative;overflow:hidden;transition:all 0.2s ease;">
+                  <div style="padding:16px;background:rgba(255,255,255,0.015);border:${this.filterToOverdueActions ? '2px dashed var(--color-above-appetite)' : isOverdue ? '1px solid rgba(255,42,84,0.15)' : '1px solid var(--border-color)'};border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:16px;position:relative;overflow:hidden;transition:all 0.2s ease;">
                     
                     <!-- Overdue warning indicator background -->
                     ${isOverdue ? `<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--color-above-appetite);"></div>` : ''}
@@ -284,6 +299,11 @@ export class ActionsComponent {
     const insightContainer = container.querySelector('#ai-insight-container');
     if (insightContainer) {
       AIInsightService.renderPageInsightCard('actions', insightContainer, this.state);
+    }
+
+    // Render Back to Dashboard banner if filtered
+    if (this.filterToOverdueActions) {
+      AIInsightService.renderBackToDashboardBanner(this, container, 'Overdue Strategic Actions');
     }
   }
 }

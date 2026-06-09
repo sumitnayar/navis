@@ -10,6 +10,20 @@ export class ObjectivesComponent {
     this.onStateChange = onStateChange;
     this.selectedObjectiveId = null;
     this.isLinkingRisk = false;
+    this.deepLinked = false;
+
+    // Parse search query parameters
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get('id');
+    if (targetId) {
+      this.selectedObjectiveId = targetId;
+      this.deepLinked = true;
+    }
+  }
+
+  clearFilters() {
+    this.selectedObjectiveId = null;
+    this.deepLinked = false;
   }
 
   // Calculate aggregate exposure of linked risks
@@ -119,6 +133,22 @@ export class ObjectivesComponent {
     const insightContainer = container.querySelector('#ai-insight-container');
     if (insightContainer) {
       AIInsightService.renderPageInsightCard('objectives', insightContainer, this.state);
+    }
+
+    // Render Back to Dashboard banner if filtered
+    if (this.deepLinked) {
+      AIInsightService.renderBackToDashboardBanner(this, container, 'Exposed Strategic Objective');
+    }
+
+    if (this.selectedObjectiveId) {
+      setTimeout(() => {
+        const card = container.querySelector(`[data-id="${this.selectedObjectiveId}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.style.outline = '2px dashed var(--color-indigo)';
+          card.style.boxShadow = '0 0 15px rgba(99, 102, 241, 0.4)';
+        }
+      }, 100);
     }
   }
 

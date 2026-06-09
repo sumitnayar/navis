@@ -23,6 +23,28 @@ export class RegisterComponent {
       // Reset the parameter so it doesn't trigger on subsequent loads
       this.state.editingRiskId = null;
     }
+
+    // Parse deep-link params from dashboard
+    const _rParams = new URLSearchParams(window.location.search);
+    const _appetiteStatus = _rParams.get('appetiteStatus');
+    if (_appetiteStatus === 'above') {
+      this.activeFilterAppetite = 'Above Appetite';
+      this._fromDashboard = true;
+    } else if (_appetiteStatus === 'near') {
+      this.activeFilterAppetite = 'Near Appetite';
+      this._fromDashboard = true;
+    } else {
+      this._fromDashboard = false;
+    }
+    const _riskId = _rParams.get('riskId');
+    this._deepLinkRiskId = _riskId || null;
+  }
+
+  clearFilters() {
+    this.activeFilterCategory = 'All';
+    this.activeFilterAppetite = 'All';
+    this._fromDashboard = false;
+    this._deepLinkRiskId = null;
   }
 
   exportToCSV() {
@@ -142,7 +164,7 @@ export class RegisterComponent {
                 else if (r.appetiteStatus === 'Near Appetite') appetiteClass = 'near';
 
                 return `
-                  <tr data-id="${r.id}">
+                  <tr data-id="${r.id}" data-risk-id="${r.id}">
                     <td style="font-family:var(--font-header);font-weight:700;color:var(--text-secondary);">${r.id}</td>
                     <td>
                       <div style="font-weight:600;color:var(--text-primary);">${r.title}</div>
@@ -191,6 +213,29 @@ export class RegisterComponent {
         </div>
       </div>
     `;
+
+    // Inject dashboard banner if navigated from dashboard
+    if (this._fromDashboard) {
+      const filterDesc = this.activeFilterAppetite !== 'All'
+        ? `Filtered: ${this.activeFilterAppetite} risks`
+        : 'Risk Register';
+      // Dynamic import to avoid adding a static import for AIInsightService
+      import('../services/aiInsightService.js').then(({ AIInsightService }) => {
+        AIInsightService.renderBackToDashboardBanner(this, container, filterDesc);
+      });
+    }
+
+    // Highlight a specific risk row if deeplink id provided
+    if (this._deepLinkRiskId) {
+      setTimeout(() => {
+        const targetRow = container.querySelector(`tr[data-risk-id="${this._deepLinkRiskId}"]`);
+        if (targetRow) {
+          targetRow.style.outline = '2px solid rgba(99,102,241,0.6)';
+          targetRow.style.boxShadow = '0 0 8px rgba(99,102,241,0.2)';
+          targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
 
     this.bindTableEvents(container);
   }

@@ -11,6 +11,18 @@ export class AssuranceComponent {
     // UI state
     this.isResolvingGap = false;
     this.resolvingRiskId = null;
+
+    // Parse deep-link params
+    const _aParams = new URLSearchParams(window.location.search);
+    this._deepLinkRiskId = _aParams.get('riskId') || null;
+    this._deepLinkGap = _aParams.get('gap') === 'true';
+    this._fromDashboard = !!this._deepLinkRiskId || this._deepLinkGap;
+  }
+
+  clearFilters() {
+    this._deepLinkRiskId = null;
+    this._deepLinkGap = false;
+    this._fromDashboard = false;
   }
 
   // Calculate overall assurance metrics
@@ -115,7 +127,7 @@ export class AssuranceComponent {
                   const third = r.assurance?.thirdLine || "None (GAP DETECTED)";
 
                   return `
-                    <tr style="${hasGap ? 'background:rgba(225,29,72,0.01);' : ''}">
+                    <tr data-risk-id="${r.id}" style="${hasGap ? 'background:rgba(225,29,72,0.01);' : ''}">
                       <td>
                         <strong style="color:var(--text-primary); cursor:pointer; display:inline-flex; align-items:center; gap:4px;" class="ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}">
                           <span>[${r.id}] ${r.title}</span>
@@ -188,6 +200,20 @@ export class AssuranceComponent {
         </div>
       ` : ''}
     `;
+
+    if (this._fromDashboard) {
+      AIInsightService.renderBackToDashboardBanner(this, container, this._deepLinkGap ? 'Filtered: Assurance Gaps' : `Assurance: Risk ${this._deepLinkRiskId}`);
+    }
+
+    // Highlight targeted row
+    if (this._deepLinkRiskId) {
+      const targetRow = container.querySelector(`tr[data-risk-id="${this._deepLinkRiskId}"]`);
+      if (targetRow) {
+        targetRow.style.outline = '2px solid var(--color-above-appetite)';
+        targetRow.style.boxShadow = '0 0 8px rgba(239,68,68,0.25)';
+        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
 
     this.bindEvents(container);
   }

@@ -8,6 +8,16 @@ export class NetworkComponent {
     this.onStateChange = onStateChange;
     this.selectedNodeId = null;
     this.isExpanded = false;
+
+    // Parse deep-link param
+    const _params = new URLSearchParams(window.location.search);
+    const _riskId = _params.get('riskId');
+    if (_riskId) {
+      this.selectedNodeId = _riskId;
+      this._fromDashboard = true;
+    } else {
+      this._fromDashboard = false;
+    }
     
     // Explicit hierarchical screen coordinates (width: 800, height: 380) for seed data
     // Strategic (Top) -> Operational (Middle) -> Tactical (Bottom)
@@ -25,6 +35,11 @@ export class NetworkComponent {
       "risk-007": { x: 520, y: 250 }, // Vendor Lock-in
       "risk-010": { x: 720, y: 120 }  // AI Hallucination
     };
+  }
+
+  clearFilters() {
+    this.selectedNodeId = null;
+    this._fromDashboard = false;
   }
 
   // Calculate downstream dependency cascades
@@ -395,6 +410,10 @@ export class NetworkComponent {
 
       </div>
     `;
+
+    if (this._fromDashboard) {
+      AIInsightService.renderBackToDashboardBanner(this, container, `Risk Cascade Network — Risk ${this.selectedNodeId}`);
+    }
 
     this.bindEvents(container);
   }

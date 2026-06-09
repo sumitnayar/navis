@@ -565,4 +565,49 @@ export class AIInsightService {
     html = html.replace(/^\* (.*$)/gim, '<li style="margin-left:12px;margin-bottom:4px;">$1</li>');
     return html;
   }
+
+  // Render standard Back-to-Dashboard banner for deep links
+  static renderBackToDashboardBanner(pageComponent, container, filterDescription) {
+    const banner = document.createElement('div');
+    banner.className = 'dashboard-evidence-banner';
+    banner.style.cssText = 'background: rgba(0, 181, 181, 0.05); border: 1px dashed rgba(0, 181, 181, 0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-primary); animation: fadeIn 0.3s ease-out;';
+    banner.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--color-indigo); animation: pulse 1.5s infinite;"></span>
+        <span>Viewing evidence from <strong>Board Dashboard</strong>: <em>${filterDescription}</em></span>
+      </div>
+      <div style="display: flex; gap: 8px;" class="no-print">
+        <button class="btn btn-secondary btn-small" id="btn-clear-dashboard-filter" style="padding: 4px 10px; font-size: 11px; height: 28px; cursor: pointer;">Clear Filter</button>
+        <button class="btn btn-primary btn-small" id="btn-back-to-dashboard" style="padding: 4px 10px; font-size: 11px; height: 28px; background: var(--color-indigo); border-color: var(--color-indigo); cursor: pointer;">Back to Board Dashboard</button>
+      </div>
+    `;
+
+    // Insert as the first child of the main layout container or right below header
+    const header = container.querySelector('.page-header');
+    if (header && header.nextSibling) {
+      header.parentNode.insertBefore(banner, header.nextSibling);
+    } else {
+      container.insertBefore(banner, container.firstChild);
+    }
+
+    // Bind event handlers
+    const clearBtn = banner.querySelector('#btn-clear-dashboard-filter');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        window.history.pushState(null, '', window.location.pathname);
+        if (pageComponent.clearFilters) {
+          pageComponent.clearFilters();
+        }
+        pageComponent.render(container);
+      });
+    }
+
+    const backBtn = banner.querySelector('#btn-back-to-dashboard');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        window.history.pushState(null, '', '/dashboard');
+        pageComponent.onStateChange({ activeTab: 'dashboard' });
+      });
+    }
+  }
 }

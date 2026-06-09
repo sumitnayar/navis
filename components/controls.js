@@ -10,20 +10,35 @@ export class ControlsComponent {
     this.isAddingControl = false;
     this.isAddingKRI = false;
     this.selectedRiskId = "";
+    this.filterToBreachedKRIs = false;
+  }
+
+  clearFilters() {
+    this.filterToBreachedKRIs = false;
   }
 
   render(container) {
     const risks = this.state.risks;
+    
+    // Check search query parameters
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('kriStatus') === 'breached') {
+      this.filterToBreachedKRIs = true;
+    }
     
     // Extract list of all controls currently mapped across risks
     const allControls = risks.flatMap(r => 
       (r.controls || []).map(c => ({ ...c, riskId: r.id, riskTitle: r.title }))
     );
 
-    // Extract list of all KRIs currently mapped
-    const allKRIs = risks.flatMap(r => 
+    // Extract list of all KRIs currently mapped and apply filter if active
+    let allKRIs = risks.flatMap(r => 
       (r.kris || []).map(k => ({ ...k, riskId: r.id, riskTitle: r.title }))
     );
+
+    if (this.filterToBreachedKRIs) {
+      allKRIs = allKRIs.filter(k => k.status === 'BREACHED');
+    }
 
     container.innerHTML = `
       <div class="page-header">
@@ -195,7 +210,7 @@ export class ControlsComponent {
                 </thead>
                 <tbody>
                   ${allKRIs.length ? allKRIs.map(k => `
-                    <tr>
+                    <tr style="${this.filterToBreachedKRIs ? 'outline: 1.5px dashed var(--color-above-appetite); background: rgba(255,42,84,0.03);' : ''}">
                       <td style="font-weight:600;color:var(--text-primary);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                         <div style="display:flex;align-items:center;gap:4px;">
                           <span>${k.name}</span>
@@ -354,6 +369,11 @@ export class ControlsComponent {
     const insightContainer = container.querySelector('#ai-insight-container');
     if (insightContainer) {
       AIInsightService.renderPageInsightCard('controls', insightContainer, this.state);
+    }
+
+    // Render Back to Dashboard banner if filtered
+    if (this.filterToBreachedKRIs) {
+      AIInsightService.renderBackToDashboardBanner(this, container, 'Breached Key Risk Indicators (KRIs)');
     }
   }
 }
