@@ -1744,3 +1744,129 @@ body.app-page {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* --- BOARD DASHBOARD GRAPH COMPONENTS & UPGRADES --- */
+.dashboard-graph-card {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  padding: 24px !important;
+  margin-bottom: 24px !important;
+}
+
+.dashboard-graph-card-header {
+  margin-bottom: 20px;
+}
+
+.dashboard-graph-card-title {
+  font-family: var(--font-header);
+  font-size: 16px;
+  font-weight: 700;
+  color: #0A1628; /* Premium Dark Navy */
+  margin: 0 0 4px 0;
+}
+
+.dashboard-graph-card-subtitle {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary); /* Muted Grey */
+  margin: 0;
+}
+
+/* Grids */
+.risk-velocity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.risk-velocity-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease;
+}
+
+.risk-velocity-card:hover {
+  transform: translateY(-2px);
+}
+
+.kri-gauge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+@media (min-width: 992px) {
+  .kri-gauge-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.kri-gauge-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.kri-gauge-title {
+  font-family: var(--font-header);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Skeletons */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.skeleton-loading {
+  animation: skeletonPulse 1.5s infinite ease-in-out;
+  background-color: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+/* Page Transitions */
+.dashboard-fade-in {
+  opacity: 0;
+  animation: dashboardFadeInEffect 200ms ease-out forwards;
+}
+
+@keyframes dashboardFadeInEffect {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Heatmap specific styling */
+.heatmap-drilldown-row:hover {
+  background-color: rgba(0, 181, 181, 0.05) !important;
+}
+
+.no-data-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}

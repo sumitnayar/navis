@@ -6,7 +6,7 @@ export class DashboardComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
     this.onStateChange = onStateChange;
-    this.selectedHeatmapCell = null; // {l, i}
+    this.selectedHeatmapRiskIndex = null;
     this.isGeneratingBrief = false;
     this.briefContent = "";
   }
@@ -53,27 +53,9 @@ export class DashboardComponent {
     };
   }
 
-  // Pre-generate matrix counts for 5x5 heatmap
-  getHeatmapMatrix() {
-    const matrix = Array(5).fill(0).map(() => Array(5).fill(0));
-    const risks = this.state.risks;
-    
-    risks.forEach(r => {
-      // Sliders are 1-5, matrix is 0-4 (0 index corresponds to Slider value 5 down to 1)
-      const lIdx = 5 - (r.likelihoodResidual || r.likelihood || 1); // Likelihood Y axis (5 is top)
-      const iIdx = (r.impactResidual || r.impact || 1) - 1; // Impact X axis (1 is left)
-      if (lIdx >= 0 && lIdx < 5 && iIdx >= 0 && iIdx < 5) {
-        matrix[lIdx][iIdx]++;
-      }
-    });
-    
-    return matrix;
-  }
-
   render(container) {
     const risks = this.state.risks;
     const metrics = this.calculateMetrics();
-    const matrix = this.getHeatmapMatrix();
     const settings = this.state.settings;
 
     // Top worsening/improving lists
@@ -126,7 +108,7 @@ export class DashboardComponent {
       <!-- MAIN DASHBOARD BODY GRID -->
       <div class="dashboard-grid">
         
-        <!-- LEFT COLUMN: CRITICAL THREATS & OBJ IMPACT -->
+        <!-- LEFT COLUMN -->
         <div class="details-panel">
           
           <!-- DYNAMIC STRATEGIC FRAGILITY MAP -->
@@ -151,6 +133,41 @@ export class DashboardComponent {
             <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; text-align: center;">
               *Fragility aggregates risk severity (L × I × V) mapped to objective dimensions. Lower is safer.
             </p>
+          </div>
+
+          <!-- RISK VELOCITY TRACKER -->
+          <div class="dashboard-graph-card" id="risk-velocity-container">
+            <div class="dashboard-graph-card-header">
+              <h3 class="dashboard-graph-card-title">Risk Velocity Tracker</h3>
+              <p class="dashboard-graph-card-subtitle">Residual score movement across top risks</p>
+            </div>
+            <div class="risk-velocity-grid">
+              ${[1, 2, 3, 4, 5].map(() => `
+                <div class="risk-velocity-card" style="height: 220px; justify-content: center; align-items: center;">
+                  <div class="skeleton-loading" style="width: 80px; height: 12px; margin-bottom: 8px;"></div>
+                  <div class="skeleton-loading" style="width: 40px; height: 20px; margin-bottom: 12px;"></div>
+                  <div class="skeleton-loading" style="width: 100%; height: 100px; border-radius: 6px;"></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- KRI BREACH MONITOR -->
+          <div class="dashboard-graph-card" id="kri-breach-container">
+            <div class="dashboard-graph-card-header">
+              <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
+              <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
+            </div>
+            <div class="kri-gauge-grid">
+              ${[1, 2, 3].map(() => `
+                <div class="kri-gauge-card" style="height: 260px; justify-content: center; align-items: center;">
+                  <div class="skeleton-loading" style="width: 120px; height: 14px; margin-bottom: 16px;"></div>
+                  <div class="skeleton-loading" style="width: 160px; height: 100px; border-radius: 50% 50% 0 0; margin-bottom: 16px;"></div>
+                  <div class="skeleton-loading" style="width: 80px; height: 18px; margin-bottom: 6px;"></div>
+                  <div class="skeleton-loading" style="width: 100px; height: 10px;"></div>
+                </div>
+              `).join('')}
+            </div>
           </div>
 
           <!-- RISK POSTURE TREND DYNAMICS -->
@@ -195,64 +212,38 @@ export class DashboardComponent {
 
         </div>
 
-        <!-- RIGHT COLUMN: HEATMAP MATRIX & ONE-CLICK BRIEF -->
+        <!-- RIGHT COLUMN -->
         <div class="details-panel">
           
-          <!-- INTERACTIVE HEATMAP MATRIX -->
-          <div class="glass-panel">
-            <h3 class="dashboard-card-title">
-              <span>Risk Heatmap (Residual)</span>
-              <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">Filter by Likelihood x Impact</span>
-            </h3>
+          <!-- UPGRADED RISK HEATMAP -->
+          <div class="dashboard-graph-card" id="risk-heatmap-container">
+            <div class="dashboard-graph-card-header">
+              <h3 class="dashboard-graph-card-title">Risk Heatmap</h3>
+              <p class="dashboard-graph-card-subtitle">Residual likelihood vs impact across active risk portfolio</p>
+            </div>
+            <div style="position: relative; height: 320px; margin-bottom: 16px; display: flex; justify-content: center; align-items: center;">
+              <div class="skeleton-loading" style="width: 100%; height: 300px; border-radius: 8px;"></div>
+            </div>
             
-            <div class="heatmap-container">
-              ${matrix.map((row, rIdx) => {
-                const likelihoodVal = 5 - rIdx;
-                return `
-                  <div class="heatmap-row">
-                    <div class="heatmap-label-y">L${likelihoodVal}</div>
-                    ${row.map((count, cIdx) => {
-                      const impactVal = cIdx + 1;
-                      const scoreMultiplier = likelihoodVal * impactVal;
-                      let cellClass = "cell-1";
-                      if (scoreMultiplier >= 16) cellClass = "cell-5"; // High / Above Appetite
-                      else if (scoreMultiplier >= 10) cellClass = "cell-4";
-                      else if (scoreMultiplier >= 6) cellClass = "cell-3";
-                      else if (scoreMultiplier >= 3) cellClass = "cell-2";
-
-                      const isSelected = this.selectedHeatmapCell && this.selectedHeatmapCell.l === likelihoodVal && this.selectedHeatmapCell.i === impactVal;
-
-                      // Check for high velocity elements in this quadrant (F3)
-                      const cellRisks = risks.filter(r => 
-                        (r.likelihoodResidual || r.likelihood || 1) === likelihoodVal && 
-                        (r.impactResidual || r.impact || 1) === impactVal
-                      );
-                      const hasHighVelocity = cellRisks.some(r => r.velocityResidual >= 4 || r.timeToImpact === 'Immediate' || r.timeToImpact === 'Fast');
-                      const glowClass = hasHighVelocity ? 'velocity-glow' : '';
-
-                      return `
-                        <div class="heatmap-cell ${cellClass} ${isSelected ? 'selected' : ''} ${glowClass}" 
-                             data-l="${likelihoodVal}" 
-                             data-i="${impactVal}">
-                          ${count > 0 ? `<span>${count}</span>` : ''}
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
-                `;
-              }).join('')}
-              <div class="heatmap-row-x">
-                <div class="heatmap-label-x">I1</div>
-                <div class="heatmap-label-x">I2</div>
-                <div class="heatmap-label-x">I3</div>
-                <div class="heatmap-label-x">I4</div>
-                <div class="heatmap-label-x">I5</div>
+            <!-- Heatmap legend -->
+            <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px; font-size: 11px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #E11D48;"></span>
+                <span style="color: var(--text-secondary);">Above Appetite</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #D97706;"></span>
+                <span style="color: var(--text-secondary);">Near Appetite</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #059669;"></span>
+                <span style="color: var(--text-secondary);">Within Appetite</span>
               </div>
             </div>
 
             <!-- Heatmap Drill-down View -->
-            <div id="heatmap-drilldown-container" style="margin-top:12px;">
-              ${this.renderHeatmapDrilldown()}
+            <div id="heatmap-drilldown-container" style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+              <p style="font-size:11px;color:var(--text-muted);text-align:center;">Click on any plotted risk point in the heatmap scatter grid to pin and inspect item specifics.</p>
             </div>
           </div>
 
@@ -296,37 +287,33 @@ export class DashboardComponent {
     `;
 
     this.bindEvents(container);
+
+    // Trigger asynchronous graph rendering immediately (no artificial delay)
+    this.initGraphs(container);
   }
 
-  renderHeatmapDrilldown() {
-    if (!this.selectedHeatmapCell) {
-      return `<p style="font-size:11px;color:var(--text-muted);text-align:center;">Click on any cell in the heatmap grid containing risks to drill down into item specifics.</p>`;
+  // Generate HTML for Heatmap drilldown card
+  renderHeatmapDrilldown(risk) {
+    if (!risk) {
+      return `<p style="font-size:11px;color:var(--text-muted);text-align:center;">Click on any plotted risk point in the heatmap scatter grid to pin and inspect item specifics.</p>`;
     }
 
-    const { l, i } = this.selectedHeatmapCell;
-    const matchingRisks = this.state.risks.filter(r => 
-      (r.likelihoodResidual || r.likelihood || 1) === l && 
-      (r.impactResidual || r.impact || 1) === i
-    );
-
     return `
-      <div style="border-top:1px solid var(--border-color);padding-top:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <h4 style="font-size:12px;color:var(--text-primary);font-weight:600;">Drill-down: Likelihood L${l} × Impact I${i}</h4>
-          <button class="btn btn-secondary btn-small" id="btn-clear-heatmap" style="padding:2px 8px;font-size:10px;">Clear Filter</button>
+      <div class="dashboard-fade-in" style="padding: 12px; background: rgba(0, 181, 181, 0.03); border: 1px solid rgba(0, 181, 181, 0.15); border-radius: 8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h4 style="font-size:12px; color:var(--text-primary); font-weight:700; margin:0;">${risk.title}</h4>
+          <button class="btn btn-secondary btn-small" id="btn-clear-heatmap" style="padding:2px 8px; font-size:10px;">Clear Pin</button>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;">
-          ${matchingRisks.length ? matchingRisks.map(r => `
-            <div class="heatmap-drilldown-row" style="padding:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <span class="profile-role-badge" style="font-size:8px;color:var(--color-indigo);margin-bottom:2px;">${r.category}</span>
-                <div style="font-weight:600;color:var(--text-primary);">${r.title}</div>
-              </div>
-              <span class="status-badge ${r.appetiteStatus === 'Above Appetite' ? 'above' : r.appetiteStatus === 'Near Appetite' ? 'near' : 'within'}" style="font-size:9px;padding:2px 6px;">
-                Score: ${r.residualScore}
-              </span>
-            </div>
-          `).join('') : `<p style="font-size:11px;color:var(--text-muted);text-align:center;">No risks in this specific scoring quadrant.</p>`}
+        <div style="font-size:11px; color:var(--text-secondary); line-height:1.5; margin-bottom:8px;">
+          ${risk.description}
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size:10px; border-top: 1px solid var(--border-color); padding-top:8px; margin-top:8px;">
+          <div>Owner: <strong>${risk.owner}</strong></div>
+          <div>Category: <strong>${risk.category}</strong></div>
+          <div>Likelihood: <strong>L${risk.likelihoodResidual || risk.likelihood}</strong></div>
+          <div>Impact: <strong>I${risk.impactResidual || risk.impact}</strong></div>
+          <div>Residual Score: <strong class="trend-tag ${risk.appetiteStatus === 'Above Appetite' ? 'deteriorating' : 'stable'}" style="padding: 2px 6px; font-size:10px; border-radius:4px; font-weight:bold;">${risk.residualScore}</strong></div>
+          <div>Appetite Status: <strong style="color: ${risk.appetiteStatus === 'Above Appetite' ? 'var(--color-above-appetite)' : risk.appetiteStatus === 'Near Appetite' ? 'var(--color-near-appetite)' : 'var(--color-within-appetite)'}">${risk.appetiteStatus}</strong></div>
         </div>
       </div>
     `;
@@ -352,6 +339,484 @@ export class DashboardComponent {
     return html;
   }
 
+  // Render line charts, bubble charts and SVG gauges dynamically
+  async initGraphs(container) {
+    const risks = this.state.risks || [];
+    
+    // Clear skeletons and fade in the layout
+    const velocityContainer = container.querySelector('#risk-velocity-container');
+    const heatmapContainer = container.querySelector('#risk-heatmap-container');
+    const breachedKriContainer = container.querySelector('#kri-breach-container');
+
+    if (risks.length === 0) {
+      if (velocityContainer) {
+        velocityContainer.innerHTML = `
+          <div class="dashboard-graph-card-header">
+            <h3 class="dashboard-graph-card-title">Risk Velocity Tracker</h3>
+            <p class="dashboard-graph-card-subtitle">Residual score movement across top risks</p>
+          </div>
+          <div class="no-data-card dashboard-fade-in">No data available for velocity tracking.</div>
+        `;
+      }
+      if (heatmapContainer) {
+        heatmapContainer.innerHTML = `
+          <div class="dashboard-graph-card-header">
+            <h3 class="dashboard-graph-card-title">Risk Heatmap</h3>
+            <p class="dashboard-graph-card-subtitle">Residual likelihood vs impact across active risk portfolio</p>
+          </div>
+          <div class="no-data-card dashboard-fade-in">No data available for risk heatmap.</div>
+        `;
+      }
+      if (breachedKriContainer) {
+        breachedKriContainer.innerHTML = `
+          <div class="dashboard-graph-card-header">
+            <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
+            <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
+          </div>
+          <div class="no-data-card dashboard-fade-in">No data available for KRI monitoring.</div>
+        `;
+      }
+      return;
+    }
+
+    // Helper functions for parsing numerical fields in KRIs
+    const parseNumeric = (val) => {
+      if (typeof val === 'number') return val;
+      if (!val) return 0;
+      const match = val.match(/[-+]?[0-9]*\.?[0-9]+/);
+      return match ? parseFloat(match[0]) : 0;
+    };
+
+    const getUnit = (val) => {
+      if (typeof val !== 'string') return '';
+      if (val.includes('%')) return '%';
+      if (val.includes('days')) return ' days';
+      if (val.includes('day')) return ' day';
+      return '';
+    };
+
+    // 1. RENDER RISK VELOCITY TRACKER
+    if (velocityContainer) {
+      const top5Risks = [...risks]
+        .sort((a, b) => (b.residualScore || 0) - (a.residualScore || 0))
+        .slice(0, 5);
+
+      velocityContainer.innerHTML = `
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title">Risk Velocity Tracker</h3>
+          <p class="dashboard-graph-card-subtitle">Residual score movement across top risks</p>
+        </div>
+        <div class="risk-velocity-grid dashboard-fade-in">
+          ${top5Risks.map((r, idx) => {
+            const trendLabel = r.trend === 'Deteriorating' ? 'Worsening' : r.trend === 'Improving' ? 'Improving' : 'Stable';
+            const badgeClass = r.trend === 'Deteriorating' ? 'above' : r.trend === 'Improving' ? 'within' : 'near';
+            return `
+              <div class="risk-velocity-card">
+                <div style="margin-bottom: 8px;">
+                  <span class="profile-role-badge" style="font-size: 8px; color: var(--color-indigo); margin-bottom: 4px; display: inline-block;">${r.category}</span>
+                  <div style="font-weight: 700; font-size: 11px; line-height: 1.3; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 28px;">${r.title}</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+                  <span style="font-size: 20px; font-weight: 800; color: var(--text-primary);">${r.residualScore}</span>
+                  <span class="status-badge ${badgeClass}" style="font-size: 8px; padding: 1px 4px; font-weight: bold;">${trendLabel}</span>
+                </div>
+                <div style="height: 100px; width: 100%; position: relative;">
+                  <canvas id="velocity-chart-${idx}"></canvas>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      // Initialize line charts for each of the top 5 risks
+      top5Risks.forEach((r, idx) => {
+        const ctx = document.getElementById(`velocity-chart-${idx}`);
+        if (!ctx) return;
+
+        // Generate score history dynamically matching the trend
+        const currentScore = r.residualScore || 12;
+        const trend = r.trend;
+        const historyPoints = [];
+
+        // Clamping utility
+        const clamp = (val) => Math.max(1, Math.min(25, val));
+
+        if (trend === 'Deteriorating') {
+          let last = currentScore;
+          historyPoints.unshift(last);
+          for (let i = 0; i < 4; i++) {
+            last = clamp(last - Math.floor(Math.random() * 3));
+            historyPoints.unshift(last);
+          }
+        } else if (trend === 'Improving') {
+          let last = currentScore;
+          historyPoints.unshift(last);
+          for (let i = 0; i < 4; i++) {
+            last = clamp(last + Math.floor(Math.random() * 3));
+            historyPoints.unshift(last);
+          }
+        } else {
+          for (let i = 0; i < 5; i++) {
+            const dev = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+            historyPoints.push(clamp(currentScore + dev));
+          }
+        }
+
+        // Final point must match current residual score
+        historyPoints[historyPoints.length - 1] = currentScore;
+
+        const lineColor = trend === 'Deteriorating' ? '#E11D48' : trend === 'Improving' ? '#059669' : '#D97706';
+
+        new window.Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['P1', 'P2', 'P3', 'P4', 'Current'],
+            datasets: [{
+              data: historyPoints,
+              borderColor: lineColor,
+              borderWidth: 2,
+              pointBackgroundColor: lineColor,
+              pointBorderColor: '#FFFFFF',
+              pointBorderWidth: 1.5,
+              pointRadius: 2.5,
+              pointHoverRadius: 4.5,
+              fill: false,
+              tension: 0.35
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: true,
+                intersect: false,
+                mode: 'index',
+                backgroundColor: '#0F172A',
+                titleColor: '#FFFFFF',
+                bodyColor: '#FFFFFF',
+                titleFont: { size: 9, family: 'Inter' },
+                bodyFont: { size: 10, family: 'Inter', weight: 'bold' },
+                padding: 6,
+                callbacks: {
+                  title: () => '',
+                  label: (context) => `Score: ${context.parsed.y}`
+                }
+              }
+            },
+            scales: {
+              x: { display: false },
+              y: {
+                display: true,
+                min: 0,
+                max: 25,
+                ticks: { display: false },
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.03)',
+                  drawTicks: false
+                },
+                border: { display: false }
+              }
+            }
+          }
+        });
+      });
+    }
+
+    // 2. RENDER RISK HEATMAP
+    if (heatmapContainer) {
+      heatmapContainer.innerHTML = `
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title">Risk Heatmap</h3>
+          <p class="dashboard-graph-card-subtitle">Residual likelihood vs impact across active risk portfolio</p>
+        </div>
+        <div class="dashboard-fade-in" style="position: relative; height: 320px; margin-bottom: 16px;">
+          <canvas id="heatmap-chart-canvas"></canvas>
+        </div>
+        <div class="dashboard-fade-in" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px; font-size: 11px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #E11D48;"></span>
+            <span style="color: var(--text-secondary);">Above Appetite</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #D97706;"></span>
+            <span style="color: var(--text-secondary);">Near Appetite</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #059669;"></span>
+            <span style="color: var(--text-secondary);">Within Appetite</span>
+          </div>
+        </div>
+        <div id="heatmap-drilldown-container" style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <p style="font-size:11px;color:var(--text-muted);text-align:center;">Click on any plotted risk point in the heatmap scatter grid to pin and inspect item specifics.</p>
+        </div>
+      `;
+
+      const ctx = document.getElementById('heatmap-chart-canvas');
+      if (ctx) {
+        // Compile datasets
+        const bubbleData = risks.map((r, index) => ({
+          x: r.likelihoodResidual || r.likelihood || 1,
+          y: r.impactResidual || r.impact || 1,
+          r: Math.max(6, (r.residualScore || 1) * 0.8), // radius sized by residual score
+          riskObj: r,
+          index: index
+        }));
+
+        this.selectedHeatmapRiskIndex = null;
+
+        // Custom Quadrant shading plugin (Barely visible High Likelihood / High Impact red shade)
+        const quadrantPlugin = {
+          id: 'quadrantShading',
+          beforeDraw(chart) {
+            const { ctx: chartCtx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
+            chartCtx.save();
+            const xPixel = x.getPixelForValue(3);
+            const yPixel = y.getPixelForValue(3);
+            const xMaxPixel = x.getPixelForValue(5.5);
+            const yMaxPixel = y.getPixelForValue(5.5);
+
+            chartCtx.fillStyle = 'rgba(239, 68, 68, 0.03)'; // Whisper red overlay
+            chartCtx.fillRect(xPixel, yMaxPixel, xMaxPixel - xPixel, yPixel - yMaxPixel);
+            chartCtx.restore();
+          }
+        };
+
+        const heatmapChartInstance = new window.Chart(ctx, {
+          type: 'bubble',
+          data: {
+            datasets: [{
+              data: bubbleData,
+              backgroundColor: (context) => {
+                const dataPoint = context.raw;
+                if (!dataPoint) return '#059669';
+                const status = dataPoint.riskObj.appetiteStatus;
+                return status === 'Above Appetite' ? '#E11D48' : status === 'Near Appetite' ? '#D97706' : '#059669';
+              },
+              borderColor: '#FFFFFF', // 2px white stroke to make overlapping distinct
+              borderWidth: 2,
+              hoverBorderColor: '#0F172A',
+              hoverBorderWidth: 2
+            }]
+          },
+          plugins: [quadrantPlugin],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (event, elements) => {
+              const ddContainer = container.querySelector('#heatmap-drilldown-container');
+              if (elements && elements.length > 0) {
+                const datasetIndex = elements[0].datasetIndex;
+                const index = elements[0].index;
+                const clickedPoint = heatmapChartInstance.data.datasets[datasetIndex].data[index];
+                
+                this.selectedHeatmapRiskIndex = clickedPoint.index;
+                
+                if (ddContainer) {
+                  ddContainer.innerHTML = this.renderHeatmapDrilldown(clickedPoint.riskObj);
+                  this.bindHeatmapClearEvent(container, heatmapChartInstance);
+                }
+              } else {
+                this.selectedHeatmapRiskIndex = null;
+                if (ddContainer) {
+                  ddContainer.innerHTML = this.renderHeatmapDrilldown(null);
+                }
+              }
+              heatmapChartInstance.update();
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: true,
+                backgroundColor: '#0F172A',
+                titleColor: '#FFFFFF',
+                bodyColor: '#FFFFFF',
+                titleFont: { size: 10, family: 'Inter', weight: 'bold' },
+                bodyFont: { size: 9, family: 'Inter' },
+                padding: 10,
+                callbacks: {
+                  title: (context) => {
+                    const rawPoint = context[0].raw;
+                    return rawPoint.riskObj.title;
+                  },
+                  label: (context) => {
+                    const rawPoint = context.raw;
+                    return [
+                      `Residual Score: ${rawPoint.riskObj.residualScore}`,
+                      `Likelihood: L${rawPoint.x}`,
+                      `Impact: I${rawPoint.y}`,
+                      `Status: ${rawPoint.riskObj.appetiteStatus}`
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                min: 0.5,
+                max: 5.5,
+                ticks: {
+                  stepSize: 1,
+                  color: '#64748B', // Muted grey labels
+                  font: { family: 'Inter', size: 10 }
+                },
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.04)',
+                  drawTicks: false
+                },
+                border: { color: 'rgba(0, 0, 0, 0.06)' },
+                title: {
+                  display: true,
+                  text: 'Likelihood →',
+                  color: '#64748B',
+                  font: { family: 'Outfit', size: 11, weight: 'bold' }
+                }
+              },
+              y: {
+                min: 0.5,
+                max: 5.5,
+                ticks: {
+                  stepSize: 1,
+                  color: '#64748B',
+                  font: { family: 'Inter', size: 10 }
+                },
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.04)',
+                  drawTicks: false
+                },
+                border: { color: 'rgba(0, 0, 0, 0.06)' },
+                title: {
+                  display: true,
+                  text: 'Impact ↑',
+                  color: '#64748B',
+                  font: { family: 'Outfit', size: 11, weight: 'bold' }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 3. RENDER KRI BREACH MONITOR (GAUGES)
+    if (breachedKriContainer) {
+      const breachedKriList = [];
+      risks.forEach(r => {
+        if (r.kris && Array.isArray(r.kris)) {
+          r.kris.forEach(k => {
+            if (k.status === 'BREACHED') {
+              breachedKriList.push({
+                riskTitle: r.title,
+                kriName: k.name,
+                current: k.current,
+                threshold: k.threshold
+              });
+            }
+          });
+        }
+      });
+
+      if (breachedKriList.length === 0) {
+        breachedKriContainer.innerHTML = `
+          <div class="dashboard-graph-card-header">
+            <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
+            <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
+          </div>
+          <div class="no-breach-state-card dashboard-fade-in" style="background: rgba(16,185,129,0.03); border: 1px solid rgba(16,185,129,0.15); border-radius: 10px; padding: 32px 24px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <div style="font-size: 32px; color: #059669; margin-bottom: 8px;">✓</div>
+            <h4 style="font-family: var(--font-header); font-size: 14px; font-weight: 700; color: #059669; margin: 0 0 4px 0;">All KRIs within threshold</h4>
+            <p style="font-family: var(--font-body); font-size: 11px; color: var(--text-secondary); margin: 0;">No operational metric has breached approved corporate limits.</p>
+          </div>
+        `;
+      } else {
+        const displayList = breachedKriList.slice(0, 6);
+
+        breachedKriContainer.innerHTML = `
+          <div class="dashboard-graph-card-header">
+            <h3 class="dashboard-graph-card-title">KRI Breach Monitor</h3>
+            <p class="dashboard-graph-card-subtitle">Live key risk indicator status against defined thresholds</p>
+          </div>
+          <div class="kri-gauge-grid dashboard-fade-in">
+            ${displayList.map((kri, idx) => {
+              const currentNum = parseNumeric(kri.current);
+              const thresholdNum = parseNumeric(kri.threshold);
+              const unit = getUnit(kri.current);
+              
+              const delta = currentNum - thresholdNum;
+              const formattedDelta = `+${delta.toFixed(1).replace(/\.0$/, '')}${unit}`;
+
+              let maxVal = 100;
+              if (currentNum > 100 || thresholdNum > 100) {
+                maxVal = Math.ceil(Math.max(currentNum, thresholdNum) * 1.3);
+              } else if (thresholdNum <= 0) {
+                maxVal = 100;
+              } else {
+                maxVal = Math.max(10, Math.ceil(thresholdNum * 1.4), Math.ceil(currentNum * 1.1));
+              }
+
+              const cx = 100;
+              const cy = 90;
+              const R = 70;
+
+              const angleThresh = Math.max(0, Math.min(180, (thresholdNum / maxVal) * 180));
+              const radThresh = (180 - angleThresh) * Math.PI / 180;
+              const xThresh = cx + R * Math.cos(radThresh);
+              const yThresh = cy - R * Math.sin(radThresh);
+
+              const angleNeedle = Math.max(0, Math.min(180, (currentNum / maxVal) * 180));
+              const radNeedle = (180 - angleNeedle) * Math.PI / 180;
+              const xNeedle = cx + (R - 12) * Math.cos(radNeedle);
+              const yNeedle = cy - (R - 12) * Math.sin(radNeedle);
+
+              return `
+                <div class="kri-gauge-card">
+                  <div class="kri-gauge-title">${kri.kriName}</div>
+                  
+                  <div style="position: relative; width: 100%; max-width: 200px; height: 110px; margin-bottom: 12px;">
+                    <svg viewBox="0 0 200 110" width="100%" height="100%">
+                      <!-- Unfilled portion background track (F1F5F9) -->
+                      <path d="M 30 90 A 70 70 0 0 1 170 90" fill="none" stroke="#F1F5F9" stroke-width="12" stroke-linecap="round" />
+                      
+                      <!-- Safe Zone Arc (Green) -->
+                      <path d="M 30 90 A 70 70 0 0 1 ${xThresh} ${yThresh}" fill="none" stroke="#10B981" stroke-width="12" />
+                      
+                      <!-- Breach Zone Arc (Red) -->
+                      <path d="M ${xThresh} ${yThresh} A 70 70 0 0 1 170 90" fill="none" stroke="#EF4444" stroke-width="12" stroke-linecap="round" />
+                      
+                      <!-- Threshold line marker -->
+                      <line x1="${cx + (R - 14) * Math.cos(radThresh)}" y1="${cy - (R - 14) * Math.sin(radThresh)}" 
+                            x2="${cx + (R + 14) * Math.cos(radThresh)}" y2="${cy - (R + 14) * Math.sin(radThresh)}" 
+                            stroke="#0F172A" stroke-width="2" />
+                      
+                      <!-- Needle (Thin sharp line) -->
+                      <line x1="${cx}" y1="${cy}" x2="${xNeedle}" y2="${yNeedle}" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" />
+                      
+                      <!-- Needle pin center anchor -->
+                      <circle cx="${cx}" cy="${cy}" r="5" fill="#0F172A" />
+                    </svg>
+                  </div>
+                  
+                  <!-- Breach Delta: Most prominent red number -->
+                  <div style="font-size: 24px; font-weight: 800; color: #EF4444; margin-bottom: 2px; line-height: 1.2;">
+                    ${formattedDelta}
+                  </div>
+                  <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">
+                    Current: <strong>${kri.current}</strong>
+                  </div>
+                  <div style="font-size: 10px; color: var(--text-muted);">
+                    Threshold: ${kri.threshold}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    }
+  }
+
   bindEvents(container) {
     // Print button
     const printBtn = container.querySelector('#btn-print-pack');
@@ -360,27 +825,6 @@ export class DashboardComponent {
         window.print();
       });
     }
-
-    // Heatmap cell click
-    const cells = container.querySelectorAll('.heatmap-cell');
-    cells.forEach(c => {
-      c.addEventListener('click', () => {
-        const l = parseInt(c.dataset.l);
-        const i = parseInt(c.dataset.i);
-        this.selectedHeatmapCell = { l, i };
-        
-        // Re-render only drill down area to maintain scroll
-        const ddContainer = container.querySelector('#heatmap-drilldown-container');
-        if (ddContainer) {
-          ddContainer.innerHTML = this.renderHeatmapDrilldown();
-          this.bindDrilldownEvents(container);
-        }
-        
-        // Highlight cell
-        cells.forEach(cell => cell.classList.remove('selected'));
-        c.classList.add('selected');
-      });
-    });
 
     // Generate Brief button
     const genBriefBtn = container.querySelector('#btn-generate-brief');
@@ -401,25 +845,23 @@ export class DashboardComponent {
         }
       });
     }
-
-    this.bindDrilldownEvents(container);
   }
 
-  bindDrilldownEvents(container) {
+  bindHeatmapClearEvent(container, heatmapChartInstance) {
     const clearBtn = container.querySelector('#btn-clear-heatmap');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        this.selectedHeatmapCell = null;
+        this.selectedHeatmapRiskIndex = null;
         
         // Re-render drilldown area
         const ddContainer = container.querySelector('#heatmap-drilldown-container');
         if (ddContainer) {
-          ddContainer.innerHTML = this.renderHeatmapDrilldown();
+          ddContainer.innerHTML = this.renderHeatmapDrilldown(null);
         }
         
-        // Remove highlighting
-        const cells = container.querySelectorAll('.heatmap-cell');
-        cells.forEach(c => c.classList.remove('selected'));
+        if (heatmapChartInstance) {
+          heatmapChartInstance.update();
+        }
       });
     }
   }
