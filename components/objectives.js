@@ -63,9 +63,6 @@ export class ObjectivesComponent {
         </div>
       </div>
 
-      <!-- AI INSIGHT CONTAINER -->
-      <div id="ai-insight-container"></div>
-
       <div class="register-layout">
         
         <!-- LEFT: LIST OF OBJECTIVE CARDS -->
@@ -128,13 +125,6 @@ export class ObjectivesComponent {
     `;
 
     this.bindEvents(container);
-
-    // Render page-level AI insights card
-    const insightContainer = container.querySelector('#ai-insight-container');
-    if (insightContainer) {
-      AIInsightService.renderPageInsightCard('objectives', insightContainer, this.state);
-    }
-
     // Render Back to Dashboard banner if filtered
     if (this.deepLinked) {
       AIInsightService.renderBackToDashboardBanner(this, container, 'Exposed Strategic Objective');

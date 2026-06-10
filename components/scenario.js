@@ -109,9 +109,6 @@ export class ScenarioComponent {
         </div>
       </div>
 
-      <!-- AI INSIGHT CONTAINER -->
-      <div id="ai-insight-container"></div>
-
       <div class="register-layout">
         
         <!-- LEFT: SELECTION & STRESS CONTROLS -->
@@ -334,11 +331,6 @@ export class ScenarioComponent {
         }
       });
     });
-
-    // Render page-level AI insights card
-    const insightContainer = container.querySelector('#ai-insight-container');
-    if (insightContainer) {
-      AIInsightService.renderPageInsightCard('scenario', insightContainer, this.state);
-    }
   }
 }
+
