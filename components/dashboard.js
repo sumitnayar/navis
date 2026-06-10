@@ -51,7 +51,7 @@ export class DashboardComponent {
       postureClass = "critical";
     } else if (metrics.aboveAppetiteCount > 0 || metrics.breachedKRIs > 0 || metrics.overdueActionsCount > 0) {
       postureValue = "ELEVATED";
-      postureClass = ""; // default elevated style (amber #D97706)
+      postureClass = ""; // default elevated style (amber var(--color-warning))
     } else if (metrics.worseningCount > 0) {
       postureValue = "MODERATE";
       postureClass = "moderate";
@@ -293,7 +293,7 @@ export class DashboardComponent {
     } catch (err) {
       console.error("Failed to generate intelligence feed:", err);
       listContainer.innerHTML = `
-        <div class="dash-insight-empty" style="color: #EF4444;">
+        <div class="dash-insight-empty" style="color: var(--color-critical);">
           <span>⚠️</span>
           <span>Failed to generate intelligence feed.</span>
         </div>
@@ -321,8 +321,8 @@ export class DashboardComponent {
           <div>Category: <strong>${risk.category}</strong></div>
           <div>Likelihood: <strong>L${risk.likelihoodResidual || risk.likelihood}</strong></div>
           <div>Impact: <strong>I${risk.impactResidual || risk.impact}</strong></div>
-          <div>Residual Score: <strong style="padding: 2px 6px; font-size:10px; border-radius:4px; font-weight:bold; background: ${risk.appetiteStatus === 'Above Appetite' ? '#FCA5A5' : '#6EE7B7'};">${risk.residualScore}</strong></div>
-          <div>Appetite Status: <strong style="color: ${risk.appetiteStatus === 'Above Appetite' ? '#EF4444' : risk.appetiteStatus === 'Near Appetite' ? '#D97706' : '#059669'}">${risk.appetiteStatus}</strong></div>
+          <div>Residual Score: <strong style="padding: 2px 6px; font-size:10px; border-radius:4px; font-weight:bold; background: ${risk.appetiteStatus === 'Above Appetite' ? 'var(--color-critical-bg)' : 'var(--color-safe-bg)'};">${risk.residualScore}</strong></div>
+          <div>Appetite Status: <strong style="color: ${risk.appetiteStatus === 'Above Appetite' ? 'var(--color-critical)' : risk.appetiteStatus === 'Near Appetite' ? 'var(--color-warning)' : 'var(--color-safe)'}">${risk.appetiteStatus}</strong></div>
         </div>
       </div>
     `;
@@ -401,9 +401,9 @@ export class DashboardComponent {
             data: bubbleData,
             backgroundColor: (context) => {
               const dataPoint = context.raw;
-              if (!dataPoint) return '#6EE7B7';
+              if (!dataPoint) return 'rgba(26, 122, 74, 0.85)';
               const status = dataPoint.riskObj.appetiteStatus;
-              return status === 'Above Appetite' ? '#FCA5A5' : status === 'Near Appetite' ? '#FCD34D' : '#6EE7B7';
+              return status === 'Above Appetite' ? 'rgba(192, 57, 43, 0.85)' : status === 'Near Appetite' ? 'rgba(194, 97, 14, 0.85)' : 'rgba(26, 122, 74, 0.85)';
             },
             borderColor: '#FFFFFF',
             borderWidth: 2,

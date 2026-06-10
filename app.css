@@ -7,6 +7,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
+  /* Red — desaturated crimson */
+  --color-critical:        #C0392B;  /* badges, borders, critical text */
+  --color-critical-text:   #B91C1C;  /* inline text, numbers */
+  --color-critical-bg:     #FDF2F2;  /* row backgrounds, fills */
+
+  /* Amber — burnt orange, not yellow */
+  --color-warning:         #C2610E;  /* badges, borders, warning text */
+  --color-warning-text:    #9A3412;  /* inline text, numbers */
+  --color-warning-bg:      #FFF7ED;  /* row backgrounds, fills */
+
+  /* Green — muted forest green */
+  --color-safe:            #1A7A4A;  /* badges, borders, safe text */
+  --color-safe-text:       #166534;  /* inline text, numbers */
+  --color-safe-bg:         #F0FDF4;  /* row backgrounds, fills */
+
   /* Colors */
   --bg-primary: #F8FAFC;       /* Soft corporate off-white background */
   --bg-secondary: #FFFFFF;     /* Pure white panels */
@@ -21,13 +36,13 @@
   --text-muted: #94A3B8;       /* Muted captions */
   
   /* Status Colors (Tailored for Light Backdrops) */
-  --color-above-appetite: #E11D48; /* Clean Crimson Rose */
+  --color-above-appetite: var(--color-critical-text); /* Clean Crimson Rose */
   --glow-above-appetite: rgba(225, 29, 72, 0.08);
   
-  --color-near-appetite: #D97706;  /* Warm Amber */
+  --color-near-appetite: var(--color-warning);  /* Warm Amber */
   --glow-near-appetite: rgba(217, 119, 6, 0.06);
   
-  --color-within-appetite: #059669; /* Rich Emerald */
+  --color-within-appetite: var(--color-safe); /* Rich Emerald */
   --glow-within-appetite: rgba(5, 150, 105, 0.08);
   
   --color-indigo: #00B5B5;       /* NAVIS Premium Compass Teal */
@@ -499,11 +514,11 @@ h1 + p,
 }
 
 /* Cell scoring colors mapping */
-.cell-1 { background-color: rgba(5, 150, 105, 0.08); color: rgba(5, 150, 105, 0.85); border: 1px dashed rgba(5, 150, 105, 0.2); }
-.cell-2 { background-color: rgba(5, 150, 105, 0.15); color: #059669; border: 1px solid rgba(5, 150, 105, 0.25); }
-.cell-3 { background-color: rgba(217, 119, 6, 0.12); color: #D97706; border: 1px solid rgba(217, 119, 6, 0.2); }
-.cell-4 { background-color: rgba(225, 29, 72, 0.1); color: #E11D48; border: 1px solid rgba(225, 29, 72, 0.2); }
-.cell-5 { background-color: rgba(225, 29, 72, 0.2); color: #E11D48; border: 1px solid #E11D48; box-shadow: 0 0 8px rgba(225, 29, 72, 0.05); }
+.cell-1 { background-color: rgba(26, 122, 74, 0.08); color: rgba(26, 122, 74, 0.85); border: 1px dashed rgba(26, 122, 74, 0.2); }
+.cell-2 { background-color: rgba(26, 122, 74, 0.15); color: var(--color-safe); border: 1px solid rgba(26, 122, 74, 0.25); }
+.cell-3 { background-color: rgba(194, 97, 14, 0.12); color: var(--color-warning-text); border: 1px solid rgba(194, 97, 14, 0.2); }
+.cell-4 { background-color: rgba(192, 57, 43, 0.1); color: var(--color-critical-text); border: 1px solid rgba(192, 57, 43, 0.2); }
+.cell-5 { background-color: rgba(225, 29, 72, 0.2); color: var(--color-critical-text); border: 1px solid var(--color-critical-text); box-shadow: 0 0 8px rgba(225, 29, 72, 0.05); }
 
 /* --- RISK NETWORK VISUALIZER --- */
 .network-container {
@@ -2024,30 +2039,30 @@ body.app-page {
 
 /* Softer Color Badges Overrides */
 .status-badge.above {
-  background-color: rgba(252, 165, 165, 0.15) !important;
-  color: #EF4444 !important;
-  border: 1px solid rgba(239, 68, 68, 0.15) !important;
+  background-color: var(--color-critical-bg) !important;
+  color: var(--color-critical) !important;
+  border: 1px solid var(--color-critical) !important;
 }
 .status-badge.above::before {
-  background-color: #EF4444 !important;
+  background-color: var(--color-critical) !important;
 }
 
 .status-badge.near {
-  background-color: rgba(252, 211, 77, 0.15) !important;
-  color: #D97706 !important;
-  border: 1px solid rgba(217, 119, 6, 0.15) !important;
+  background-color: var(--color-warning-bg) !important;
+  color: var(--color-warning) !important;
+  border: 1px solid var(--color-warning) !important;
 }
 .status-badge.near::before {
-  background-color: #D97706 !important;
+  background-color: var(--color-warning) !important;
 }
 
 .status-badge.within {
-  background-color: rgba(110, 231, 183, 0.15) !important;
-  color: #059669 !important;
-  border: 1px solid rgba(5, 150, 105, 0.15) !important;
+  background-color: var(--color-safe-bg) !important;
+  color: var(--color-safe) !important;
+  border: 1px solid var(--color-safe) !important;
 }
 .status-badge.within::before {
-  background-color: #059669 !important;
+  background-color: var(--color-safe) !important;
 }
 
 /* AI Insight Cards styling */
@@ -2180,7 +2195,7 @@ body.app-page {
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: #E11D48;
+  background: var(--color-critical-text);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -2473,7 +2488,7 @@ body.app-page {
   color: #64748B;
   cursor: pointer;
 }
-.top-nav-signout:hover { color: #EF4444; }
+.top-nav-signout:hover { color: var(--color-critical); }
 
 /* Main content shift */
 .main-content {
@@ -2510,12 +2525,12 @@ body.app-page {
   font-weight: var(--weight-bold);
   color: #FFFFFF;
   padding: 2px 8px; border-radius: 4px;
-  background: #D97706; /* default elevated */
+  background: var(--color-warning); /* default elevated */
   flex-shrink: 0;
 }
-.dash-posture-value.critical { background: #EF4444; }
+.dash-posture-value.critical { background: var(--color-critical); }
 .dash-posture-value.moderate { background: #00B5B5; }
-.dash-posture-value.low      { background: #059669; }
+.dash-posture-value.low      { background: var(--color-safe); }
 .dash-sb-divider {
   width: 1px; height: 16px; background: #E2E8F0; flex-shrink: 0;
 }
@@ -2531,8 +2546,8 @@ body.app-page {
   color: #0A1628;
   flex-shrink: 0;
 }
-.dash-metric-value.red    { color: #EF4444; }
-.dash-metric-value.amber  { color: #D97706; }
+.dash-metric-value.red    { color: var(--color-critical-text); }
+.dash-metric-value.amber  { color: var(--color-warning-text); }
 .dash-print-btn {
   margin-left: auto; padding: 4px 12px;
   font-size: 9px; color: #64748B;
@@ -2583,8 +2598,8 @@ body.app-page {
   width: 72px;
   flex-shrink: 0;
 }
-.dash-severity.critical { color: #EF4444; }
-.dash-severity.warning  { color: #D97706; }
+.dash-severity.critical { color: var(--color-critical); }
+.dash-severity.warning  { color: var(--color-warning); }
 .dash-severity.advisory { color: #00B5B5; }
 .dash-insight-text {
   font-size: var(--text-sm);      /* 11px */
@@ -2611,7 +2626,7 @@ body.app-page {
 .dash-insight-link:hover { text-decoration: underline; }
 .dash-insight-empty {
   height: 40px; display: flex; align-items: center;
-  font-size: var(--text-sm); color: #059669; gap: 8px;
+  font-size: var(--text-sm); color: var(--color-safe); gap: 8px;
 }
 
 /* Skeleton */
@@ -2646,11 +2661,11 @@ body.app-page {
 }
 .dash-fragility-table td:not(:first-child) { text-align: right; }
 .dash-fragility-table tr:nth-child(even) td { background: #FAFAFA; }
-.frag-red   { font-size: var(--text-sm); font-weight: var(--weight-bold); color: #EF4444; }
-.frag-amber { font-size: var(--text-sm); font-weight: var(--weight-bold); color: #D97706; }
-.frag-green { font-size: var(--text-sm); font-weight: var(--weight-bold); color: #059669; }
-.trend-up   { font-size: var(--text-md); font-weight: var(--weight-regular); color: #EF4444; }
-.trend-down { font-size: var(--text-md); font-weight: var(--weight-regular); color: #059669; }
+.frag-red   { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-critical-text); }
+.frag-amber { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-warning-text); }
+.frag-green { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-safe-text); }
+.trend-up   { font-size: var(--text-md); font-weight: var(--weight-regular); color: var(--color-critical); }
+.trend-down { font-size: var(--text-md); font-weight: var(--weight-regular); color: var(--color-safe); }
 .trend-flat { font-size: var(--text-md); font-weight: var(--weight-regular); color: #64748B; }
 
 /* Risk dynamics */

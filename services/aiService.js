@@ -854,7 +854,7 @@ ${JSON.stringify(context, null, 2)}
             <tr style="border-bottom: 2px solid #E2E8F0; color:#0A1628; font-weight:700;">
               <th style="padding:6px 8px;">Risk Title</th>
               <th style="padding:6px 8px;">Owner</th>
-              <th style="padding:6px 8px; color:#E11D48;">Days Since Last Review</th>
+              <th style="padding:6px 8px; color:var(--color-critical-text);">Days Since Last Review</th>
             </tr>
           </thead>
           <tbody>
@@ -870,7 +870,7 @@ ${JSON.stringify(context, null, 2)}
                 <tr style="border-bottom: 1px solid #F1F5F9; color:#475569;">
                   <td style="padding:6px 8px; font-weight:600; color:#0A1628;">${sr.title}</td>
                   <td style="padding:6px 8px;">${riskItem?.owner || 'Unassigned'}</td>
-                  <td style="padding:6px 8px; color:#E11D48; font-family:monospace;">${daysText}</td>
+                  <td style="padding:6px 8px; color:var(--color-critical-text); font-family:monospace;">${daysText}</td>
                 </tr>
               `;
             }).join('')}
@@ -878,8 +878,9 @@ ${JSON.stringify(context, null, 2)}
         </table>
       `;
     } else {
-      staleHTML = `<div style="font-size:11px; color:#059669; padding:8px; background:rgba(5,150,105,0.05); border-radius:4px;">✅ All active risks have been reviewed and logged within the standard 30-day corporate window.</div>`;
+      staleHTML = `<div style="font-size:11px; color:var(--color-safe-text); padding:8px; background:var(--color-safe-bg); border-radius:4px;">✅ All active risks have been reviewed and logged within the standard 30-day corporate window.</div>`;
     }
+
 
     // Section 4: Directives
     const topFragileDim = sortedRadar[0]?.dim || 'Financial';

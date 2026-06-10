@@ -33,7 +33,7 @@ export class SettingsComponent {
           <div class="glass-panel" style="background:rgba(99,102,241,0.03);border-color:rgba(99,102,241,0.25);">
             <h3 class="dashboard-card-title" style="color:var(--color-indigo);">
               <span>Gemini API Live Intelligence</span>
-              <span class="status-badge" style="font-size:10px; background:${this.state.serverGeminiConfigured ? 'rgba(5,150,105,0.1)' : s.geminiApiKey ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'}; color:${this.state.serverGeminiConfigured ? '#059669' : s.geminiApiKey ? '#d97706' : '#ef4444'}; border:1px solid ${this.state.serverGeminiConfigured ? 'rgba(5,150,105,0.2)' : s.geminiApiKey ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)'}; padding:2px 6px; border-radius:12px; font-weight:700;">
+              <span class="status-badge" style="font-size:10px; background:${this.state.serverGeminiConfigured ? 'var(--color-safe-bg)' : s.geminiApiKey ? 'var(--color-warning-bg)' : 'var(--color-critical-bg)'}; color:${this.state.serverGeminiConfigured ? 'var(--color-safe)' : s.geminiApiKey ? 'var(--color-warning)' : 'var(--color-critical)'}; border:1px solid ${this.state.serverGeminiConfigured ? 'var(--color-safe)' : s.geminiApiKey ? 'var(--color-warning)' : 'var(--color-critical)'}; padding:2px 6px; border-radius:12px; font-weight:700;">
                 ${this.state.serverGeminiConfigured ? 'Connected (Secure Server)' : s.geminiApiKey ? 'Connected (Live Dev Fallback)' : 'Disconnected (Simulated)'}
               </span>
             </h3>

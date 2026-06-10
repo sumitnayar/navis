@@ -134,11 +134,11 @@ export class IntakeComponent {
     return `
       <div class="glass-panel" style="padding:40px 20px;text-align:center;">
         <div style="width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:24px;height:24px;color:#EF4444;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:24px;height:24px;color:var(--color-critical);">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
           </svg>
         </div>
-        <h3 style="font-size:15px;font-weight:700;color:#EF4444;margin-bottom:8px;">Extraction Failed</h3>
+        <h3 style="font-size:15px;font-weight:700;color:var(--color-critical);margin-bottom:8px;">Extraction Failed</h3>
         <p style="font-size:13px;color:var(--text-secondary);max-width:440px;margin:0 auto 20px;">${this.extractionError || 'An unknown error occurred.'}</p>
         <button class="btn btn-secondary" id="btn-reset-upload">Try Another Document</button>
       </div>
@@ -225,9 +225,9 @@ export class IntakeComponent {
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-color);flex-wrap:wrap;">
           <span style="background:rgba(0,181,181,0.08);color:var(--color-teal);border:1px solid rgba(0,181,181,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">🟢 ${counts.New} New</span>
-          <span style="background:rgba(245,158,11,0.08);color:#D97706;border:1px solid rgba(245,158,11,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">🟡 ${counts.Update} Updates</span>
+          <span style="background:rgba(245,158,11,0.08);color:var(--color-warning);border:1px solid rgba(245,158,11,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">🟡 ${counts.Update} Updates</span>
           <span style="background:rgba(107,114,128,0.08);color:var(--text-muted);border:1px solid rgba(107,114,128,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">⚪ ${counts.Duplicate} Duplicates</span>
-          <span style="background:rgba(239,68,68,0.08);color:#EF4444;border:1px solid rgba(239,68,68,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">🔴 ${counts.Conflict} Conflicts</span>
+          <span style="background:rgba(239,68,68,0.08);color:var(--color-critical);border:1px solid rgba(239,68,68,0.2);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">🔴 ${counts.Conflict} Conflicts</span>
         </div>
       </div>
 
@@ -279,12 +279,12 @@ export class IntakeComponent {
 
     const deltaBadge = {
       New: '<span style="background:rgba(0,181,181,0.1);color:var(--color-teal);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">New</span>',
-      Update: '<span style="background:rgba(245,158,11,0.1);color:#D97706;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Update</span>',
+      Update: '<span style="background:rgba(245,158,11,0.1);color:var(--color-warning);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Update</span>',
       Duplicate: '<span style="background:rgba(107,114,128,0.1);color:var(--text-muted);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Duplicate</span>',
-      Conflict: '<span style="background:rgba(239,68,68,0.1);color:#EF4444;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Conflict</span>'
+      Conflict: '<span style="background:rgba(239,68,68,0.1);color:var(--color-critical);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Conflict</span>'
     }[item.deltaStatus] || '';
 
-    const confColor = { high: 'var(--color-teal)', medium: '#D97706', low: 'var(--text-muted)' }[item.confidence] || 'var(--text-muted)';
+    const confColor = { high: 'var(--color-teal)', medium: 'var(--color-warning)', low: 'var(--text-muted)' }[item.confidence] || 'var(--text-muted)';
 
     const editValues = this.editValues[item.id] || {};
     const displayTitle = editValues.title || item.title || '—';
@@ -295,7 +295,7 @@ export class IntakeComponent {
     const editForm = isEditing ? this.renderEditForm(item) : '';
 
     const actionBtns = isConflict
-      ? `<span style="font-size:10px;color:#EF4444;font-weight:600;">Resolve Required</span>
+      ? `<span style="font-size:10px;color:var(--color-critical);font-weight:600;">Resolve Required</span>
          <button class="btn btn-secondary btn-small" style="font-size:10px;" data-action="accept" data-id="${item.id}">Accept Anyway</button>
          <button class="btn btn-secondary btn-small" style="font-size:10px;" data-action="dismiss" data-id="${item.id}">Dismiss</button>`
       : `<button class="btn btn-secondary btn-small ${isAccepted ? 'active' : ''}" style="font-size:10px;" data-action="accept" data-id="${item.id}">${isAccepted ? '✓ Accepted' : 'Accept'}</button>
@@ -474,11 +474,11 @@ export class IntakeComponent {
     const isConflict = item.deltaStatus === 'Conflict';
     const deltaBadge = {
       New: '<span style="background:rgba(0,181,181,0.1);color:var(--color-teal);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">New</span>',
-      Update: '<span style="background:rgba(245,158,11,0.1);color:#D97706;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Update</span>',
+      Update: '<span style="background:rgba(245,158,11,0.1);color:var(--color-warning);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Update</span>',
       Duplicate: '<span style="background:rgba(107,114,128,0.1);color:var(--text-muted);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">Duplicate</span>',
-      Conflict: '<span style="background:rgba(239,68,68,0.1);color:#EF4444;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">⚠ Conflict</span>'
+      Conflict: '<span style="background:rgba(239,68,68,0.1);color:var(--color-critical);padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;">⚠ Conflict</span>'
     }[item.deltaStatus] || '';
-    const confColor = { high: 'var(--color-teal)', medium: '#D97706', low: 'var(--text-muted)' }[item.confidence] || 'var(--text-muted)';
+    const confColor = { high: 'var(--color-teal)', medium: 'var(--color-warning)', low: 'var(--text-muted)' }[item.confidence] || 'var(--text-muted)';
     const rowStyle = isDismissed ? 'opacity:0.4;' : isAccepted ? 'background:rgba(0,181,181,0.03);' : isConflict ? 'background:rgba(239,68,68,0.02);' : '';
     const actionBtns = isConflict
       ? `<button class="btn btn-secondary btn-small" data-queue-action="accept" data-id="${item.id}" style="font-size:10px;">Accept Anyway</button>
@@ -528,7 +528,7 @@ export class IntakeComponent {
     const counts = entry.extractedCounts || {};
     const statusColors = {
       fully_processed: { bg: 'rgba(0,181,181,0.1)', color: 'var(--color-teal)', label: 'Fully Processed' },
-      partially_processed: { bg: 'rgba(245,158,11,0.1)', color: '#D97706', label: 'Partially Processed' },
+      partially_processed: { bg: 'rgba(245,158,11,0.1)', color: 'var(--color-warning)', label: 'Partially Processed' },
       pending_review: { bg: 'rgba(107,114,128,0.1)', color: 'var(--text-muted)', label: 'Pending Review' }
     };
     const sc = statusColors[entry.status] || statusColors.pending_review;
