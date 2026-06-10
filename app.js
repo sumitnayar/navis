@@ -621,18 +621,6 @@ class RiskOSApplication {
   async renderAuthenticatedApp(tabId) {
     this.showAuthenticatedApp();
 
-    // Apply sidebar collapse state immediately to prevent visual flash
-    const isCollapsed = localStorage.getItem('navis_sidebar_collapsed') === 'true';
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-    if (isCollapsed) {
-      if (sidebar) sidebar.classList.add('collapsed');
-      if (mainContent) mainContent.classList.add('sidebar-collapsed');
-    } else {
-      if (sidebar) sidebar.classList.remove('collapsed');
-      if (mainContent) mainContent.classList.remove('sidebar-collapsed');
-    }
-
     if (!this.appHasInitialized) {
       StorageService.init();
       
@@ -654,7 +642,7 @@ class RiskOSApplication {
       };
 
       this.updateBrandVisuals();
-      this.bindSidebarEvents();
+      this.bindTopNavEvents();
       this.appHasInitialized = true;
 
       // 1. Render skeletons immediately (no blocking)
@@ -676,7 +664,7 @@ class RiskOSApplication {
         this.state.isLoading = false;
 
         this.updateBrandVisuals();
-        this.renderSidebar();
+        this.renderTopNav();
 
         // Check Gemini config status in the background
         fetch('/api/gemini').then(resp => {
@@ -705,50 +693,37 @@ class RiskOSApplication {
   }
 
   async initializeAuthenticatedState() {
-    // Left as legacy placeholder to prevent references from crashing.
     this.appHasInitialized = true;
   }
 
   updateBrandVisuals() {
     const s = this.state.settings;
-    
-    const logoEl = document.querySelector('#sidebar-logo');
-    if (logoEl && s.brandName) {
-      const letters = s.brandName.split(' ').map((word) => word[0]).join('');
-      logoEl.textContent = letters.slice(0, 2).toUpperCase();
-    }
-
-    const nameEl = document.querySelector('#sidebar-brand-name');
-    if (nameEl && s.brandName) {
-      nameEl.textContent = s.brandName;
-    }
-
     document.title = `${s.brandName || 'NAVIS'} | Board Risk Intelligence Platform`;
 
-    const roleEl = document.querySelector('#profile-active-role');
-    if (roleEl) roleEl.textContent = s.activeUserRole;
-
-    const companyEl = document.querySelector('#profile-active-company');
-    if (companyEl) companyEl.textContent = s.companyName;
+    const companyEl = document.querySelector('#top-nav-company-name');
+    if (companyEl) {
+      companyEl.textContent = s.companyName || '';
+      companyEl.title = s.companyName || '';
+    }
   }
 
-  renderSidebar() {
-    const tabs = [
-      'dashboard', 'intake', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
-      'register', 'taxonomy', 'assurance', 'controls', 'actions',
-      'culture', 'settings'
-    ];
+  renderTopNav() {
+    const companyEl = document.getElementById('top-nav-company');
+    if (companyEl && this.state.settings?.companyName) {
+      companyEl.textContent = this.state.settings.companyName;
+    }
+    this.updateTopNavActive(this.currentTab || this.state.activeTab);
+  }
 
-    tabs.forEach((tab) => {
-      const link = document.querySelector(`#nav-${tab}`);
-      if (!link) return;
-
-      if (tab === this.state.activeTab) {
-        link.classList.add('active');
-      } else {
-        link.classList.remove('active');
-      }
-    });
+  updateTopNavActive(tabId) {
+    document.querySelectorAll('.top-nav-item').forEach(el => el.classList.remove('active'));
+    const activeEl = document.getElementById(`nav-${tabId}`);
+    if (activeEl) {
+      activeEl.classList.add('active');
+    } else {
+      // Active tab is in dropdown — highlight More button
+      document.getElementById('nav-more')?.classList.add('active');
+    }
   }
 
   routeTo(tabId, options = {}) {
@@ -762,7 +737,8 @@ class RiskOSApplication {
     }
 
     this.state.activeTab = tabId;
-    this.renderSidebar();
+    this.currentTab = tabId;
+    this.updateTopNavActive(tabId);
     this.updateBrandVisuals();
 
     const mainContainer = document.querySelector('#page-render-container');
@@ -787,66 +763,45 @@ class RiskOSApplication {
     this.activeComponentInstance.render(mainContainer);
   }
 
-  bindSidebarEvents() {
-    if (this.sidebarEventsBound) return;
-
-    const tabs = [
-      'dashboard', 'intake', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
-      'register', 'taxonomy', 'assurance', 'controls', 'actions',
-      'culture', 'settings'
-    ];
-
-    tabs.forEach((tab) => {
-      const link = document.querySelector(`#nav-${tab}`);
-      if (link) {
-        link.addEventListener('click', () => {
-          this.routeTo(tab);
-        });
-      }
+  bindTopNavEvents() {
+    // Module navigation
+    document.querySelectorAll('.top-nav-item[data-tab]').forEach(el => {
+      el.addEventListener('click', () => this.routeTo(el.dataset.tab));
     });
 
-    const profileSettingsLink = document.querySelector('#nav-settings-lnk');
-    if (profileSettingsLink) {
-      profileSettingsLink.addEventListener('click', () => {
-        this.routeTo('settings');
+    // Dropdown items
+    document.querySelectorAll('.top-nav-dropdown-item[data-tab]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('nav-more')?.classList.remove('open');
+        this.routeTo(el.dataset.tab);
       });
-    }
+    });
 
-    const signOutButton = document.querySelector('#btn-sign-out');
-    if (signOutButton) {
-      signOutButton.addEventListener('click', async () => {
-        await AuthService.signOut();
-        this.resetAuthenticatedState();
-        this.navigate('/login', { replace: true });
-      });
-    }
+    // More toggle
+    document.getElementById('nav-more')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('nav-more')?.classList.toggle('open');
+    });
 
-    // Bind sidebar collapse toggle button click event
-    const sidebarToggle = document.querySelector('#sidebar-toggle');
-    if (sidebarToggle) {
-      sidebarToggle.addEventListener('click', () => {
-        const sidebar = document.querySelector('.sidebar');
-        const mainContent = document.querySelector('.main-content');
-        if (sidebar && mainContent) {
-          const wasCollapsed = sidebar.classList.contains('collapsed');
-          if (wasCollapsed) {
-            sidebar.classList.remove('collapsed');
-            mainContent.classList.remove('sidebar-collapsed');
-            localStorage.setItem('navis_sidebar_collapsed', 'false');
-          } else {
-            sidebar.classList.add('collapsed');
-            mainContent.classList.add('sidebar-collapsed');
-            localStorage.setItem('navis_sidebar_collapsed', 'true');
-          }
-          this.removeSidebarTooltip();
-        }
-      });
-    }
+    // Close dropdown on outside click
+    document.addEventListener('click', () => {
+      document.getElementById('nav-more')?.classList.remove('open');
+    });
 
-    // Initialize custom JavaScript-rendered tooltips
-    this.initSideBarTooltips();
+    // Settings
+    document.getElementById('top-nav-settings')?.addEventListener('click',
+      () => this.routeTo('settings'));
 
-    this.sidebarEventsBound = true;
+    // Sign out
+    document.getElementById('top-nav-signout')?.addEventListener('click',
+      () => this.handleSignOut());
+  }
+
+  async handleSignOut() {
+    await AuthService.signOut();
+    this.resetAuthenticatedState();
+    this.navigate('/login', { replace: true });
   }
 
   resetAuthenticatedState() {
@@ -857,62 +812,6 @@ class RiskOSApplication {
     const mainContainer = document.querySelector('#page-render-container');
     if (mainContainer) {
       mainContainer.innerHTML = '';
-    }
-  }
-
-  // --- COLLAPSED SIDEBAR JS TOOLTIPS ---
-  initSideBarTooltips() {
-    const navLinks = document.querySelectorAll('.sidebar .nav-link, .sidebar #nav-settings-lnk');
-    navLinks.forEach(link => {
-      link.addEventListener('mouseenter', () => {
-        const sidebar = document.querySelector('.sidebar');
-        if (!sidebar || !sidebar.classList.contains('collapsed')) return;
-
-        const tooltipText = link.getAttribute('data-tooltip') || link.querySelector('.nav-label')?.textContent || 'Board Console';
-
-        // Remove any existing tooltips
-        this.removeSidebarTooltip();
-
-        // Create tooltip element
-        const tooltip = document.createElement('div');
-        tooltip.id = 'sidebar-tooltip-el';
-        tooltip.style.position = 'absolute';
-        tooltip.style.zIndex = '99999';
-        tooltip.style.background = '#ffffff';
-        tooltip.style.color = '#0a1628';
-        tooltip.style.borderLeft = '3px solid #00B5B5';
-        tooltip.style.padding = '4px 8px';
-        tooltip.style.borderRadius = '4px';
-        tooltip.style.fontSize = '8px'; // As specified: 8px font
-        tooltip.style.fontWeight = '700';
-        tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-        tooltip.style.whiteSpace = 'nowrap';
-        tooltip.style.pointerEvents = 'none';
-        tooltip.style.fontFamily = 'var(--font-body, sans-serif)';
-        tooltip.textContent = tooltipText;
-
-        const rect = link.getBoundingClientRect();
-        // Position vertically centered, 8px offset to the right of the link
-        tooltip.style.top = `${rect.top + (rect.height - 20) / 2 + window.scrollY}px`;
-        tooltip.style.left = `${rect.right + 8 + window.scrollX}px`;
-
-        document.body.appendChild(tooltip);
-      });
-
-      link.addEventListener('mouseleave', () => {
-        this.removeSidebarTooltip();
-      });
-
-      link.addEventListener('click', () => {
-        this.removeSidebarTooltip();
-      });
-    });
-  }
-
-  removeSidebarTooltip() {
-    const existing = document.querySelector('#sidebar-tooltip-el');
-    if (existing) {
-      existing.remove();
     }
   }
 }
