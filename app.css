@@ -520,75 +520,317 @@ h1 + p,
 .cell-4 { background-color: rgba(192, 57, 43, 0.1); color: var(--color-critical-text); border: 1px solid rgba(192, 57, 43, 0.2); }
 .cell-5 { background-color: rgba(225, 29, 72, 0.2); color: var(--color-critical-text); border: 1px solid var(--color-critical-text); box-shadow: 0 0 8px rgba(225, 29, 72, 0.05); }
 
-/* --- RISK NETWORK VISUALIZER --- */
+/* --- RISK NETWORK VISUALIZER REDESIGN --- */
 .network-container {
   width: 100%;
-  height: 380px;
+  height: 440px;
   border-radius: 12px;
   background: #FAFBFD;
   border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: background 0.3s ease, border-color 0.3s ease;
+  user-select: none;
 }
 
 .network-svg {
   width: 100%;
   height: 100%;
+  display: block;
 }
 
+/* Node Styling */
 .network-node {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
 .network-node circle {
-  stroke-width: 1.5;
-  transition: all 0.3s ease;
+  transition: r 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
 }
 
 .network-node:hover circle {
-  stroke-width: 3;
+  filter: drop-shadow(0 0 8px rgba(0,181,181,0.15)) !important;
 }
 
-.network-node.selected circle {
-  stroke: var(--text-primary) !important;
-  stroke-width: 3px;
-  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.15));
+.network-node.critical circle {
+  filter: drop-shadow(0 0 12px rgba(192,57,43,0.18)) !important;
 }
 
-.network-node.active-chain circle {
-  stroke-width: 2.5px;
-  stroke-dasharray: 4;
-  animation: strokeRotate 10s linear infinite;
-}
-
-.network-node text {
+.network-node text.node-label {
   font-family: var(--font-header);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  fill: var(--text-secondary);
+  fill: #374151;
+  pointer-events: none;
+  transition: fill 0.15s ease;
+}
+
+.network-node text.node-metric {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 500;
+  fill: #6B7280;
   pointer-events: none;
 }
 
-.network-node:hover text, .network-node.selected text {
-  fill: var(--text-primary);
-  font-size: 11px;
-}
-
+/* Link (Edge) Styling */
 .network-link {
+  fill: none;
   stroke-linecap: round;
-  transition: all 0.3s ease;
-  stroke-dasharray: 4 4; /* Subtle broken lines by default */
+  transition: opacity 0.25s ease, stroke-width 0.25s ease, stroke 0.25s ease;
 }
 
+/* Edge Weights */
+.network-link.weak {
+  stroke-width: 1px;
+  stroke: #D1D5DB;
+  opacity: 0.40;
+}
+
+.network-link.moderate {
+  stroke-width: 1.5px;
+  stroke: #BFC7D4;
+  opacity: 0.55;
+}
+
+.network-link.strong {
+  stroke-width: 2px;
+  stroke: #9CA3AF;
+  opacity: 0.70;
+}
+
+.network-link.indirect {
+  stroke-width: 1px;
+  stroke-dasharray: 4 4;
+  stroke: #BFC7D4;
+  opacity: 0.35;
+}
+
+/* Active Highlight Cascades */
 .network-link.active-chain {
-  stroke-width: 3px !important;
-  stroke-dasharray: none !important; /* Solid and prominent when establishing connectivity */
+  stroke-width: 2.5px !important;
+  stroke: #00B5B5 !important;
+  opacity: 1.0 !important;
 }
 
-@keyframes dashMove {
+.cascade-faded {
+  opacity: 0.15 !important;
+}
+
+.cascade-active {
+  opacity: 1.0 !important;
+}
+
+/* Playback and Canvas Toolbar */
+.network-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.playback-group {
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.playback-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.playback-btn:hover {
+  color: var(--text-primary);
+  background: rgba(0,0,0,0.03);
+}
+
+.playback-btn.active {
+  color: #FFFFFF !important;
+  background: #00B5B5 !important;
+}
+
+.canvas-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+.control-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  color: var(--text-primary);
+  background: rgba(0,0,0,0.03);
+}
+
+/* Boardroom Presentation Mode */
+.board-mode-toggle-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.board-mode .network-container {
+  background: #0A1628 !important;
+  border-color: #1E293B !important;
+}
+
+.board-mode .playback-group {
+  background: #0F172A !important;
+  border-color: #1E293B !important;
+}
+
+.board-mode .playback-btn {
+  color: #94A3B8 !important;
+}
+
+.board-mode .playback-btn:hover {
+  color: #FFFFFF !important;
+  background: rgba(255,255,255,0.05) !important;
+}
+
+.board-mode .playback-btn.active {
+  background: #00B5B5 !important;
+  color: #FFFFFF !important;
+}
+
+.board-mode .control-btn {
+  background: #1E293B !important;
+  border-color: #1E293B !important;
+  color: #94A3B8 !important;
+}
+
+.board-mode .control-btn:hover {
+  color: #FFFFFF !important;
+  background: rgba(255,255,255,0.08) !important;
+}
+
+.board-mode .network-node text.node-label {
+  fill: #FFFFFF !important;
+}
+
+.board-mode .network-node text.node-metric {
+  fill: #94A3B8 !important;
+}
+
+.board-mode .network-link.weak {
+  stroke: rgba(0, 181, 181, 0.5) !important;
+  opacity: 0.35 !important;
+}
+
+.board-mode .network-link.moderate {
+  stroke: rgba(0, 181, 181, 0.5) !important;
+  opacity: 0.50 !important;
+}
+
+.board-mode .network-link.strong {
+  stroke: rgba(0, 181, 181, 0.5) !important;
+  opacity: 0.65 !important;
+}
+
+.board-mode .network-link.indirect {
+  stroke: rgba(0, 181, 181, 0.35) !important;
+}
+
+.board-mode .network-link.active-chain {
+  stroke: #00B5B5 !important;
+  opacity: 1.0 !important;
+}
+
+/* Minimap styling */
+.network-minimap {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  width: 130px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  overflow: hidden;
+  z-index: 8;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.board-mode .network-minimap {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: #1E293B !important;
+}
+
+/* Expanded visualizer layout */
+.register-layout.map-expanded {
+  grid-template-columns: 1fr 360px !important;
+}
+
+/* Cascade Intelligence Panel overrides */
+.board-mode .details-panel .glass-panel {
+  background: #0F172A !important;
+  border-color: #1E293B !important;
+  color: #FFFFFF !important;
+}
+
+.board-mode .details-panel h3,
+.board-mode .details-panel p,
+.board-mode .details-panel div,
+.board-mode .details-panel span:not(.profile-role-badge):not(.status-badge) {
+  color: #FFFFFF !important;
+}
+
+.board-mode .details-panel .text-secondary {
+  color: #94A3B8 !important;
+}
+
+.board-mode .details-panel .text-muted {
+  color: #94A3B8 !important;
+}
+
+.board-mode .details-panel .cascade-section-label {
+  color: #00B5B5 !important;
+}
+
+.cascade-section-label {
+  color: #00B5B5 !important;
+}
+
+@keyframes strokeRotate {
   to {
-    stroke-dashoffset: -40;
+    stroke-dashoffset: -20;
   }
 }
 
