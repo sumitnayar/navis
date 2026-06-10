@@ -15,10 +15,12 @@ import { ActionsComponent } from './components/actions.js';
 import { CultureComponent } from './components/culture.js';
 import { SettingsComponent } from './components/settings.js';
 import { BoardQAComponent } from './components/boardQA.js';
+import { IntakeComponent } from './components/intake.js';
 
 const TAB_ROUTES = {
   dashboard: '/dashboard',
   boardQA: '/ai',
+  intake: '/intake',
   objectives: '/objectives',
   scenario: '/scenario',
   portfolio: '/portfolio',
@@ -36,6 +38,7 @@ const PROTECTED_ROUTES = {
   '/dashboard': 'dashboard',
   '/board-qa': 'boardQA',
   '/ai': 'boardQA',
+  '/intake': 'intake',
   '/objectives': 'objectives',
   '/scenario': 'scenario',
   '/scenarios': 'scenario',
@@ -624,6 +627,7 @@ class RiskOSApplication {
       this.components = {
         dashboard: DashboardComponent,
         boardQA: BoardQAComponent,
+        intake: IntakeComponent,
         objectives: ObjectivesComponent,
         scenario: ScenarioComponent,
         portfolio: PortfolioComponent,
@@ -718,7 +722,7 @@ class RiskOSApplication {
 
   renderSidebar() {
     const tabs = [
-      'dashboard', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
+      'dashboard', 'intake', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
       'register', 'taxonomy', 'assurance', 'controls', 'actions',
       'culture', 'settings'
     ];
@@ -775,7 +779,7 @@ class RiskOSApplication {
     if (this.sidebarEventsBound) return;
 
     const tabs = [
-      'dashboard', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
+      'dashboard', 'intake', 'boardQA', 'objectives', 'scenario', 'portfolio', 'network',
       'register', 'taxonomy', 'assurance', 'controls', 'actions',
       'culture', 'settings'
     ];

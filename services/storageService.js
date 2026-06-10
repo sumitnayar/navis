@@ -20,7 +20,9 @@ const STORAGE_KEYS = {
   SCENARIOS: 'navis_v3_scenarios',
   CULTURE: 'navis_v3_culture',
   TRENDS: 'navis_v3_trends',
-  SEEDED: 'navis_v3_seeded_flag_v3'
+  SEEDED: 'navis_v3_seeded_flag_v3',
+  DOCUMENT_VAULT: 'navis_v3_document_vault',
+  CHANGE_QUEUE:   'navis_v3_change_queue'
 };
 
 const isCloudMode = isSupabaseConfigured && supabaseClient;
@@ -674,5 +676,81 @@ export class StorageService {
 
   static async clearSaasDemoData() {
     return DemoDataService.clear();
+  }
+
+  // --- DOCUMENT VAULT (Risk Intelligence Desk) ---
+
+  static async getDocumentVault() {
+    if (isCloudMode) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('document_vault')
+          .select('*')
+          .order('upload_date', { ascending: false });
+        if (error) throw error;
+        return data.map(d => ({
+          id: d.id,
+          documentName: d.document_name,
+          documentType: d.document_type,
+          documentSummary: d.document_summary,
+          uploadDate: d.upload_date,
+          extractedCounts: d.extracted_counts || {},
+          status: d.status,
+          changesAccepted: d.changes_accepted || 0,
+          changesDismissed: d.changes_dismissed || 0,
+          rawExtraction: d.raw_extraction || null
+        }));
+      } catch (e) {
+        console.error('Supabase document_vault fetch failed, falling back to local:', e);
+      }
+    }
+    const data = localStorage.getItem(STORAGE_KEYS.DOCUMENT_VAULT);
+    return data ? JSON.parse(data) : [];
+  }
+
+  static async saveVaultEntry(entry) {
+    if (isCloudMode) {
+      try {
+        const dbEntry = {
+          id: entry.id,
+          document_name: entry.documentName,
+          document_type: entry.documentType,
+          document_summary: entry.documentSummary,
+          upload_date: entry.uploadDate || new Date().toISOString(),
+          extracted_counts: entry.extractedCounts || {},
+          status: entry.status || 'pending_review',
+          changes_accepted: entry.changesAccepted || 0,
+          changes_dismissed: entry.changesDismissed || 0,
+          raw_extraction: entry.rawExtraction || null
+        };
+        const { error } = await supabaseClient.from('document_vault').upsert(dbEntry);
+        if (error) throw error;
+        return entry;
+      } catch (e) {
+        console.error('Supabase document_vault save failed, falling back to local:', e);
+      }
+    }
+    const vault = JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCUMENT_VAULT) || '[]');
+    const idx = vault.findIndex(v => v.id === entry.id);
+    if (idx > -1) {
+      vault[idx] = { ...vault[idx], ...entry };
+    } else {
+      vault.push(entry);
+    }
+    localStorage.setItem(STORAGE_KEYS.DOCUMENT_VAULT, JSON.stringify(vault));
+    return entry;
+  }
+
+  // --- CHANGE QUEUE (Risk Intelligence Desk) ---
+
+  static async getChangeQueue() {
+    // Phase 1: localStorage only (cloud persistence in future sprint)
+    const data = localStorage.getItem(STORAGE_KEYS.CHANGE_QUEUE);
+    return data ? JSON.parse(data) : [];
+  }
+
+  static async saveChangeQueue(items) {
+    // Phase 1: localStorage only
+    localStorage.setItem(STORAGE_KEYS.CHANGE_QUEUE, JSON.stringify(items));
   }
 }
