@@ -2903,9 +2903,9 @@ body.app-page {
 }
 .dash-fragility-table td:not(:first-child) { text-align: right; }
 .dash-fragility-table tr:nth-child(even) td { background: #FAFAFA; }
-.frag-red   { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-critical-text); }
-.frag-amber { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-warning-text); }
-.frag-green { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-safe-text); }
+.frag-red   { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-critical-text) !important; }
+.frag-amber { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-warning-text) !important; }
+.frag-green { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--color-safe-text) !important; }
 .trend-up   { font-size: var(--text-md); font-weight: var(--weight-regular); color: var(--color-critical); }
 .trend-down { font-size: var(--text-md); font-weight: var(--weight-regular); color: var(--color-safe); }
 .trend-flat { font-size: var(--text-md); font-weight: var(--weight-regular); color: #64748B; }

@@ -3,6 +3,13 @@
 import { StorageService } from '../services/storageService.js';
 import { AIInsightService } from '../services/aiInsightService.js';
 
+const cleanTitle = (title) => {
+  if (!title) return '';
+  return title
+    .replace(/^\[demo-trk-risk-\d+\]\s*/i, '')
+    .replace(/^\[DEMO Trackier SaaS\]\s*/i, '')
+    .trim();
+};
 
 export class PortfolioComponent {
   constructor(appState, onStateChange) {
@@ -125,7 +132,7 @@ export class PortfolioComponent {
     };
 
     return {
-      risk: `[${risk.id}] ${risk.title}`,
+      risk: `[${risk.id}] ${cleanTitle(risk.title)}`,
       ...target
     };
   }
@@ -162,9 +169,6 @@ export class PortfolioComponent {
           <p class="page-subtitle">Group enterprise risks into macro portfolios | Track cascading impacts from local risk elements to Enterprise Value</p>
         </div>
       </div>
-
-      <!-- AI INSIGHT CONTAINER -->
-      <div id="ai-insight-container"></div>
 
       <!-- PORTFOLIO COUNTER CARDS -->
       <div class="ticker-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-bottom: 24px;">
@@ -208,7 +212,7 @@ export class PortfolioComponent {
                        data-risk-id="${r.id}"
                        style="cursor:pointer; padding: 12px; border:1px solid ${isSelected ? 'var(--color-indigo)' : 'var(--border-color)'};">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 4px;">
-                      <strong style="font-size:12px; color:var(--text-primary);">[${r.id}] ${r.title}</strong>
+                      <strong style="font-size:12px; color:var(--text-primary);">[${r.id}] ${cleanTitle(r.title)}</strong>
                       <span class="status-badge ${r.appetiteStatus === 'Above Appetite' ? 'above' : r.appetiteStatus === 'Near Appetite' ? 'near' : 'within'}" style="font-size:8px; padding: 1px 4px;">
                         ${r.residualScore}
                       </span>
@@ -235,13 +239,12 @@ export class PortfolioComponent {
             ${cascade ? `
               <!-- CASCADE FLOWCHART PANELS -->
               <div class="cascade-flow-wrap" style="display:flex; flex-direction:column; gap:20px; position:relative;">
-                
-                <!-- Step 1: Risk Node -->
-                <div class="cascade-step-card ai-explain-trigger" data-explain-type="risk" data-explain-id="${activeRisk.id}" style="position:relative; padding:16px; border:1px solid var(--color-above-appetite); background: rgba(225,29,72,0.01); border-radius:10px; cursor:pointer;">
+                          <!-- Step 1: Risk Node -->
+                <div class="cascade-step-card ai-explain-trigger" data-explain-type="risk" data-explain-id="${activeRisk.id}" style="position:relative; padding:16px; border:1px solid var(--color-critical); background: var(--color-critical-bg); border-radius:10px; cursor:pointer;">
                   <span class="profile-role-badge above" style="font-size: 8px; margin-bottom: 4px;">1. Threat Vector Element <span style="font-size:9px;margin-left:4px;">(Click to Explain)</span></span>
                   <strong style="color:var(--text-primary); font-size:13px; display:block;">${cascade.risk}</strong>
                   <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">
-                    Residual Score: <strong>${activeRisk.residualScore}</strong> | Status: <strong style="color:var(--color-above-appetite);">${activeRisk.appetiteStatus}</strong>
+                    Residual Score: <strong>${activeRisk.residualScore}</strong> | Status: <strong style="color:var(--color-critical-text);">${activeRisk.appetiteStatus}</strong>
                   </div>
                   
                   <!-- Connector Arrow -->
@@ -249,9 +252,9 @@ export class PortfolioComponent {
                     <div style="position:absolute; bottom:0; left:50%; transform: translateX(-50%) rotate(45deg); border: solid var(--color-indigo); border-width: 0 2px 2px 0; padding: 3px;"></div>
                   </div>
                 </div>
-
-                <!-- Step 2: Business Driver -->
-                <div class="cascade-step-card" style="position:relative; padding:16px; border:1px solid var(--color-near-appetite); background: rgba(217,119,6,0.01); border-radius:10px; margin-top:12px;">
+ 
+                 <!-- Step 2: Business Driver -->
+                <div class="cascade-step-card" style="position:relative; padding:16px; border:1px solid var(--color-warning); background: var(--color-warning-bg); border-radius:10px; margin-top:12px;">
                   <span class="profile-role-badge near" style="font-size: 8px; margin-bottom: 4px;">2. Operational Business Driver Threatened</span>
                   <strong style="color:var(--text-primary); font-size:13px; display:block;">${cascade.driver}</strong>
                   
@@ -260,9 +263,9 @@ export class PortfolioComponent {
                     <div style="position:absolute; bottom:0; left:50%; transform: translateX(-50%) rotate(45deg); border: solid var(--color-indigo); border-width: 0 2px 2px 0; padding: 3px;"></div>
                   </div>
                 </div>
-
-                <!-- Step 3: Strategic Objective -->
-                <div class="cascade-step-card" style="position:relative; padding:16px; border:1px solid var(--color-indigo); background: rgba(0, 181, 181, 0.01); border-radius:10px; margin-top:12px;">
+ 
+                 <!-- Step 3: Strategic Objective -->
+                <div class="cascade-step-card" style="position:relative; padding:16px; border:1px solid var(--color-indigo); background: rgba(0, 181, 181, 0.04); border-radius:10px; margin-top:12px;">
                   <span class="profile-role-badge indigo" style="font-size: 8px; margin-bottom: 4px;">3. Vulnerable Corporate Goal Alignment</span>
                   <strong style="color:var(--text-primary); font-size:13px; display:block;">${cascade.objective}</strong>
                   
@@ -271,14 +274,12 @@ export class PortfolioComponent {
                     <div style="position:absolute; bottom:0; left:50%; transform: translateX(-50%) rotate(45deg); border: solid var(--color-indigo); border-width: 0 2px 2px 0; padding: 3px;"></div>
                   </div>
                 </div>
-
-                <!-- Step 4: Enterprise Value Impact -->
-                <div class="cascade-step-card" style="padding:16px; border:1px solid #1E293B; background: rgba(30,41,59,0.01); border-radius:10px; margin-top:12px;">
-                  <span class="profile-role-badge" style="font-size: 8px; margin-bottom: 4px; background: #1E293B; color:white;">4. Ultimate Enterprise Value Impact</span>
-                  <strong style="color:#1E293B; font-size:13px; display:block; font-weight:700;">${cascade.evImpact}</strong>
-                </div>
-
-              </div>
+ 
+                 <!-- Step 4: Enterprise Value Impact -->
+                <div class="cascade-step-card" style="padding:16px; border:1px solid var(--border-color); background: var(--bg-primary); border-radius:10px; margin-top:12px;">
+                  <span class="profile-role-badge" style="font-size: 8px; margin-bottom: 4px; background: var(--text-primary); color:white;">4. Ultimate Enterprise Value Impact</span>
+                  <strong style="color:var(--text-primary); font-size:13px; display:block; font-weight:700;">${cascade.evImpact}</strong>
+                </div>  </div>
             ` : `
               <div style="text-align:center; color:var(--text-muted); padding-top: 100px;">
                 Select a portfolio risk on the left to map its cascading impact path to Enterprise Value.
@@ -349,10 +350,5 @@ export class PortfolioComponent {
       });
     });
 
-    // Render page-level AI insights card
-    const insightContainer = container.querySelector('#ai-insight-container');
-    if (insightContainer) {
-      AIInsightService.renderPageInsightCard('portfolio', insightContainer, this.state);
-    }
   }
 }

@@ -99,7 +99,7 @@ export class StorageService {
 
         return data.map(r => ({
           id: r.id,
-          title: r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').trim() : '',
+          title: r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').replace(/^\[demo-trk-risk-\d+\]\s*/i, '').trim() : '',
           category: r.category,
           l1: r.l1,
           l2: r.l2,
@@ -179,7 +179,7 @@ export class StorageService {
 
     let modified = false;
     const mappedRisks = risks.map(r => {
-      const title = r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').trim() : '';
+      const title = r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').replace(/^\[demo-trk-risk-\d+\]\s*/i, '').trim() : '';
       let updated = false;
       if (r.title !== title) {
         r.title = title;
