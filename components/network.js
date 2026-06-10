@@ -324,9 +324,6 @@ export class NetworkComponent {
         </div>
       </div>
 
-      <!-- AI INSIGHT CONTAINER -->
-      <div id="ai-insight-container"></div>
-
       <div class="register-layout ${this.isExpanded ? 'map-expanded' : ''} ${this.isBoardMode ? 'board-mode' : ''}">
         
         <!-- LEFT SCREEN: INTERACTIVE SVG NETWORK CONTAINER -->
@@ -657,7 +654,7 @@ export class NetworkComponent {
             <span class="cascade-section-label" style="font-weight:700; font-size:9px; text-transform:uppercase; display:block; margin-bottom:4px;">Fragility Score</span>
             <div style="display:flex; align-items:center; gap:8px;">
               <div style="flex-grow:1; height:6px; background:${this.isBoardMode ? '#1E293B' : '#E2E8F0'}; border-radius:3px; overflow:hidden;">
-                <div style="height:100%; width:${fragilityScore}%; background: ${fragilityScore >= 70 ? '#C0392B' : fragilityScore >= 45 ? '#C2610E' : '#1A7A4A'};"></div>
+                <div style="height:100%; width:${fragilityScore}%; background: ${fragilityScore >= 70 ? 'var(--color-critical)' : fragilityScore >= 45 ? 'var(--color-warning)' : 'var(--color-safe)'};"></div>
               </div>
               <span style="font-size:11px; font-weight:700; color: ${this.isBoardMode ? '#FFFFFF' : '#0A1628'};">${fragilityScore}/100</span>
             </div>
@@ -669,7 +666,7 @@ export class NetworkComponent {
             <div style="display:flex; flex-direction:column; gap:4px;">
               ${threatenedObjs.length ? threatenedObjs.map(o => {
                 const s = dynamicData.statuses[o.id];
-                const color = s.includes('Critical') ? '#C0392B' : s.includes('Risk') ? '#C2610E' : '#1A7A4A';
+                const color = s.includes('Critical') ? 'var(--color-critical)' : s.includes('Risk') ? 'var(--color-warning)' : 'var(--color-safe)';
                 return `
                   <div style="font-size:11px; display:flex; justify-content:space-between; align-items:center; background:${this.isBoardMode ? '#1E293B' : '#F8FAFC'}; padding:4px 8px; border-radius:4px;">
                     <span style="font-weight:500; color:${this.isBoardMode ? '#FFFFFF' : '#0A1628'};">${o.label}</span>
@@ -686,7 +683,7 @@ export class NetworkComponent {
             <div style="display:flex; flex-direction:column; gap:4px;">
               ${valueImpacts.length ? valueImpacts.map(v => {
                 const s = dynamicData.statuses[v.id];
-                const color = s === 'Critical' ? '#C0392B' : s === 'Warning' ? '#C2610E' : '#1A7A4A';
+                const color = s === 'Critical' ? 'var(--color-critical)' : s === 'Warning' ? 'var(--color-warning)' : 'var(--color-safe)';
                 return `
                   <div style="font-size:11px; display:flex; justify-content:space-between; align-items:center; background:${this.isBoardMode ? '#1E293B' : '#F8FAFC'}; padding:4px 8px; border-radius:4px;">
                     <span style="font-weight:500; color:${this.isBoardMode ? '#FFFFFF' : '#0A1628'};">${v.label}</span>
@@ -718,7 +715,7 @@ export class NetworkComponent {
               ${mappedControls.length ? mappedControls.map(c => `
                 <div style="font-size:10px; padding:4px 6px; background:${this.isBoardMode ? '#1E293B' : '#F1F5F9'}; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
                   <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; color:${this.isBoardMode ? '#E2E8F0' : '#475569'};">${c.name}</span>
-                  <span style="color:${c.rating === 'Effective' ? '#1A7A4A' : '#C2610E'}; font-weight:700; font-size:9px;">${c.rating}</span>
+                  <span style="color:${c.rating === 'Effective' ? 'var(--color-safe)' : 'var(--color-warning)'}; font-weight:700; font-size:9px;">${c.rating}</span>
                 </div>
               `).join('') : `<div style="font-size:10px; color:#64748B; font-style:italic;">No specific controls mapped.</div>`}
             </div>
@@ -906,11 +903,5 @@ export class NetworkComponent {
         }
       });
     });
-
-    // --- RENDER DYNAMIC AI PAGE INSIGHTS ---
-    const insightContainer = container.querySelector('#ai-insight-container');
-    if (insightContainer) {
-      AIInsightService.renderPageInsightCard('network', insightContainer, this.state);
-    }
   }
 }
