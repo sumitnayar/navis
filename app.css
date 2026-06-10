@@ -2166,3 +2166,96 @@ body.app-page {
 :root {
   --color-teal: #00B5B5;
 }
+
+/* ============================================================
+   COLLAPSIBLE SIDEBAR STYLES
+   ============================================================ */
+
+.sidebar {
+  width: 260px;
+  transition: width 200ms ease;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar.collapsed {
+  width: 56px;
+}
+
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 12px;
+}
+
+.sidebar.collapsed .nav-group-title,
+.sidebar.collapsed .section-label {
+  display: none;
+}
+
+.sidebar.collapsed .nav-link svg {
+  margin: 0;
+}
+
+.sidebar.collapsed #sidebar-brand-name {
+  display: none;
+}
+
+.sidebar.collapsed .brand-section {
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.sidebar.collapsed #profile-active-role,
+.sidebar.collapsed #profile-active-company,
+.sidebar.collapsed #nav-settings-lnk span:first-child,
+.sidebar.collapsed #btn-sign-out {
+  display: none;
+}
+
+.sidebar.collapsed #nav-settings-lnk {
+  justify-content: center !important;
+}
+
+.sidebar.collapsed #toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.sidebar-toggle-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted, #8a9cae);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--text-primary, #ffffff);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.main-content {
+  margin-left: 260px;
+  transition: margin-left 200ms ease;
+}
+
+.main-content.sidebar-collapsed {
+  margin-left: 56px;
+}

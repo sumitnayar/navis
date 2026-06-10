@@ -66,8 +66,9 @@ CREATE TABLE IF NOT EXISTS public.risks (
     controls JSONB DEFAULT '[]'::JSONB,
     kris JSONB DEFAULT '[]'::JSONB,
     actions JSONB DEFAULT '[]'::JSONB,
-    fragility JSONB DEFAULT '{"revenue":1,"growth":1,"customerTrust":1,"technology":1,"people":1,"operations":1,"reputation":1,"valuation":1}'::JSONB,
-    assurance JSONB DEFAULT '{"firstLine":"CRO","secondLine":"Risk Comm","thirdLine":"None","gapDetected":true}'::JSONB
+    assurance JSONB DEFAULT '{"firstLine":"CRO","secondLine":"Risk Comm","thirdLine":"None","gapDetected":true}'::JSONB,
+    last_reviewed_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 4. SCENARIO ANALYSIS SIMULATOR
@@ -178,3 +179,24 @@ ON CONFLICT (id) DO NOTHING;
 -- 5. SEED INITIAL CULTURE GAUGES
 INSERT INTO public.culture_metrics (policy_acknowledgement_rate, training_completion_rate, incident_report_velocity_days, near_miss_logged_count, whistleblower_cases_active, culture_score, trend)
 VALUES (94, 88, 4, 28, 0, 86, 'Improving');
+
+-- ==========================================
+-- 3. V3 UPDATE & AI INSIGHTS MIGRATIONS
+-- ==========================================
+
+-- Add new columns to risks if they do not exist (for existing database upgrades)
+ALTER TABLE public.risks ADD COLUMN IF NOT EXISTS last_reviewed_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE public.risks ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+
+-- AI Insights Table
+CREATE TABLE IF NOT EXISTS public.ai_insights (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    insight_type VARCHAR(100) NOT NULL,
+    severity VARCHAR(50) NOT NULL,
+    insight_text TEXT NOT NULL,
+    source_data JSONB,
+    status VARCHAR(50) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    acknowledged_at TIMESTAMP WITH TIME ZONE,
+    dismissed_at TIMESTAMP WITH TIME ZONE
+);

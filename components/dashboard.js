@@ -288,6 +288,28 @@ export class DashboardComponent {
 
       </div>
 
+      <!-- ═══════════════ RISK INTELLIGENCE FEED ═══════════════ -->
+      <div class="dashboard-graph-card" id="risk-intelligence-feed-card" style="margin-bottom: 20px;">
+        <div class="dashboard-graph-card-header">
+          <h3 class="dashboard-graph-card-title" style="display: flex; align-items: center; gap: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 18px; height: 18px; color: var(--color-teal);">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+            Risk Intelligence Feed
+            <span class="status-badge within" style="font-size: 9px; padding: 2px 6px; font-weight: normal; margin-left: 4px;">AI Forecasts &amp; Audits</span>
+          </h3>
+          <p class="dashboard-graph-card-subtitle">AI-detected signals requiring attention</p>
+        </div>
+        <div id="risk-intelligence-feed-body" style="padding-top: 10px;">
+          <!-- Asynchronous loading state -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="skeleton-loading" style="width: 100%; height: 50px; border-radius: 6px;"></div>
+            <div class="skeleton-loading" style="width: 100%; height: 50px; border-radius: 6px;"></div>
+            <div class="skeleton-loading" style="width: 100%; height: 50px; border-radius: 6px;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══════════════ TOP BOARD ISSUES ═══════════════ -->
       <div class="dashboard-graph-card" id="top-board-issues-container">
         <div class="dashboard-graph-card-header">
@@ -721,6 +743,21 @@ export class DashboardComponent {
       // Still load the Board Attention Brief (it's outside the accordion)
       this._loadBoardBrief(container);
     }
+
+    // Trigger asynchronous Risk Intelligence Feed loading
+    setTimeout(async () => {
+      try {
+        const { RiskIntelligenceService } = await import('../services/riskIntelligenceService.js');
+        const insights = await RiskIntelligenceService.generateInsights(risks, null);
+        this.renderIntelligenceFeed(insights);
+      } catch (err) {
+        console.error("Failed to load Risk Intelligence Feed:", err);
+        const feedBody = document.querySelector('#risk-intelligence-feed-body');
+        if (feedBody) {
+          feedBody.innerHTML = `<div class="no-data-card" style="font-size:11px;color:var(--color-above-appetite);">Failed to generate intelligence feed.</div>`;
+        }
+      }
+    }, 100);
   }
 
   // ─── Load Board Attention Brief (outside accordion) ──────────────────────
@@ -1526,5 +1563,136 @@ export class DashboardComponent {
         }
       });
     }
+  }
+
+  renderIntelligenceFeed(insights) {
+    const feedBody = document.querySelector('#risk-intelligence-feed-body');
+    if (!feedBody) return;
+
+    if (!insights || insights.length === 0) {
+      feedBody.innerHTML = `
+        <div class="no-data-card" style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 11px;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 24px; height: 24px; margin: 0 auto 8px; opacity: 0.5;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+          </svg>
+          No active intelligence alerts or forecast breaches detected.
+        </div>
+      `;
+      return;
+    }
+
+    feedBody.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        ${insights.map(ins => {
+          let severityClass = 'within'; // Advisory
+          let borderLeftColor = '#00B5B5';
+          let bg = 'rgba(0, 181, 181, 0.02)';
+          
+          if (ins.severity === 'Critical') {
+            severityClass = 'above';
+            borderLeftColor = 'var(--color-above-appetite, #E11D48)';
+            bg = 'rgba(225, 29, 72, 0.02)';
+          } else if (ins.severity === 'Warning') {
+            severityClass = 'near';
+            borderLeftColor = 'var(--color-near-appetite, #D97706)';
+            bg = 'rgba(217, 119, 6, 0.02)';
+          }
+
+          const isAcknowledged = ins.status === 'acknowledged';
+          const opacityStyle = isAcknowledged ? 'opacity: 0.65;' : '';
+
+          return `
+            <div class="insight-card" data-insight-id="${ins.id}" style="border: 1px solid var(--border-color); border-left: 4px solid ${borderLeftColor}; background: ${bg}; padding: 12px 16px; border-radius: 8px; transition: all 0.2s ease; ${opacityStyle}">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="status-badge ${severityClass}" style="font-size: 10px; padding: 2px 8px;">${ins.severity}</span>
+                  <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">${ins.insight_type}</span>
+                  ${isAcknowledged ? `<span style="font-size: 10px; color: var(--text-muted); font-style: italic;">(Acknowledged)</span>` : ''}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;" class="no-print">
+                  <button class="btn btn-secondary btn-small btn-insight-ack" data-id="${ins.id}" style="padding: 2px 8px; font-size: 10px;" ${isAcknowledged ? 'disabled style="opacity: 0.5;"' : ''}>Acknowledge</button>
+                  <button class="btn btn-secondary btn-small btn-insight-dismiss" data-id="${ins.id}" style="padding: 2px 8px; font-size: 10px; color: var(--color-above-appetite);">Dismiss</button>
+                  <button class="btn btn-primary btn-small btn-insight-review" data-id="${ins.id}" data-type="${ins.insight_type}" data-risk-id="${ins.source_data?.riskId || ''}" data-filter="${ins.source_data?.filter || ''}" style="padding: 2px 8px; font-size: 10px;">Review</button>
+                </div>
+              </div>
+              <div class="insight-text" style="font-size: 12px; line-height: 1.5; color: var(--text-primary);">
+                ${ins.insight_text}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    // Bind event listeners
+    feedBody.querySelectorAll('.btn-insight-ack').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        try {
+          const { RiskIntelligenceService } = await import('../services/riskIntelligenceService.js');
+          await RiskIntelligenceService.acknowledgeInsight(id);
+          // Re-load and re-render feed
+          const freshInsights = await RiskIntelligenceService.generateInsights(this.state.risks, null);
+          this.renderIntelligenceFeed(freshInsights);
+        } catch (err) {
+          console.error("Failed to acknowledge insight:", err);
+        }
+      });
+    });
+
+    feedBody.querySelectorAll('.btn-insight-dismiss').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        try {
+          const { RiskIntelligenceService } = await import('../services/riskIntelligenceService.js');
+          await RiskIntelligenceService.dismissInsight(id);
+          // Re-load and re-render feed
+          const freshInsights = await RiskIntelligenceService.generateInsights(this.state.risks, null);
+          this.renderIntelligenceFeed(freshInsights);
+        } catch (err) {
+          console.error("Failed to dismiss insight:", err);
+        }
+      });
+    });
+
+    feedBody.querySelectorAll('.btn-insight-review').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = btn.dataset.type;
+        const riskId = btn.dataset.riskId;
+        const filter = btn.dataset.filter;
+
+        if (type === 'KRI Trajectory') {
+          // 1. Expand diagnostics accordion if collapsed
+          const accordionBody = document.querySelector('#diagnostics-accordion-body');
+          const accordionHeader = document.querySelector('#diagnostics-accordion-header');
+          const chevron = document.querySelector('#diagnostics-chevron');
+          if (accordionBody && !this._diagnosticsExpanded) {
+            this._diagnosticsExpanded = true;
+            accordionBody.style.maxHeight = '9999px';
+            accordionBody.style.padding   = '20px';
+            if (chevron) chevron.style.transform = 'rotate(180deg)';
+            if (accordionHeader) accordionHeader.style.borderBottom = '1px solid var(--border-color)';
+            this.initGraphs(document.querySelector('#page-render-container'));
+          }
+
+          // 2. Scroll `#kri-breach-container` into view and highlight it
+          const targetEl = document.querySelector('#kri-breach-container');
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.style.transition = 'outline 0.3s ease';
+            targetEl.style.outline = '2px solid var(--color-indigo)';
+            setTimeout(() => {
+              targetEl.style.outline = 'none';
+            }, 2000);
+          }
+        } else if (type === 'Register Staleness' && filter === 'stale') {
+          // Deep-link to the register module with staleness query param
+          this.navigateToPage('/risks?staleness=true', 'register');
+        }
+      });
+    });
   }
 }

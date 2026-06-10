@@ -36,6 +36,13 @@ export class RegisterComponent {
     } else {
       this._fromDashboard = false;
     }
+    const _staleness = _rParams.get('staleness');
+    if (_staleness === 'true') {
+      this.filterStale = true;
+      this._fromDashboard = true;
+    } else {
+      this.filterStale = false;
+    }
     const _riskId = _rParams.get('riskId');
     this._deepLinkRiskId = _riskId || null;
   }
@@ -43,6 +50,7 @@ export class RegisterComponent {
   clearFilters() {
     this.activeFilterCategory = 'All';
     this.activeFilterAppetite = 'All';
+    this.filterStale = false;
     this._fromDashboard = false;
     this._deepLinkRiskId = null;
   }
@@ -96,6 +104,22 @@ export class RegisterComponent {
     }
     if (this.activeFilterAppetite !== 'All') {
       filteredRisks = filteredRisks.filter(r => r.appetiteStatus === this.activeFilterAppetite);
+    }
+
+    if (this.filterStale) {
+      const today = new Date();
+      filteredRisks = filteredRisks.filter(r => {
+        const lastReviewedStr = r.last_reviewed_date || r.lastReviewedDate || r.created_at || new Date().toISOString();
+        const lastReviewed = new Date(lastReviewedStr);
+        const diffDays = Math.ceil(Math.abs(today - lastReviewed) / 86400000);
+        if (r.appetiteStatus === 'Above Appetite') return diffDays > 7;
+        if (r.appetiteStatus === 'Near Appetite') return diffDays > 21;
+        return diffDays > 60;
+      }).sort((a, b) => {
+        const lastReviewedA = new Date(a.last_reviewed_date || a.lastReviewedDate || a.created_at || new Date().toISOString());
+        const lastReviewedB = new Date(b.last_reviewed_date || b.lastReviewedDate || b.created_at || b.created_at || new Date().toISOString());
+        return lastReviewedA - lastReviewedB; // oldest date first (descending days since review)
+      });
     }
 
     container.innerHTML = `
@@ -216,7 +240,9 @@ export class RegisterComponent {
 
     // Inject dashboard banner if navigated from dashboard
     if (this._fromDashboard) {
-      const filterDesc = this.activeFilterAppetite !== 'All'
+      const filterDesc = this.filterStale
+        ? 'Filtered: Stale governance risks'
+        : this.activeFilterAppetite !== 'All'
         ? `Filtered: ${this.activeFilterAppetite} risks`
         : 'Risk Register';
       // Dynamic import to avoid adding a static import for AIInsightService

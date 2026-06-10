@@ -621,6 +621,18 @@ class RiskOSApplication {
   async renderAuthenticatedApp(tabId) {
     this.showAuthenticatedApp();
 
+    // Apply sidebar collapse state immediately to prevent visual flash
+    const isCollapsed = localStorage.getItem('navis_sidebar_collapsed') === 'true';
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    if (isCollapsed) {
+      if (sidebar) sidebar.classList.add('collapsed');
+      if (mainContent) mainContent.classList.add('sidebar-collapsed');
+    } else {
+      if (sidebar) sidebar.classList.remove('collapsed');
+      if (mainContent) mainContent.classList.remove('sidebar-collapsed');
+    }
+
     if (!this.appHasInitialized) {
       StorageService.init();
       
@@ -809,6 +821,31 @@ class RiskOSApplication {
       });
     }
 
+    // Bind sidebar collapse toggle button click event
+    const sidebarToggle = document.querySelector('#sidebar-toggle');
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', () => {
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+        if (sidebar && mainContent) {
+          const wasCollapsed = sidebar.classList.contains('collapsed');
+          if (wasCollapsed) {
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('sidebar-collapsed');
+            localStorage.setItem('navis_sidebar_collapsed', 'false');
+          } else {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('sidebar-collapsed');
+            localStorage.setItem('navis_sidebar_collapsed', 'true');
+          }
+          this.removeSidebarTooltip();
+        }
+      });
+    }
+
+    // Initialize custom JavaScript-rendered tooltips
+    this.initSideBarTooltips();
+
     this.sidebarEventsBound = true;
   }
 
@@ -820,6 +857,62 @@ class RiskOSApplication {
     const mainContainer = document.querySelector('#page-render-container');
     if (mainContainer) {
       mainContainer.innerHTML = '';
+    }
+  }
+
+  // --- COLLAPSED SIDEBAR JS TOOLTIPS ---
+  initSideBarTooltips() {
+    const navLinks = document.querySelectorAll('.sidebar .nav-link, .sidebar #nav-settings-lnk');
+    navLinks.forEach(link => {
+      link.addEventListener('mouseenter', () => {
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar || !sidebar.classList.contains('collapsed')) return;
+
+        const tooltipText = link.getAttribute('data-tooltip') || link.querySelector('.nav-label')?.textContent || 'Board Console';
+
+        // Remove any existing tooltips
+        this.removeSidebarTooltip();
+
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.id = 'sidebar-tooltip-el';
+        tooltip.style.position = 'absolute';
+        tooltip.style.zIndex = '99999';
+        tooltip.style.background = '#ffffff';
+        tooltip.style.color = '#0a1628';
+        tooltip.style.borderLeft = '3px solid #00B5B5';
+        tooltip.style.padding = '4px 8px';
+        tooltip.style.borderRadius = '4px';
+        tooltip.style.fontSize = '8px'; // As specified: 8px font
+        tooltip.style.fontWeight = '700';
+        tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+        tooltip.style.whiteSpace = 'nowrap';
+        tooltip.style.pointerEvents = 'none';
+        tooltip.style.fontFamily = 'var(--font-body, sans-serif)';
+        tooltip.textContent = tooltipText;
+
+        const rect = link.getBoundingClientRect();
+        // Position vertically centered, 8px offset to the right of the link
+        tooltip.style.top = `${rect.top + (rect.height - 20) / 2 + window.scrollY}px`;
+        tooltip.style.left = `${rect.right + 8 + window.scrollX}px`;
+
+        document.body.appendChild(tooltip);
+      });
+
+      link.addEventListener('mouseleave', () => {
+        this.removeSidebarTooltip();
+      });
+
+      link.addEventListener('click', () => {
+        this.removeSidebarTooltip();
+      });
+    });
+  }
+
+  removeSidebarTooltip() {
+    const existing = document.querySelector('#sidebar-tooltip-el');
+    if (existing) {
+      existing.remove();
     }
   }
 }

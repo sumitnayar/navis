@@ -121,6 +121,8 @@ export class StorageService {
           timeToDetection: r.time_to_detection,
           timeToRecovery: r.time_to_recovery,
           parentRiskId: r.parent_risk_id,
+          last_reviewed_date: r.last_reviewed_date || r.created_at || new Date().toISOString(),
+          created_at: r.created_at || new Date().toISOString(),
           
           controls: (r.controls || []).map(normalizeControl),
           kris: r.kris || [],
@@ -153,10 +155,63 @@ export class StorageService {
     // B. LOCAL OFFLINE DEMO MODE (localStorage)
     const data = localStorage.getItem(STORAGE_KEYS.RISKS);
     const risks = data ? JSON.parse(data) : [];
-    return risks.map(r => ({
-      ...r,
-      title: r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').trim() : ''
-    }));
+    
+    const getSimulatedDate = (daysAgo) => {
+      const date = new Date();
+      date.setDate(date.getDate() - daysAgo);
+      return date.toISOString();
+    };
+
+    const SIMULATED_OFFSETS = {
+      'risk-003': 2,
+      'risk-004': 5,
+      'risk-005': 9,
+      'risk-006': 12,
+      'risk-001': 15,
+      'risk-002': 18,
+      'risk-007': 25,
+      'risk-008': 35,
+      'risk-009': 40,
+      'risk-010': 42,
+      'risk-011': 60,
+      'risk-013': 80
+    };
+
+    let modified = false;
+    const mappedRisks = risks.map(r => {
+      const title = r.title ? r.title.replace(/^\[DEMO Trackier SaaS\]\s*/i, '').trim() : '';
+      let updated = false;
+      if (r.title !== title) {
+        r.title = title;
+        updated = true;
+      }
+      if (!r.last_reviewed_date) {
+        const offset = SIMULATED_OFFSETS[r.id];
+        if (offset !== undefined) {
+          r.last_reviewed_date = getSimulatedDate(offset);
+          updated = true;
+        } else {
+          r.last_reviewed_date = getSimulatedDate(3);
+          updated = true;
+        }
+      }
+      if (!r.created_at) {
+        r.created_at = r.last_reviewed_date || new Date().toISOString();
+        updated = true;
+      }
+      if (updated) {
+        modified = true;
+      }
+      return {
+        ...r,
+        title
+      };
+    });
+
+    if (modified) {
+      localStorage.setItem(STORAGE_KEYS.RISKS, JSON.stringify(mappedRisks));
+    }
+    return mappedRisks;
   }
 
   static async getRiskById(id) {
@@ -165,6 +220,9 @@ export class StorageService {
   }
 
   static async saveRisk(risk, userComment = "Updated risk metrics") {
+    risk.last_reviewed_date = new Date().toISOString();
+    risk.created_at = risk.created_at || new Date().toISOString();
+
     const likelihoodRes = parseInt(risk.likelihoodResidual || risk.likelihood || 1);
     const impactRes = parseInt(risk.impactResidual || risk.impact || 1);
     risk.residualScore = likelihoodRes * impactRes; 
@@ -211,7 +269,8 @@ export class StorageService {
           time_to_impact: risk.timeToImpact || 'Moderate',
           time_to_detection: risk.timeToDetection || 'Moderate',
           time_to_recovery: risk.timeToRecovery || 'Moderate',
-          parent_risk_id: risk.parentRiskId || null
+          parent_risk_id: risk.parentRiskId || null,
+          last_reviewed_date: risk.last_reviewed_date
         };
 
         const { error } = await supabaseClient.from('risks').upsert(dbRisk);
