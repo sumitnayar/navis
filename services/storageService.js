@@ -22,7 +22,11 @@ const STORAGE_KEYS = {
   TRENDS: 'navis_v3_trends',
   SEEDED: 'navis_v3_seeded_flag_v3',
   DOCUMENT_VAULT: 'navis_v3_document_vault',
-  CHANGE_QUEUE:   'navis_v3_change_queue'
+  CHANGE_QUEUE:   'navis_v3_change_queue',
+  POLICY_DOCUMENTS: 'navis_v3_policy_documents',
+  POLICY_CHUNKS: 'navis_v3_policy_chunks',
+  POLICY_QUESTIONS: 'navis_v3_policy_questions',
+  POLICY_SEEDED: 'navis_v3_policy_seeded_flag'
 };
 
 const isCloudMode = isSupabaseConfigured && supabaseClient;
@@ -48,6 +52,10 @@ export class StorageService {
     const isSeeded = localStorage.getItem(STORAGE_KEYS.SEEDED);
     if (!isSeeded) {
       this.resetToDefaults();
+    }
+    const isPolicySeeded = localStorage.getItem(STORAGE_KEYS.POLICY_SEEDED);
+    if (!isPolicySeeded) {
+      this.seedPolicyDocuments();
     }
   }
 
@@ -811,5 +819,352 @@ export class StorageService {
   static async saveChangeQueue(items) {
     // Phase 1: localStorage only
     localStorage.setItem(STORAGE_KEYS.CHANGE_QUEUE, JSON.stringify(items));
+  }
+
+  // --- POLICY INTELLIGENCE SEEDER ---
+
+  static seedPolicyDocuments() {
+    const sampleDocs = [
+      {
+        id: 'policy-doc-access-control',
+        title: 'Access Control Policy',
+        document_type: 'Access Control Policy',
+        framework_tags: ['ISO 27001', 'SOC 2'],
+        file_name: 'access_control_policy_v2.pdf',
+        file_url: '',
+        mime_type: 'application/pdf',
+        status: 'Ready',
+        extracted_text: `ScaleFlow Technologies Access Control Policy. ISO 27001 / SOC 2 Compliance framework.
+Section 1: User Access Provisioning. All user accounts must be authorized by the respective department head. Access is granted on a least-privilege basis. Multi-Factor Authentication (MFA) is mandatory for all access to internal systems, databases, and production servers.
+Section 2: Privileged Access Management. Admin accounts must use dedicated admin credentials. Double authentication is required. Privileged access reviews must occur every 90 days. Any inactive admin account for more than 30 days will be disabled automatically.
+Section 3: Revocation of Access. Upon termination of employment or changes in contract, user access must be revoked within 24 hours of the departure date. HR must trigger the offboarding ticket immediately.
+Section 4: Audit Logs. Authentication and authorization logs must be maintained for at least 365 days. Monitoring tools will alert the security team of any brute force or access control bypass attempts.
+Section 5: Password Complexity. Passwords must be at least 12 characters long, containing uppercase, lowercase, numbers, and special characters. Password rotation is recommended every 180 days.`,
+        summary: 'Access control policy covering provisioning, privileged access reviews, password rules, and immediate revocation procedures.',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'policy-doc-bcp-dr',
+        title: 'BCP/DR Policy',
+        document_type: 'BCP/DR Policy',
+        framework_tags: ['ISO 27001', 'Internal Governance'],
+        file_name: 'scaleflow_bcp_dr_framework.pdf',
+        file_url: '',
+        mime_type: 'application/pdf',
+        status: 'Ready',
+        extracted_text: `ScaleFlow Technologies Business Continuity & Disaster Recovery Policy.
+Section 1: Business Continuity Plan. ScaleFlow is committed to maintaining operations during disruptions. The Critical Crisis Management Team (CMT) is responsible for declaring a disaster and executing recovery procedures.
+Section 2: Disaster Recovery Targets. The Recovery Time Objective (RTO) is defined as less than 4 hours for production databases and customer tracking ingestion services. The Recovery Point Objective (RPO) is defined as less than 1 hour, meaning no more than 1 hour of customer transactional data can be lost in a failover event.
+Section 3: Data Backup Schedule. Full database backups are performed weekly. Incremental backups are executed daily. Backups are stored in an encrypted offsite location with geographic redundancy.
+Section 4: Disaster Recovery Testing. Annual tabletop exercises and simulation tests must be conducted by the DevOps and Security teams. The results of the annual DR test must be reported to the Board of Directors.
+Section 5: Crisis Communications. In the event of a critical service outage, customer success must notify key enterprise tenants within 2 hours. A public status page will be maintained and updated every 30 minutes.`,
+        summary: 'Business continuity and disaster recovery plan defining critical RTO (< 4 hrs) and RPO (< 1 hr) metrics, testing, and communications.',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'policy-doc-privacy',
+        title: 'Privacy Policy',
+        document_type: 'Privacy Policy',
+        framework_tags: ['DPDP', 'GDPR', 'CCPA'],
+        file_name: 'scaleflow_privacy_charter.pdf',
+        file_url: '',
+        mime_type: 'application/pdf',
+        status: 'Ready',
+        extracted_text: `ScaleFlow Technologies Data Privacy Policy. Alignment with DPDP, GDPR, and CCPA.
+Section 1: Personal Data Collection. ScaleFlow processes customer event tracking data, user identifiers, email addresses, and IP addresses. We strictly collect only personal data necessary for attribution services, aligning with the data minimization principle.
+Section 2: Consent Management. Explicit consent must be obtained from users prior to tracking or processing their PII. Users have the right to withdraw consent at any time.
+Section 3: User Rights. Under GDPR and DPDP, users have the right of access, right of rectification, and right of erasure (the right to be forgotten). ScaleFlow will process erasure requests within 30 days of receipt.
+Section 4: Data Breach Notification. In the event of a confirmed personal data breach, ScaleFlow will notify the regulatory authorities and affected data subjects within 72 hours of detection, detailing the nature of the breach and mitigation steps.
+Section 5: Data Protection Officer. The DPO is responsible for oversight of privacy impact assessments (PIAs) and ensuring continuous compliance across all engineering and customer-facing teams.`,
+        summary: 'Privacy charter aligned with DPDP, GDPR, and CCPA detailing PII collection, consent, rights of erasure, and 72-hour breach notice.',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+
+    localStorage.setItem(STORAGE_KEYS.POLICY_DOCUMENTS, JSON.stringify(sampleDocs));
+
+    // Seed initial chunks for the sample policies
+    const allChunks = [];
+    sampleDocs.forEach(doc => {
+      if (doc.id === 'policy-doc-access-control') {
+        allChunks.push(
+          { id: 'chunk-ac-1', document_id: doc.id, chunk_index: 0, chunk_text: `Section 1: User Access Provisioning. All user accounts must be authorized by the respective department head. Access is granted on a least-privilege basis. Multi-Factor Authentication (MFA) is mandatory for all access to internal systems, databases, and production servers.`, section_title: 'Section 1: User Access Provisioning', page_number: 1, token_count: 50, created_at: new Date().toISOString() },
+          { id: 'chunk-ac-2', document_id: doc.id, chunk_index: 1, chunk_text: `Section 2: Privileged Access Management. Admin accounts must use dedicated admin credentials. Double authentication is required. Privileged access reviews must occur every 90 days. Any inactive admin account for more than 30 days will be disabled automatically.`, section_title: 'Section 2: Privileged Access Management', page_number: 1, token_count: 50, created_at: new Date().toISOString() },
+          { id: 'chunk-ac-3', document_id: doc.id, chunk_index: 2, chunk_text: `Section 3: Revocation of Access. Upon termination of employment or changes in contract, user access must be revoked within 24 hours of the departure date. HR must trigger the offboarding ticket immediately.`, section_title: 'Section 3: Revocation of Access', page_number: 1, token_count: 40, created_at: new Date().toISOString() },
+          { id: 'chunk-ac-4', document_id: doc.id, chunk_index: 3, chunk_text: `Section 4: Audit Logs. Authentication and authorization logs must be maintained for at least 365 days. Monitoring tools will alert the security team of any brute force or access control bypass attempts.`, section_title: 'Section 4: Audit Logs', page_number: 2, token_count: 40, created_at: new Date().toISOString() },
+          { id: 'chunk-ac-5', document_id: doc.id, chunk_index: 4, chunk_text: `Section 5: Password Complexity. Passwords must be at least 12 characters long, containing uppercase, lowercase, numbers, and special characters. Password rotation is recommended every 180 days.`, section_title: 'Section 5: Password Complexity', page_number: 2, token_count: 35, created_at: new Date().toISOString() }
+        );
+      }
+      if (doc.id === 'policy-doc-bcp-dr') {
+        allChunks.push(
+          { id: 'chunk-bd-1', document_id: doc.id, chunk_index: 0, chunk_text: `Section 1: Business Continuity Plan. ScaleFlow is committed to maintaining operations during disruptions. The Critical Crisis Management Team (CMT) is responsible for declaring a disaster and executing recovery procedures.`, section_title: 'Section 1: Business Continuity Plan', page_number: 1, token_count: 45, created_at: new Date().toISOString() },
+          { id: 'chunk-bd-2', document_id: doc.id, chunk_index: 1, chunk_text: `Section 2: Disaster Recovery Targets. The Recovery Time Objective (RTO) is defined as less than 4 hours for production databases and customer tracking ingestion services. The Recovery Point Objective (RPO) is defined as less than 1 hour, meaning no more than 1 hour of customer transactional data can be lost in a failover event.`, section_title: 'Section 2: Disaster Recovery Targets', page_number: 1, token_count: 65, created_at: new Date().toISOString() },
+          { id: 'chunk-bd-3', document_id: doc.id, chunk_index: 2, chunk_text: `Section 3: Data Backup Schedule. Full database backups are performed weekly. Incremental backups are executed daily. Backups are stored in an encrypted offsite location with geographic redundancy.`, section_title: 'Section 3: Data Backup Schedule', page_number: 1, token_count: 40, created_at: new Date().toISOString() },
+          { id: 'chunk-bd-4', document_id: doc.id, chunk_index: 3, chunk_text: `Section 4: Disaster Recovery Testing. Annual tabletop exercises and simulation tests must be conducted by the DevOps and Security teams. The results of the annual DR test must be reported to the Board of Directors.`, section_title: 'Section 4: Disaster Recovery Testing', page_number: 2, token_count: 45, created_at: new Date().toISOString() },
+          { id: 'chunk-bd-5', document_id: doc.id, chunk_index: 5, chunk_text: `Section 5: Crisis Communications. In the event of a critical service outage, customer success must notify key enterprise tenants within 2 hours. A public status page will be maintained and updated every 30 minutes.`, section_title: 'Section 5: Crisis Communications', page_number: 2, token_count: 50, created_at: new Date().toISOString() }
+        );
+      }
+      if (doc.id === 'policy-doc-privacy') {
+        allChunks.push(
+          { id: 'chunk-pr-1', document_id: doc.id, chunk_index: 0, chunk_text: `Section 1: Personal Data Collection. ScaleFlow processes customer event tracking data, user identifiers, email addresses, and IP addresses. We strictly collect only personal data necessary for attribution services, aligning with the data minimization principle.`, section_title: 'Section 1: Personal Data Collection', page_number: 1, token_count: 50, created_at: new Date().toISOString() },
+          { id: 'chunk-pr-2', document_id: doc.id, chunk_index: 1, chunk_text: `Section 2: Consent Management. Explicit consent must be obtained from users prior to tracking or processing their PII. Users have the right to withdraw consent at any time.`, section_title: 'Section 2: Consent Management', page_number: 1, token_count: 35, created_at: new Date().toISOString() },
+          { id: 'chunk-pr-3', document_id: doc.id, chunk_index: 2, chunk_text: `Section 3: User Rights. Under GDPR and DPDP, users have the right of access, right of rectification, and right of erasure (the right to be forgotten). ScaleFlow will process erasure requests within 30 days of receipt.`, section_title: 'Section 3: User Rights', page_number: 1, token_count: 55, created_at: new Date().toISOString() },
+          { id: 'chunk-pr-4', document_id: doc.id, chunk_index: 3, chunk_text: `Section 4: Data Breach Notification. In the event of a confirmed personal data breach, ScaleFlow will notify the regulatory authorities and affected data subjects within 72 hours of detection, detailing the nature of the breach and mitigation steps.`, section_title: 'Section 4: Data Breach Notification', page_number: 2, token_count: 55, created_at: new Date().toISOString() },
+          { id: 'chunk-pr-5', document_id: doc.id, chunk_index: 4, chunk_text: `Section 5: Data Protection Officer. The DPO is responsible for oversight of privacy impact assessments (PIAs) and ensuring continuous compliance across all engineering and customer-facing teams.`, section_title: 'Section 5: Data Protection Officer', page_number: 2, token_count: 45, created_at: new Date().toISOString() }
+        );
+      }
+    });
+
+    localStorage.setItem(STORAGE_KEYS.POLICY_CHUNKS, JSON.stringify(allChunks));
+    localStorage.setItem(STORAGE_KEYS.POLICY_SEEDED, 'true');
+  }
+
+  // --- POLICY DOCUMENTS CRUD ---
+
+  static async getPolicyDocuments() {
+    if (isCloudMode) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('policy_documents')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data.map(d => ({
+          id: d.id,
+          title: d.title,
+          document_type: d.document_type,
+          framework_tags: d.framework_tags || [],
+          file_name: d.file_name,
+          file_url: d.file_url,
+          mime_type: d.mime_type,
+          uploaded_by: d.uploaded_by,
+          status: d.status,
+          extracted_text: d.extracted_text,
+          summary: d.summary,
+          created_at: d.created_at,
+          updated_at: d.updated_at
+        }));
+      } catch (e) {
+        console.error('Supabase getPolicyDocuments failed, falling back to local:', e);
+      }
+    }
+    const data = localStorage.getItem(STORAGE_KEYS.POLICY_DOCUMENTS);
+    return data ? JSON.parse(data) : [];
+  }
+
+  static async savePolicyDocument(doc) {
+    if (isCloudMode) {
+      try {
+        const dbDoc = {
+          id: doc.id,
+          organization_id: '00000000-0000-0000-0000-000000000000',
+          title: doc.title,
+          document_type: doc.document_type,
+          framework_tags: doc.framework_tags || [],
+          file_name: doc.file_name,
+          file_url: doc.file_url,
+          mime_type: doc.mime_type,
+          uploaded_by: doc.uploaded_by,
+          status: doc.status,
+          extracted_text: doc.extracted_text,
+          summary: doc.summary,
+          created_at: doc.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        const { error } = await supabaseClient.from('policy_documents').upsert(dbDoc);
+        if (error) throw error;
+        return doc;
+      } catch (e) {
+        console.error('Supabase savePolicyDocument failed, falling back to local:', e);
+      }
+    }
+    const docs = JSON.parse(localStorage.getItem(STORAGE_KEYS.POLICY_DOCUMENTS) || '[]');
+    const idx = docs.findIndex(d => d.id === doc.id);
+    if (idx > -1) {
+      docs[idx] = { ...docs[idx], ...doc, updated_at: new Date().toISOString() };
+    } else {
+      docs.push({ ...doc, created_at: doc.created_at || new Date().toISOString(), updated_at: new Date().toISOString() });
+    }
+    localStorage.setItem(STORAGE_KEYS.POLICY_DOCUMENTS, JSON.stringify(docs));
+    return doc;
+  }
+
+  static async deletePolicyDocument(id) {
+    if (isCloudMode) {
+      try {
+        const { error } = await supabaseClient.from('policy_documents').delete().eq('id', id);
+        if (error) throw error;
+        return true;
+      } catch (e) {
+        console.error('Supabase deletePolicyDocument failed, falling back to local:', e);
+      }
+    }
+    const docs = JSON.parse(localStorage.getItem(STORAGE_KEYS.POLICY_DOCUMENTS) || '[]');
+    const remaining = docs.filter(d => d.id !== id);
+    localStorage.setItem(STORAGE_KEYS.POLICY_DOCUMENTS, JSON.stringify(remaining));
+
+    const chunks = JSON.parse(localStorage.getItem(STORAGE_KEYS.POLICY_CHUNKS) || '[]');
+    const remainingChunks = chunks.filter(c => c.document_id !== id);
+    localStorage.setItem(STORAGE_KEYS.POLICY_CHUNKS, JSON.stringify(remainingChunks));
+    return true;
+  }
+
+  // --- POLICY CHUNKS ---
+
+  static async getPolicyChunks(documentId = null) {
+    if (isCloudMode) {
+      try {
+        let query = supabaseClient.from('policy_document_chunks').select('*');
+        if (documentId) {
+          query = query.eq('document_id', documentId);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        return data.map(c => ({
+          id: c.id,
+          document_id: c.document_id,
+          chunk_index: c.chunk_index,
+          chunk_text: c.chunk_text,
+          section_title: c.section_title,
+          page_number: c.page_number,
+          token_count: c.token_count,
+          created_at: c.created_at
+        }));
+      } catch (e) {
+        console.error('Supabase getPolicyChunks failed, falling back to local:', e);
+      }
+    }
+    const data = localStorage.getItem(STORAGE_KEYS.POLICY_CHUNKS);
+    const parsed = data ? JSON.parse(data) : [];
+    if (documentId) {
+      return parsed.filter(c => c.document_id === documentId);
+    }
+    return parsed;
+  }
+
+  static async savePolicyChunks(chunks) {
+    if (isCloudMode) {
+      try {
+        const dbChunks = chunks.map(c => ({
+          id: c.id || undefined,
+          document_id: c.document_id,
+          organization_id: '00000000-0000-0000-0000-000000000000',
+          chunk_index: c.chunk_index,
+          chunk_text: c.chunk_text,
+          section_title: c.section_title,
+          page_number: c.page_number,
+          token_count: c.token_count
+        }));
+        const { error } = await supabaseClient.from('policy_document_chunks').insert(dbChunks);
+        if (error) throw error;
+        return chunks;
+      } catch (e) {
+        console.error('Supabase savePolicyChunks failed, falling back to local:', e);
+      }
+    }
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.POLICY_CHUNKS) || '[]');
+    const newChunks = chunks.map(c => ({
+      ...c,
+      id: c.id || `chunk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      created_at: new Date().toISOString()
+    }));
+    localStorage.setItem(STORAGE_KEYS.POLICY_CHUNKS, JSON.stringify([...existing, ...newChunks]));
+    return newChunks;
+  }
+
+  // --- POLICY QUESTIONS ---
+
+  static async getPolicyQuestions() {
+    if (isCloudMode) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('policy_questions')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data.map(q => ({
+          id: q.id,
+          question: q.question,
+          answer: q.answer,
+          cited_chunks: q.cited_chunks || [],
+          confidence: q.confidence,
+          created_at: q.created_at
+        }));
+      } catch (e) {
+        console.error('Supabase getPolicyQuestions failed, falling back to local:', e);
+      }
+    }
+    const data = localStorage.getItem(STORAGE_KEYS.POLICY_QUESTIONS);
+    return data ? JSON.parse(data) : [];
+  }
+
+  static async savePolicyQuestion(q) {
+    if (isCloudMode) {
+      try {
+        const dbQ = {
+          id: q.id || undefined,
+          organization_id: '00000000-0000-0000-0000-000000000000',
+          question: q.question,
+          answer: q.answer,
+          cited_chunks: q.cited_chunks || [],
+          confidence: q.confidence
+        };
+        const { error } = await supabaseClient.from('policy_questions').insert(dbQ);
+        if (error) throw error;
+        return q;
+      } catch (e) {
+        console.error('Supabase savePolicyQuestion failed, falling back to local:', e);
+      }
+    }
+    const questions = JSON.parse(localStorage.getItem(STORAGE_KEYS.POLICY_QUESTIONS) || '[]');
+    const newQ = {
+      ...q,
+      id: q.id || `q-${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+    questions.push(newQ);
+    localStorage.setItem(STORAGE_KEYS.POLICY_QUESTIONS, JSON.stringify(questions));
+    return newQ;
+  }
+
+  // --- KEYWORD RETRIEVAL ---
+
+  static async retrieveRelevantChunks(query, limit = 4) {
+    const allChunks = await this.getPolicyChunks();
+    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    
+    if (queryWords.length === 0) {
+      return allChunks.slice(0, limit);
+    }
+    
+    const scored = allChunks.map(chunk => {
+      const text = chunk.chunk_text.toLowerCase();
+      let score = 0;
+      
+      queryWords.forEach(word => {
+        const regex = new RegExp('\\b' + word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\b', 'g');
+        const matches = text.match(regex);
+        if (matches) {
+          score += matches.length * 2.0;
+        }
+        if (text.includes(word)) {
+          score += 0.5;
+        }
+      });
+      
+      return { chunk, score };
+    });
+    
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored.filter(s => s.score > 0).map(s => s.chunk);
+    
+    if (top.length === 0) {
+      return allChunks.slice(0, limit);
+    }
+    
+    return top.slice(0, limit);
   }
 }

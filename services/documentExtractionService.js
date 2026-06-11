@@ -24,8 +24,10 @@ export class DocumentExtractionService {
         return await this._extractCSV(file);
       } else if (ext === 'docx') {
         return await this._extractWord(file);
+      } else if (ext === 'txt' || ext === 'md') {
+        return await this._extractPlain(file);
       } else {
-        return { text: '', error: `Unsupported file type: .${ext}. Please upload a PDF, Excel, CSV, or Word document.`, fileType: ext };
+        return { text: '', error: `Unsupported file type: .${ext}. Please upload a PDF, Word, Excel, CSV, Text, or Markdown document.`, fileType: ext };
       }
     } catch (err) {
       console.error('Text extraction error:', err);
@@ -94,6 +96,16 @@ export class DocumentExtractionService {
     });
   }
 
+  static async _extractPlain(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      const ext = file.name.toLowerCase().split('.').pop();
+      reader.onload = (e) => resolve({ text: e.target.result || '', error: null, fileType: ext });
+      reader.onerror = () => resolve({ text: '', error: `Failed to read ${ext.toUpperCase()} file.`, fileType: ext });
+      reader.readAsText(file);
+    });
+  }
+
   static async _extractWord(file) {
     const mammoth = window.mammoth;
     if (!mammoth) {
@@ -122,6 +134,112 @@ export class DocumentExtractionService {
     }
     return chunks;
   }
+
+  /**
+   * Split long policy text into overlapping chunks based on word count.
+   * Returns array of objects { chunk_index, chunk_text, section_title, page_number, token_count }
+   */
+  static chunkPolicyText(text) {
+    const minWords = 700;
+    const maxWords = 1000;
+    const overlapWords = 120;
+    
+    // Split text by whitespace into words, keeping newline characters attached
+    const words = text.split(/([ \t\r\n]+)/).filter(w => w.length > 0);
+    
+    // Count non-whitespace tokens to represent words
+    const isWhitespace = (s) => /^[ \t\r\n]+$/.test(s);
+    const wordTokens = [];
+    for (let i = 0; i < words.length; i++) {
+      if (!isWhitespace(words[i])) {
+        wordTokens.push({ word: words[i], idx: i });
+      }
+    }
+
+    if (wordTokens.length === 0) return [];
+
+    if (wordTokens.length <= maxWords) {
+      let sectionTitle = null;
+      const lines = text.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (/^(section|article|part)\s+\d+/i.test(trimmed)) {
+          sectionTitle = trimmed.slice(0, 100);
+          break;
+        }
+      }
+      return [{
+        chunk_index: 0,
+        chunk_text: text,
+        section_title: sectionTitle || 'General',
+        page_number: 1,
+        token_count: Math.round(wordTokens.length * 1.3)
+      }];
+    }
+
+    const chunks = [];
+    let startTokenIdx = 0;
+    let chunkIndex = 0;
+
+    while (startTokenIdx < wordTokens.length) {
+      let endTokenIdx = startTokenIdx + maxWords;
+      if (endTokenIdx > wordTokens.length) {
+        endTokenIdx = wordTokens.length;
+      }
+
+      // Look back for a good section boundary in the overlap window
+      let adjustedEndTokenIdx = endTokenIdx;
+      if (endTokenIdx < wordTokens.length) {
+        const lookbackLimit = Math.max(startTokenIdx + minWords, endTokenIdx - overlapWords);
+        for (let i = endTokenIdx - 1; i >= lookbackLimit; i--) {
+          const w = wordTokens[i].word;
+          if (w === 'Section' || w === 'SECTION' || w === 'Article' || w === 'ARTICLE' || (w.toUpperCase() === w && w.endsWith('.'))) {
+            adjustedEndTokenIdx = i;
+            break;
+          }
+        }
+      }
+
+      const sliceStart = wordTokens[startTokenIdx].idx;
+      const sliceEnd = wordTokens[adjustedEndTokenIdx - 1].idx + 1;
+      const chunkTextStr = words.slice(sliceStart, sliceEnd).join('').trim();
+      
+      // Simple section detection
+      let sectionTitle = null;
+      const lines = chunkTextStr.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (/^(section|article|part)\s+\d+/i.test(trimmed)) {
+          sectionTitle = trimmed.slice(0, 100);
+          break;
+        }
+      }
+
+      // Page number detection: look for "Page X"
+      let pageNumber = 1;
+      const pageMatch = chunkTextStr.match(/page\s+(\d+)/i);
+      if (pageMatch) {
+        pageNumber = parseInt(pageMatch[1]);
+      } else {
+        pageNumber = Math.max(1, Math.ceil(startTokenIdx / 300));
+      }
+
+      chunks.push({
+        chunk_index: chunkIndex++,
+        chunk_text: chunkTextStr,
+        section_title: sectionTitle || 'General',
+        page_number: pageNumber,
+        token_count: Math.round((adjustedEndTokenIdx - startTokenIdx) * 1.3)
+      });
+
+      if (adjustedEndTokenIdx >= wordTokens.length) break;
+      startTokenIdx = adjustedEndTokenIdx - overlapWords;
+      if (startTokenIdx < 0) startTokenIdx = 0;
+    }
+
+    return chunks;
+  }
+
 
   // ─── GEMINI EXTRACTION ────────────────────────────────────────────────────
 

@@ -200,3 +200,62 @@ CREATE TABLE IF NOT EXISTS public.ai_insights (
     acknowledged_at TIMESTAMP WITH TIME ZONE,
     dismissed_at TIMESTAMP WITH TIME ZONE
 );
+
+-- ==========================================
+-- 4. POLICY INTELLIGENCE & RAG TABLES
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.document_vault (
+    id VARCHAR(100) PRIMARY KEY,
+    organization_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
+    document_name VARCHAR(255) NOT NULL,
+    document_type VARCHAR(100),
+    document_summary TEXT,
+    upload_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    extracted_counts JSONB DEFAULT '{}'::JSONB,
+    status VARCHAR(50) DEFAULT 'pending_review',
+    changes_accepted INT DEFAULT 0,
+    changes_dismissed INT DEFAULT 0,
+    raw_extraction JSONB DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.policy_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
+    title TEXT NOT NULL,
+    document_type TEXT NOT NULL,
+    framework_tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+    file_name TEXT,
+    file_url TEXT,
+    mime_type TEXT,
+    uploaded_by UUID,
+    status TEXT NOT NULL CHECK (status IN ('Uploaded', 'Processing', 'Ready', 'Failed')),
+    extracted_text TEXT,
+    summary TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS public.policy_document_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID NOT NULL REFERENCES public.policy_documents(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
+    chunk_index INT NOT NULL,
+    chunk_text TEXT NOT NULL,
+    section_title TEXT,
+    page_number INT,
+    token_count INT,
+    embedding vector(1536), -- Nullable, if pgvector is available
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS public.policy_questions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'::uuid,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    cited_chunks JSONB DEFAULT '[]'::JSONB,
+    confidence TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+

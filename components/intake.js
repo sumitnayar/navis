@@ -3,6 +3,7 @@
 import { AIInsightService } from '../services/aiInsightService.js';
 import { StorageService } from '../services/storageService.js';
 import { DocumentExtractionService } from '../services/documentExtractionService.js';
+import { AIService } from '../services/aiService.js';
 
 const RISK_CATEGORIES = [
   'Strategic', 'Operational', 'Financial', 'Technology', 'Compliance',
@@ -41,6 +42,11 @@ export class IntakeComponent {
     } catch (e) {
       this.vaultEntries = [];
     }
+    try {
+      this.policyDocs = await StorageService.getPolicyDocuments();
+    } catch (e) {
+      this.policyDocs = [];
+    }
   }
 
   // ─── RENDER ENTRY POINT ───────────────────────────────────────────────────
@@ -72,6 +78,7 @@ export class IntakeComponent {
           ${pendingCount > 0 ? `<span class="queue-badge">${pendingCount}</span>` : ''}
         </button>
         <button class="intake-tab ${this.activeTab === 'vault' ? 'active' : ''}" data-tab="vault" id="tab-btn-vault">Document Vault</button>
+        <button class="intake-tab ${this.activeTab === 'policies' ? 'active' : ''}" data-tab="policies" id="tab-btn-policies">Policy Intelligence</button>
       </div>
 
       <div id="intake-body"></div>
@@ -84,6 +91,7 @@ export class IntakeComponent {
     if (this.activeTab === 'upload') body.innerHTML = this.renderUploadTab();
     else if (this.activeTab === 'queue') body.innerHTML = this.renderQueueTab();
     else if (this.activeTab === 'vault') body.innerHTML = this.renderVaultTab();
+    else if (this.activeTab === 'policies') body.innerHTML = this.renderPoliciesTab();
     this.bindBodyEvents(body);
   }
 
@@ -722,6 +730,136 @@ export class IntakeComponent {
         this.bindBodyEvents(body.parentElement.querySelector('#intake-body'));
       });
     }
+
+    // --- POLICY TAB BINDINGS ---
+    
+    // Policy Dropzone
+    const policyDropzone = body.querySelector('#policy-dropzone');
+    if (policyDropzone) {
+      policyDropzone.addEventListener('dragover', (e) => { e.preventDefault(); policyDropzone.classList.add('dragover'); });
+      policyDropzone.addEventListener('dragleave', () => policyDropzone.classList.remove('dragover'));
+      policyDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        policyDropzone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) this.setupPolicyMetadataForm(file);
+      });
+    }
+
+    // Policy File Input
+    const policyFileInput = body.querySelector('#policy-file-input');
+    if (policyFileInput) {
+      policyFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) this.setupPolicyMetadataForm(file);
+      });
+    }
+
+    // Cancel Policy Upload
+    const cancelUploadBtn = body.querySelector('#btn-cancel-policy-upload');
+    if (cancelUploadBtn) {
+      cancelUploadBtn.addEventListener('click', () => {
+        this.pendingPolicyFile = null;
+        const metaSection = body.querySelector('#policy-upload-meta');
+        if (metaSection) metaSection.style.display = 'none';
+      });
+    }
+
+    // Submit Policy Upload
+    const submitUploadBtn = body.querySelector('#btn-submit-policy-upload');
+    if (submitUploadBtn) {
+      submitUploadBtn.addEventListener('click', () => {
+        const docType = body.querySelector('#policy-upload-type').value;
+        const framework = body.querySelector('#policy-upload-framework').value;
+        if (this.pendingPolicyFile) {
+          this.handlePolicyUpload(this.pendingPolicyFile, docType, framework);
+        }
+      });
+    }
+
+    // Policy Filters
+    const filterType = body.querySelector('#filter-policy-type');
+    if (filterType) {
+      filterType.value = this.policyFilterType || 'All';
+      filterType.addEventListener('change', (e) => {
+        this.policyFilterType = e.target.value;
+        this.updatePolicyTable();
+      });
+    }
+
+    const filterFramework = body.querySelector('#filter-policy-framework');
+    if (filterFramework) {
+      filterFramework.value = this.policyFilterFramework || 'All';
+      filterFramework.addEventListener('change', (e) => {
+        this.policyFilterFramework = e.target.value;
+        this.updatePolicyTable();
+      });
+    }
+
+    // Policy Q&A Submit
+    const qaSubmitBtn = body.querySelector('#btn-policy-qa-submit');
+    const qaInput = body.querySelector('#policy-qa-input');
+    if (qaSubmitBtn && qaInput) {
+      qaSubmitBtn.addEventListener('click', () => {
+        const query = qaInput.value.trim();
+        if (query) {
+          qaInput.value = '';
+          this.handlePolicyQAQuery(query);
+        }
+      });
+
+      qaInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          const query = qaInput.value.trim();
+          if (query) {
+            qaInput.value = '';
+            this.handlePolicyQAQuery(query);
+          }
+        }
+      });
+    }
+
+    // Bind row action buttons (Delete and Recommended Actions)
+    body.addEventListener('click', async (e) => {
+      // Delete document
+      const deleteBtn = e.target.closest('[data-policy-delete-id]');
+      if (deleteBtn) {
+        e.stopPropagation();
+        const docId = deleteBtn.dataset.policyDeleteId;
+        if (confirm('Are you sure you want to delete this policy document? This will also remove its extracted chunks.')) {
+          await this.handleDeletePolicy(docId);
+        }
+        return;
+      }
+
+      // Create action item from Q&A recommendations
+      const recBtn = e.target.closest('[data-rec-type]');
+      if (recBtn) {
+        e.stopPropagation();
+        const type = recBtn.dataset.recType;
+        const title = recBtn.dataset.recTitle;
+        const desc = recBtn.dataset.recDesc;
+        const sourceDoc = recBtn.dataset.recSource;
+        
+        await this.handleCreateChangeQueueItem(type, title, desc, sourceDoc);
+        recBtn.disabled = true;
+        recBtn.textContent = '✓ Added to Queue';
+        recBtn.style.background = 'rgba(0,181,181,0.1)';
+        recBtn.style.color = 'var(--color-teal)';
+        
+        // Refresh change queue badge count
+        const pendingCount = this.changeQueue.filter(i => i.decision === 'pending' || !i.decision).length;
+        const badge = document.querySelector('#tab-btn-queue .queue-badge');
+        if (badge) {
+          badge.textContent = pendingCount;
+        } else if (pendingCount > 0) {
+          const tabBtn = document.querySelector('#tab-btn-queue');
+          if (tabBtn) {
+            tabBtn.innerHTML = `Change Queue <span class="queue-badge">${pendingCount}</span>`;
+          }
+        }
+      }
+    });
   }
 
   // ─── FILE UPLOAD HANDLER ──────────────────────────────────────────────────
@@ -887,5 +1025,423 @@ export class IntakeComponent {
     this.renderBody();
     const newBody = this._container.querySelector('#intake-body');
     if (newBody) this.bindBodyEvents(newBody);
+  }
+
+  // --- POLICY INTELLIGENCE METHODS ---
+
+  renderPoliciesTab() {
+    this.updatePolicyTableBody();
+    return `
+      <div class="board-qa-layout" style="display:flex;gap:16px;align-items:stretch;margin-top:16px;flex-wrap:wrap;">
+        
+        <!-- LEFT PANEL: Upload & Document List -->
+        <div class="details-panel" style="flex: 1 1 45%; max-width: 50%; display:flex; flex-direction:column; gap:16px;">
+          <!-- Upload Box -->
+          <div class="glass-panel" style="padding: 16px;">
+            <h4 style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-top:0;margin-bottom:12px;">Upload Policy Document</h4>
+            
+            <div class="intake-dropzone" id="policy-dropzone" style="padding: 20px 10px; border: 1px dashed var(--border-color); border-radius: 6px; text-align: center;">
+              <div class="dropzone-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:36px;height:36px;color:var(--color-teal);margin:0 auto 10px;display:block;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                <span style="font-size:11px;font-weight:600;color:var(--text-primary);display:block;margin-bottom:4px;" id="policy-upload-filename-display">Drag policy here or click to browse</span>
+                <input type="file" id="policy-file-input" accept=".pdf,.docx,.txt,.md" style="display:none;">
+                <label for="policy-file-input" class="btn btn-secondary btn-small" style="cursor:pointer;padding:4px 12px;font-size:10px;margin-top:4px;">Choose File</label>
+              </div>
+            </div>
+
+            <!-- Metadata parameters -->
+            <div id="policy-upload-meta" style="margin-top: 12px; display: none; border-top: 1px solid var(--border-color); padding-top: 12px; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Document Type</label>
+                <select id="policy-upload-type" class="form-control" style="font-size:11px;padding:4px;height:28px;">
+                  <option value="Information Security Policy">Information Security Policy</option>
+                  <option value="Privacy Policy">Privacy Policy</option>
+                  <option value="Access Control Policy">Access Control Policy</option>
+                  <option value="BCP/DR Policy">BCP/DR Policy</option>
+                  <option value="Vendor Risk Policy">Vendor Risk Policy</option>
+                  <option value="Incident Response Policy">Incident Response Policy</option>
+                  <option value="Audit Report">Audit Report</option>
+                  <option value="SOP">SOP</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Framework / Category</label>
+                <select id="policy-upload-framework" class="form-control" style="font-size:11px;padding:4px;height:28px;">
+                  <option value="ISO 27001">ISO 27001</option>
+                  <option value="ISO 27701">ISO 27701</option>
+                  <option value="SOC 2">SOC 2</option>
+                  <option value="DPDP">DPDP</option>
+                  <option value="GDPR">GDPR</option>
+                  <option value="CCPA">CCPA</option>
+                  <option value="Internal Governance">Internal Governance</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div style="grid-column: span 2; display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
+                <button id="btn-cancel-policy-upload" class="btn btn-secondary btn-small" style="font-size:10px;padding:4px 10px;">Cancel</button>
+                <button id="btn-submit-policy-upload" class="btn btn-primary btn-small" style="font-size:10px;padding:4px 10px;">Extract &amp; Process</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Document List Table Card -->
+          <div class="glass-panel" style="padding: 16px; flex-grow: 1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <h4 style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin:0;">Policy Documents</h4>
+              <div style="display:flex;gap:6px;">
+                <select id="filter-policy-type" class="form-control" style="font-size:9px;padding:2px 4px;height:22px;width:95px;">
+                  <option value="All">All Types</option>
+                  <option value="Information Security Policy">InfoSec</option>
+                  <option value="Privacy Policy">Privacy</option>
+                  <option value="Access Control Policy">Access</option>
+                  <option value="BCP/DR Policy">BCP/DR</option>
+                  <option value="Vendor Risk Policy">Vendor Risk</option>
+                  <option value="Incident Response Policy">Incident</option>
+                  <option value="Other">Other</option>
+                </select>
+                <select id="filter-policy-framework" class="form-control" style="font-size:9px;padding:2px 4px;height:22px;width:95px;">
+                  <option value="All">All Frameworks</option>
+                  <option value="ISO 27001">ISO 27001</option>
+                  <option value="SOC 2">SOC 2</option>
+                  <option value="DPDP">DPDP</option>
+                  <option value="GDPR">GDPR</option>
+                  <option value="Internal Governance">Internal Gov</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border-color);background:rgba(0,0,0,0.01);text-align:left;">
+                    <th style="padding:6px 8px;font-weight:600;color:var(--text-secondary);">Document</th>
+                    <th style="padding:6px 8px;font-weight:600;color:var(--text-secondary);">Framework</th>
+                    <th style="padding:6px 8px;font-weight:600;color:var(--text-secondary);">Status</th>
+                    <th style="padding:6px 8px;font-weight:600;color:var(--text-secondary);text-align:right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="policy-table-body">
+                  <!-- Rendered via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: Chat Copilot -->
+        <div class="chat-window" style="flex: 1 1 50%; display:flex; flex-direction:column; height: 100%; min-height: 520px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(255,255,255,0.01);">
+          <div class="chat-header" style="border-bottom:1px solid var(--border-color);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.01);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="chat-header-dot" style="background-color: var(--color-within-appetite);"></span>
+              <span style="font-family:var(--font-header);font-weight:600;font-size:12px;color:var(--text-primary);">Policy Audit &amp; RAG Copilot</span>
+              <span class="status-badge within" style="font-size:9px;padding:2px 6px;">Active</span>
+            </div>
+          </div>
+
+          <div id="policy-qa-messages" class="chat-messages" style="flex-grow:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;max-height: 380px;">
+            <div class="chat-bubble bot" style="background:rgba(0,181,181,0.02); border: 1px solid rgba(0,181,181,0.1); border-radius: 8px; padding: 12px; font-size:12px; color:var(--text-primary); line-height: 1.5; margin: 0;">
+              <strong>Welcome to Policy Intelligence.</strong><br>
+              Ask questions about your compliance policies. The AI copilot will perform keyword matching and retrieve policy chunks to formulate structured audit answers:
+              <ul style="margin: 6px 0; padding-left: 20px;">
+                <li>Direct answers based on policy guidelines</li>
+                <li>Verifiable text citations</li>
+                <li>Gaps detected relative to frameworks</li>
+                <li>Recommended action items</li>
+              </ul>
+              All gaps and recommended actions can be pushed directly to the <strong>Change Queue</strong> for verification!
+            </div>
+          </div>
+
+          <div id="policy-thinking-loader" style="display:none; align-items:center; gap:8px; padding: 12px 16px; background: rgba(0,0,0,0.01); border-top: 1px solid var(--border-color);">
+            <div class="chat-bubble-loader" style="margin:0;">
+              <span></span><span></span><span></span>
+            </div>
+            <span style="font-size:11px;color:var(--text-secondary);font-family:var(--font-header);">Retrieving matching policy chunks and analyzing...</span>
+          </div>
+
+          <div class="chat-input-bar no-print" style="padding:12px; border-top:1px solid var(--border-color); display:flex; gap:8px; background:rgba(0,0,0,0.01);">
+            <input type="text" id="policy-qa-input" class="form-control" placeholder="Ask a policy compliance question (e.g. What is our RTO for backups?)" style="flex-grow:1;font-size:12px;" />
+            <button id="btn-policy-qa-submit" class="btn btn-primary" style="padding:8px 16px;font-size:12px;">Submit</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  setupPolicyMetadataForm(file) {
+    this.pendingPolicyFile = file;
+    const body = this._container.querySelector('#intake-body');
+    if (body) {
+      const filenameDisplay = body.querySelector('#policy-upload-filename-display');
+      if (filenameDisplay) filenameDisplay.textContent = `Selected: ${file.name}`;
+      
+      const metaSection = body.querySelector('#policy-upload-meta');
+      if (metaSection) metaSection.style.display = 'grid';
+    }
+  }
+
+  async handlePolicyUpload(file, docType, framework) {
+    this.pendingPolicyFile = null;
+    const body = this._container.querySelector('#intake-body');
+    
+    const metaSection = body.querySelector('#policy-upload-meta');
+    if (metaSection) metaSection.style.display = 'none';
+
+    const filenameDisplay = body.querySelector('#policy-upload-filename-display');
+    if (filenameDisplay) filenameDisplay.textContent = 'Extracting and parsing text...';
+
+    const docId = `policy-${Date.now()}`;
+    const newDoc = {
+      id: docId,
+      title: file.name.replace(/\.[^/.]+$/, ""),
+      document_type: docType,
+      framework_tags: [framework],
+      file_name: file.name,
+      file_url: '',
+      mime_type: file.type || 'application/octet-stream',
+      status: 'Processing',
+      extracted_text: '',
+      summary: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    await StorageService.savePolicyDocument(newDoc);
+    await this.loadData();
+    this.updatePolicyTable();
+
+    try {
+      const { text, error } = await DocumentExtractionService.extractText(file);
+      if (error) {
+        throw new Error(error);
+      }
+
+      newDoc.extracted_text = text;
+      newDoc.summary = text.slice(0, 150) + (text.length > 150 ? '...' : '');
+      newDoc.status = 'Ready';
+      
+      await StorageService.savePolicyDocument(newDoc);
+
+      const chunks = DocumentExtractionService.chunkPolicyText(text);
+      const mappedChunks = chunks.map(c => ({
+        ...c,
+        id: `chunk-${docId}-${c.chunk_index}`,
+        document_id: docId
+      }));
+      await StorageService.savePolicyChunks(mappedChunks);
+
+      if (filenameDisplay) filenameDisplay.textContent = 'Policy processed successfully!';
+    } catch (err) {
+      console.error('Policy processing error:', err);
+      newDoc.status = 'Failed';
+      newDoc.summary = `Failed to process document: ${err.message}`;
+      await StorageService.savePolicyDocument(newDoc);
+      if (filenameDisplay) filenameDisplay.textContent = `Processing failed: ${err.message}`;
+    }
+
+    await this.loadData();
+    this.updatePolicyTable();
+  }
+
+  updatePolicyTable() {
+    const tableBody = this._container.querySelector('#policy-table-body');
+    if (!tableBody) return;
+    
+    const filterType = this.policyFilterType || 'All';
+    const filterFramework = this.policyFilterFramework || 'All';
+    
+    let docs = this.policyDocs || [];
+    if (filterType !== 'All') {
+      docs = docs.filter(d => d.document_type === filterType);
+    }
+    if (filterFramework !== 'All') {
+      docs = docs.filter(d => d.framework_tags.includes(filterFramework));
+    }
+    
+    if (docs.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--text-muted);">No policy documents found.</td></tr>`;
+      return;
+    }
+    
+    tableBody.innerHTML = docs.map(d => {
+      const statusClass = {
+        Ready: 'within',
+        Processing: 'near',
+        Failed: 'above'
+      }[d.status] || 'near';
+      
+      return `
+        <tr style="border-bottom:1px solid var(--border-color);height:32px;">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${d.title}">${d.title}</td>
+          <td style="padding:6px 8px;">
+            <div style="font-weight:500;color:var(--text-primary);">${d.document_type}</div>
+            <div style="font-size:9px;color:var(--text-muted);">${d.framework_tags.join(', ')}</div>
+          </td>
+          <td style="padding:6px 8px;"><span class="status-badge ${statusClass}" style="font-size:9px;padding:1px 5px;">${d.status}</span></td>
+          <td style="padding:6px 8px;text-align:right;">
+            <button class="btn btn-secondary btn-small" style="padding:2px 6px;font-size:9px;color:var(--color-critical);border-color:rgba(192,57,43,0.2);" data-policy-delete-id="${d.id}">Delete</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  updatePolicyTableBody() {
+    setTimeout(() => this.updatePolicyTable(), 50);
+  }
+
+  async handleDeletePolicy(docId) {
+    await StorageService.deletePolicyDocument(docId);
+    await this.loadData();
+    this.updatePolicyTable();
+  }
+
+  async handlePolicyQAQuery(query) {
+    const messagesContainer = this._container.querySelector('#policy-qa-messages');
+    const loader = this._container.querySelector('#policy-thinking-loader');
+    if (!messagesContainer) return;
+
+    const userMsg = document.createElement('div');
+    userMsg.className = 'chat-bubble user';
+    userMsg.style.cssText = 'background:rgba(0,181,181,0.06); border: 1px solid rgba(0,181,181,0.15); border-radius: 8px; padding: 10px 12px; font-size:12px; color:var(--text-primary); line-height: 1.4; align-self: flex-end; margin-left: 20%; margin-bottom: 8px;';
+    userMsg.textContent = query;
+    messagesContainer.appendChild(userMsg);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    if (loader) loader.style.display = 'flex';
+
+    try {
+      const matchingChunks = await StorageService.retrieveRelevantChunks(query, 4);
+      const settings = this.state.settings || {};
+      const aiResponse = await AIService.answerPolicyQuestion(query, matchingChunks, settings);
+      
+      if (loader) loader.style.display = 'none';
+
+      const botMsg = document.createElement('div');
+      botMsg.className = 'chat-bubble bot';
+      botMsg.style.cssText = 'background:rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; font-size:12px; color:var(--text-primary); line-height: 1.4; margin-right: 10%; display:flex; flex-direction:column; gap:10px; margin-bottom: 8px;';
+      
+      const formattedAnswer = this.formatPoliciesMarkdown(aiResponse.direct_answer);
+      let html = `<div style="line-height:1.5;">${formattedAnswer}</div>`;
+      
+      if (aiResponse.citations && aiResponse.citations.length > 0) {
+        html += `
+          <div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:4px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Evidence &amp; Citations</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${aiResponse.citations.map(c => `
+                <div style="background:rgba(0,0,0,0.02);border:1px solid var(--border-color);border-radius:4px;padding:6px 8px;font-size:10px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;font-weight:600;color:var(--text-primary);">
+                    <span>📄 ${c.document_title}</span>
+                    <span style="color:var(--text-muted);font-size:9px;">${c.section_title || 'General'} ${c.page_number ? `· Page ${c.page_number}` : ''}</span>
+                  </div>
+                  <div style="color:var(--text-secondary);font-style:italic;">"${c.excerpt}"</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (aiResponse.gaps_detected && aiResponse.gaps_detected.length > 0) {
+        html += `
+          <div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:4px;">
+            <div style="font-size:10px;font-weight:700;color:var(--color-critical);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Gaps &amp; Weaknesses Detected</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${aiResponse.gaps_detected.map(g => `
+                <div style="background:rgba(192,57,43,0.01);border:1px solid rgba(192,57,43,0.1);border-radius:4px;padding:8px;font-size:11px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                  <div>
+                    <strong style="color:var(--color-critical);display:block;margin-bottom:2px;">${g.title}</strong>
+                    <span style="color:var(--text-secondary);font-size:10px;line-height:1.4;">${g.description}</span>
+                  </div>
+                  <button class="btn btn-secondary btn-small" style="font-size:9px;padding:2px 6px;white-space:nowrap;margin-top:2px;" 
+                          data-rec-type="Risk" data-rec-title="${g.title}" data-rec-desc="${g.description}" data-rec-source="${aiResponse.citations?.[0]?.document_title || 'Policy Intelligence'}">
+                    Create Risk
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (aiResponse.recommended_actions && aiResponse.recommended_actions.length > 0) {
+        html += `
+          <div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:4px;">
+            <div style="font-size:10px;font-weight:700;color:var(--color-teal);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Recommended Safeguards</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${aiResponse.recommended_actions.map(r => `
+                <div style="background:rgba(0,181,181,0.01);border:1px solid rgba(0,181,181,0.1);border-radius:4px;padding:8px;font-size:11px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                  <div>
+                    <strong style="color:var(--color-teal);display:block;margin-bottom:2px;">${r.title}</strong>
+                    <span style="color:var(--text-secondary);font-size:10px;line-height:1.4;">${r.description}</span>
+                  </div>
+                  <button class="btn btn-secondary btn-small" style="font-size:9px;padding:2px 6px;white-space:nowrap;margin-top:2px;" 
+                          data-rec-type="${r.type === 'control' ? 'Control' : 'Action'}" data-rec-title="${r.title}" data-rec-desc="${r.description}" data-rec-source="${aiResponse.citations?.[0]?.document_title || 'Policy Intelligence'}">
+                    Create ${r.type === 'control' ? 'Control' : 'Action'}
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      const confColor = { High: 'var(--color-teal)', Medium: 'var(--color-warning)', Low: 'var(--text-muted)' }[aiResponse.confidence] || 'var(--text-muted)';
+      html += `
+        <div style="border-top:1px solid var(--border-color);padding-top:6px;margin-top:4px;display:flex;justify-content:flex-end;">
+          <span style="font-size:9px;color:var(--text-muted);">Confidence Level: <strong style="color:${confColor}">${aiResponse.confidence || 'Medium'}</strong></span>
+        </div>
+      `;
+
+      botMsg.innerHTML = html;
+      messagesContainer.appendChild(botMsg);
+    } catch (err) {
+      console.error('Q&A analysis error:', err);
+      if (loader) loader.style.display = 'none';
+      const botErr = document.createElement('div');
+      botErr.className = 'chat-bubble bot';
+      botErr.style.cssText = 'background:rgba(192,57,43,0.03); border: 1px solid rgba(192,57,43,0.15); border-radius: 8px; padding: 10px 12px; font-size:12px; color:var(--color-critical);';
+      botErr.textContent = 'Sorry, the Policy Ingestion Layer encountered an error. Please try again.';
+      messagesContainer.appendChild(botErr);
+    }
+    
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  async handleCreateChangeQueueItem(type, title, desc, sourceDoc) {
+    const newItem = {
+      id: `ext-${type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      itemType: type,
+      title: title,
+      description: desc,
+      deltaStatus: 'New',
+      confidence: 'high',
+      sourceDocument: sourceDoc || 'Policy Intelligence',
+      uploadDate: new Date().toISOString(),
+      decision: 'pending'
+    };
+    
+    const existing = await StorageService.getChangeQueue();
+    await StorageService.saveChangeQueue([...existing, newItem]);
+    this.changeQueue = await StorageService.getChangeQueue();
+  }
+
+  formatPoliciesMarkdown(text) {
+    if (!text) return "";
+    let html = text;
+    html = html.replace(/^### (.*$)/gim, '<h4 style="font-size:12px;font-weight:700;color:var(--text-primary);margin-top:8px;margin-bottom:4px;">$1</h4>');
+    html = html.replace(/^#### (.*$)/gim, '<h5 style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-top:6px;margin-bottom:2px;">$1</h5>');
+    html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+    html = html.replace(/^---$/gim, '<hr style="border:0;height:1px;background:var(--border-color);margin:6px 0;" />');
+    html = html.replace(/^\* (.*$)/gim, '<li style="margin-left:10px;margin-bottom:2px;">$1</li>');
+    html = html.replace(/^- (.*$)/gim, '<li style="margin-left:10px;margin-bottom:2px;">$1</li>');
+    html = html.replace(/^\d+\. (.*$)/gim, '<li style="margin-left:10px;margin-bottom:2px;list-style:decimal;">$1</li>');
+    return html;
   }
 }
