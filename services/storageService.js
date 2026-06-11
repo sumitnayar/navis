@@ -1132,8 +1132,15 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
 
   // --- KEYWORD RETRIEVAL ---
 
-  static async retrieveRelevantChunks(query, limit = 4) {
-    const allChunks = await this.getPolicyChunks();
+  static async retrieveRelevantChunks(query, documentIds = null, limit = 4) {
+    return this.retrieveRelevantChunksKeyword(query, documentIds, limit);
+  }
+
+  static async retrieveRelevantChunksKeyword(query, documentIds = null, limit = 4) {
+    let allChunks = await this.getPolicyChunks();
+    if (documentIds && Array.isArray(documentIds) && documentIds.length > 0) {
+      allChunks = allChunks.filter(c => documentIds.includes(c.document_id));
+    }
     const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
     
     if (queryWords.length === 0) {
