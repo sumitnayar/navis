@@ -765,14 +765,29 @@ export class StorageService {
           status: d.status,
           changesAccepted: d.changes_accepted || 0,
           changesDismissed: d.changes_dismissed || 0,
-          rawExtraction: d.raw_extraction || null
+          rawExtraction: d.raw_extraction || null,
+          is_demo: d.is_demo || ['policy-doc-access-control', 'policy-doc-bcp-dr', 'policy-doc-privacy'].includes(d.id)
         }));
       } catch (e) {
         console.error('Supabase document_vault fetch failed, falling back to local:', e);
       }
     }
     const data = localStorage.getItem(STORAGE_KEYS.DOCUMENT_VAULT);
-    return data ? JSON.parse(data) : [];
+    const vault = data ? JSON.parse(data) : [];
+    
+    // Retroactive sync for demo flag
+    let updated = false;
+    const syncedVault = vault.map(d => {
+      if (['policy-doc-access-control', 'policy-doc-bcp-dr', 'policy-doc-privacy'].includes(d.id) && !d.is_demo) {
+        d.is_demo = true;
+        updated = true;
+      }
+      return d;
+    });
+    if (updated) {
+      localStorage.setItem(STORAGE_KEYS.DOCUMENT_VAULT, JSON.stringify(syncedVault));
+    }
+    return syncedVault;
   }
 
   static async saveVaultEntry(entry) {
@@ -886,6 +901,31 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
 
     localStorage.setItem(STORAGE_KEYS.POLICY_DOCUMENTS, JSON.stringify(sampleDocs));
 
+    // Seed corresponding Document Vault entries for the sample policies
+    const vaultDocs = sampleDocs.map(doc => ({
+      id: doc.id,
+      documentName: doc.title,
+      documentType: doc.document_type,
+      documentSummary: doc.summary,
+      uploadDate: doc.created_at,
+      extractedCounts: {
+        risks: 5,
+        controls: 5,
+        policies: 1,
+        actions: 5,
+        gaps: 2
+      },
+      status: 'fully_processed',
+      changesAccepted: 5,
+      changesDismissed: 0,
+      rawExtraction: null,
+      is_demo: true
+    }));
+
+    const existingVault = JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCUMENT_VAULT) || '[]');
+    const cleanedVault = existingVault.filter(v => !v.is_demo && v.id !== 'policy-doc-access-control' && v.id !== 'policy-doc-bcp-dr' && v.id !== 'policy-doc-privacy');
+    localStorage.setItem(STORAGE_KEYS.DOCUMENT_VAULT, JSON.stringify([...cleanedVault, ...vaultDocs]));
+
     // Seed initial chunks for the sample policies
     const allChunks = [];
     sampleDocs.forEach(doc => {
@@ -997,6 +1037,8 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
       try {
         const { error } = await supabaseClient.from('policy_documents').delete().eq('id', id);
         if (error) throw error;
+        // Also delete from document_vault
+        await supabaseClient.from('document_vault').delete().eq('id', id);
         return true;
       } catch (e) {
         console.error('Supabase deletePolicyDocument failed, falling back to local:', e);
@@ -1009,6 +1051,12 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
     const chunks = JSON.parse(localStorage.getItem(STORAGE_KEYS.POLICY_CHUNKS) || '[]');
     const remainingChunks = chunks.filter(c => c.document_id !== id);
     localStorage.setItem(STORAGE_KEYS.POLICY_CHUNKS, JSON.stringify(remainingChunks));
+
+    // Also delete from document_vault
+    const vault = JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCUMENT_VAULT) || '[]');
+    const remainingVault = vault.filter(v => v.id !== id);
+    localStorage.setItem(STORAGE_KEYS.DOCUMENT_VAULT, JSON.stringify(remainingVault));
+
     return true;
   }
 

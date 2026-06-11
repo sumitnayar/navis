@@ -50,13 +50,68 @@ export class IntakeComponent {
     }
     try {
       this.policyDocs = await StorageService.getPolicyDocuments();
-      if ((!this.selectedDocIds || this.selectedDocIds.length === 0) && this.policyDocs && this.policyDocs.length > 0) {
-        this.selectedDocIds = this.policyDocs.map(d => d.id);
-        this.allDocsSelected = true;
-      }
     } catch (e) {
       this.policyDocs = [];
     }
+    this.resyncSelection();
+  }
+
+  resyncSelection() {
+    const activeDocs = this.getActiveWorkspaceDocs();
+    const activeDocIds = activeDocs.map(d => d.id);
+    if (!this.selectedDocIds || this.selectedDocIds.length === 0) {
+      this.selectedDocIds = activeDocIds;
+      this.allDocsSelected = true;
+    } else {
+      this.selectedDocIds = this.selectedDocIds.filter(id => activeDocIds.includes(id));
+      if (this.selectedDocIds.length === 0 && activeDocIds.length > 0) {
+        this.selectedDocIds = activeDocIds;
+        this.allDocsSelected = true;
+      } else {
+        this.allDocsSelected = this.selectedDocIds.length === activeDocIds.length;
+      }
+    }
+  }
+
+  getActiveWorkspaceDocs() {
+    const processedVaultDocs = (this.vaultEntries || []).filter(d => 
+      d.status === 'fully_processed' || d.status === 'partially_processed' || d.status === 'Ready'
+    );
+
+    const hasRealDocs = processedVaultDocs.some(d => !d.is_demo);
+    const docs = hasRealDocs ? processedVaultDocs.filter(d => !d.is_demo) : processedVaultDocs;
+
+    return docs.map(d => {
+      let title = d.documentName || 'Untitled Document';
+      if (!hasRealDocs && d.is_demo) {
+        title = `[Demo] ${title}`;
+      }
+      
+      let status = 'Ready';
+      if (d.status === 'Processing' || d.status === 'Failed') {
+        status = d.status;
+      }
+
+      let tags = [];
+      if (d.documentType) {
+        const matchedPolicy = (this.policyDocs || []).find(p => p.id === d.id);
+        if (matchedPolicy && matchedPolicy.framework_tags) {
+          tags = matchedPolicy.framework_tags;
+        } else if (d.extractedCounts) {
+          tags = Object.keys(d.extractedCounts).filter(k => d.extractedCounts[k] > 0);
+        }
+      }
+
+      return {
+        id: d.id,
+        title,
+        document_type: d.documentType || 'Other',
+        status,
+        created_at: d.uploadDate,
+        framework_tags: tags,
+        is_demo: !!d.is_demo
+      };
+    });
   }
 
   // ─── RENDER ENTRY POINT ───────────────────────────────────────────────────
@@ -821,8 +876,9 @@ export class IntakeComponent {
     if (chkAllDocs) {
       chkAllDocs.addEventListener('change', () => {
         this.allDocsSelected = chkAllDocs.checked;
+        const activeDocs = this.getActiveWorkspaceDocs();
         if (chkAllDocs.checked) {
-          this.selectedDocIds = this.policyDocs.map(d => d.id);
+          this.selectedDocIds = activeDocs.map(d => d.id);
         } else {
           this.selectedDocIds = [];
         }
@@ -841,7 +897,8 @@ export class IntakeComponent {
         } else {
           this.selectedDocIds = this.selectedDocIds.filter(id => id !== docId);
         }
-        this.allDocsSelected = this.selectedDocIds.length === this.policyDocs.length;
+        const activeDocs = this.getActiveWorkspaceDocs();
+        this.allDocsSelected = this.selectedDocIds.length === activeDocs.length;
         this.renderBody();
       });
     });
@@ -946,6 +1003,8 @@ export class IntakeComponent {
       this.renderBody();
       return;
     }
+
+    this.extractedText = text;
 
     // Determine chunk count
     const chunks = DocumentExtractionService.chunkText(text);
@@ -1064,7 +1123,37 @@ export class IntakeComponent {
     };
 
     await StorageService.saveVaultEntry(vaultEntry);
+
+    // Also save as policy document and chunk it for QA
+    if (this.extractedText) {
+      const docId = vaultEntry.id;
+      const newDoc = {
+        id: docId,
+        title: vaultEntry.documentName.replace(/\.[^/.]+$/, ""),
+        document_type: vaultEntry.documentType,
+        framework_tags: result?.framework_tags || (vaultEntry.documentType ? [vaultEntry.documentType] : ['Internal Governance']),
+        file_name: vaultEntry.documentName,
+        file_url: '',
+        mime_type: 'application/octet-stream',
+        status: 'Ready',
+        extracted_text: this.extractedText,
+        summary: vaultEntry.documentSummary,
+        created_at: vaultEntry.uploadDate,
+        updated_at: new Date().toISOString()
+      };
+      await StorageService.savePolicyDocument(newDoc);
+
+      const chunks = DocumentExtractionService.chunkPolicyText(this.extractedText);
+      const mappedChunks = chunks.map(c => ({
+        ...c,
+        id: `chunk-${docId}-${c.chunk_index}`,
+        document_id: docId
+      }));
+      await StorageService.savePolicyChunks(mappedChunks);
+    }
+
     this.vaultEntries = await StorageService.getDocumentVault();
+    this.policyDocs = await StorageService.getPolicyDocuments();
 
     // Update app state
     this.onStateChange({ risks: this.state.risks });
@@ -1099,7 +1188,8 @@ export class IntakeComponent {
   // --- POLICY INTELLIGENCE METHODS ---
 
   renderPoliciesTab() {
-    const hasDocs = this.policyDocs && this.policyDocs.length > 0;
+    const activeDocs = this.getActiveWorkspaceDocs();
+    const hasDocs = activeDocs.length > 0;
     const showUploadDrawer = this.showPolicyUploadDrawer || false;
     
     return `
@@ -1166,7 +1256,7 @@ export class IntakeComponent {
           <div class="glass-panel" style="display: flex; flex-direction: column; padding: 16px; min-height: 0; overflow: hidden; background: var(--panel-bg); border: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink:0;">
               <h3 style="font-size:11px; font-weight:700; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px; margin:0;">
-                Documents (${this.policyDocs.length})
+                Documents (${activeDocs.length})
               </h3>
               <button id="btn-show-upload-drawer" class="btn btn-secondary btn-small" style="font-size:9px; padding:2px 8px; display: ${showUploadDrawer ? 'none' : 'block'};">
                 ＋ Add
@@ -1186,7 +1276,7 @@ export class IntakeComponent {
               </div>
               
               <div class="policy-docs-list-scrollable" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
-                ${this.policyDocs.map(d => {
+                ${activeDocs.map(d => {
                   const isChecked = this.selectedDocIds.includes(d.id);
                   const statusClass = {
                     Ready: 'within',
@@ -1303,7 +1393,8 @@ export class IntakeComponent {
     }
 
     if (!this.activeQuestion) {
-      const hasDocs = this.policyDocs && this.policyDocs.length > 0;
+      const activeDocs = this.getActiveWorkspaceDocs();
+      const hasDocs = activeDocs.length > 0;
       if (!hasDocs) {
         return `
           <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px;">
@@ -1451,10 +1542,11 @@ export class IntakeComponent {
   }
 
   getSelectedDocNamesSummary() {
-    if (!this.policyDocs || this.policyDocs.length === 0) return 'None';
-    if (this.selectedDocIds.length === this.policyDocs.length) return 'All Documents';
+    const activeDocs = this.getActiveWorkspaceDocs();
+    if (activeDocs.length === 0) return 'None';
+    if (this.selectedDocIds.length === activeDocs.length) return 'All Documents';
     if (this.selectedDocIds.length === 1) {
-      const doc = this.policyDocs.find(d => d.id === this.selectedDocIds[0]);
+      const doc = activeDocs.find(d => d.id === this.selectedDocIds[0]);
       return doc ? doc.title : '1 Document';
     }
     return `${this.selectedDocIds.length} Documents`;
@@ -1499,6 +1591,22 @@ export class IntakeComponent {
     };
 
     await StorageService.savePolicyDocument(newDoc);
+    
+    // Save corresponding Document Vault entry with status 'Processing'
+    const vaultEntry = {
+      id: docId,
+      documentName: file.name,
+      documentType: docType,
+      documentSummary: '',
+      uploadDate: newDoc.created_at,
+      extractedCounts: { risks: 0, controls: 0, policies: 1, actions: 0, gaps: 0 },
+      status: 'Processing',
+      changesAccepted: 0,
+      changesDismissed: 0,
+      rawExtraction: null
+    };
+    await StorageService.saveVaultEntry(vaultEntry);
+
     await this.loadData();
     this.renderBody();
 
@@ -1514,6 +1622,11 @@ export class IntakeComponent {
       
       await StorageService.savePolicyDocument(newDoc);
 
+      // Update vault entry status to fully_processed
+      vaultEntry.status = 'fully_processed';
+      vaultEntry.documentSummary = newDoc.summary;
+      await StorageService.saveVaultEntry(vaultEntry);
+
       const chunks = DocumentExtractionService.chunkPolicyText(text);
       const mappedChunks = chunks.map(c => ({
         ...c,
@@ -1528,6 +1641,12 @@ export class IntakeComponent {
       newDoc.status = 'Failed';
       newDoc.summary = `Failed to process document: ${err.message}`;
       await StorageService.savePolicyDocument(newDoc);
+      
+      // Update vault entry status to Failed
+      vaultEntry.status = 'Failed';
+      vaultEntry.documentSummary = newDoc.summary;
+      await StorageService.saveVaultEntry(vaultEntry);
+
       if (filenameDisplay) filenameDisplay.textContent = `Processing failed: ${err.message}`;
     }
 
@@ -1536,7 +1655,8 @@ export class IntakeComponent {
     if (!this.selectedDocIds.includes(docId)) {
       this.selectedDocIds.push(docId);
     }
-    this.allDocsSelected = this.selectedDocIds.length === this.policyDocs.length;
+    const activeDocs = this.getActiveWorkspaceDocs();
+    this.allDocsSelected = this.selectedDocIds.length === activeDocs.length;
     this.renderBody();
   }
 
@@ -1544,7 +1664,8 @@ export class IntakeComponent {
     await StorageService.deletePolicyDocument(docId);
     this.selectedDocIds = this.selectedDocIds.filter(id => id !== docId);
     await this.loadData();
-    this.allDocsSelected = this.selectedDocIds.length === this.policyDocs.length;
+    const activeDocs = this.getActiveWorkspaceDocs();
+    this.allDocsSelected = this.selectedDocIds.length === activeDocs.length;
     this.renderBody();
   }
 
