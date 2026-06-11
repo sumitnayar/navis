@@ -766,7 +766,7 @@ export class StorageService {
           changesAccepted: d.changes_accepted || 0,
           changesDismissed: d.changes_dismissed || 0,
           rawExtraction: d.raw_extraction || null,
-          is_demo: d.is_demo || ['policy-doc-access-control', 'policy-doc-bcp-dr', 'policy-doc-privacy'].includes(d.id)
+          is_demo: d.is_demo || ['policy-doc-access-control', 'policy-doc-bcp-dr', 'policy-doc-privacy', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003'].includes(d.id)
         }));
       } catch (e) {
         console.error('Supabase document_vault fetch failed, falling back to local:', e);
@@ -778,7 +778,7 @@ export class StorageService {
     // Retroactive sync for demo flag
     let updated = false;
     const syncedVault = vault.map(d => {
-      if (['policy-doc-access-control', 'policy-doc-bcp-dr', 'policy-doc-privacy'].includes(d.id) && !d.is_demo) {
+      if (['policy-doc-access-control', 'policy-doc-bcp-dr', 'policy-doc-privacy', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003'].includes(d.id) && !d.is_demo) {
         d.is_demo = true;
         updated = true;
       }
@@ -841,7 +841,7 @@ export class StorageService {
   static seedPolicyDocuments() {
     const sampleDocs = [
       {
-        id: 'policy-doc-access-control',
+        id: '00000000-0000-0000-0000-000000000001',
         title: 'Access Control Policy',
         document_type: 'Access Control Policy',
         framework_tags: ['ISO 27001', 'SOC 2'],
@@ -860,7 +860,7 @@ Section 5: Password Complexity. Passwords must be at least 12 characters long, c
         updated_at: new Date().toISOString()
       },
       {
-        id: 'policy-doc-bcp-dr',
+        id: '00000000-0000-0000-0000-000000000002',
         title: 'BCP/DR Policy',
         document_type: 'BCP/DR Policy',
         framework_tags: ['ISO 27001', 'Internal Governance'],
@@ -879,7 +879,7 @@ Section 5: Crisis Communications. In the event of a critical service outage, cus
         updated_at: new Date().toISOString()
       },
       {
-        id: 'policy-doc-privacy',
+        id: '00000000-0000-0000-0000-000000000003',
         title: 'Privacy Policy',
         document_type: 'Privacy Policy',
         framework_tags: ['DPDP', 'GDPR', 'CCPA'],
@@ -923,13 +923,21 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
     }));
 
     const existingVault = JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCUMENT_VAULT) || '[]');
-    const cleanedVault = existingVault.filter(v => !v.is_demo && v.id !== 'policy-doc-access-control' && v.id !== 'policy-doc-bcp-dr' && v.id !== 'policy-doc-privacy');
+    const cleanedVault = existingVault.filter(v => 
+      !v.is_demo && 
+      v.id !== 'policy-doc-access-control' && 
+      v.id !== 'policy-doc-bcp-dr' && 
+      v.id !== 'policy-doc-privacy' &&
+      v.id !== '00000000-0000-0000-0000-000000000001' &&
+      v.id !== '00000000-0000-0000-0000-000000000002' &&
+      v.id !== '00000000-0000-0000-0000-000000000003'
+    );
     localStorage.setItem(STORAGE_KEYS.DOCUMENT_VAULT, JSON.stringify([...cleanedVault, ...vaultDocs]));
 
     // Seed initial chunks for the sample policies
     const allChunks = [];
     sampleDocs.forEach(doc => {
-      if (doc.id === 'policy-doc-access-control') {
+      if (doc.id === '00000000-0000-0000-0000-000000000001') {
         allChunks.push(
           { id: 'chunk-ac-1', document_id: doc.id, chunk_index: 0, chunk_text: `Section 1: User Access Provisioning. All user accounts must be authorized by the respective department head. Access is granted on a least-privilege basis. Multi-Factor Authentication (MFA) is mandatory for all access to internal systems, databases, and production servers.`, section_title: 'Section 1: User Access Provisioning', page_number: 1, token_count: 50, created_at: new Date().toISOString() },
           { id: 'chunk-ac-2', document_id: doc.id, chunk_index: 1, chunk_text: `Section 2: Privileged Access Management. Admin accounts must use dedicated admin credentials. Double authentication is required. Privileged access reviews must occur every 90 days. Any inactive admin account for more than 30 days will be disabled automatically.`, section_title: 'Section 2: Privileged Access Management', page_number: 1, token_count: 50, created_at: new Date().toISOString() },
@@ -938,7 +946,7 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
           { id: 'chunk-ac-5', document_id: doc.id, chunk_index: 4, chunk_text: `Section 5: Password Complexity. Passwords must be at least 12 characters long, containing uppercase, lowercase, numbers, and special characters. Password rotation is recommended every 180 days.`, section_title: 'Section 5: Password Complexity', page_number: 2, token_count: 35, created_at: new Date().toISOString() }
         );
       }
-      if (doc.id === 'policy-doc-bcp-dr') {
+      if (doc.id === '00000000-0000-0000-0000-000000000002') {
         allChunks.push(
           { id: 'chunk-bd-1', document_id: doc.id, chunk_index: 0, chunk_text: `Section 1: Business Continuity Plan. ScaleFlow is committed to maintaining operations during disruptions. The Critical Crisis Management Team (CMT) is responsible for declaring a disaster and executing recovery procedures.`, section_title: 'Section 1: Business Continuity Plan', page_number: 1, token_count: 45, created_at: new Date().toISOString() },
           { id: 'chunk-bd-2', document_id: doc.id, chunk_index: 1, chunk_text: `Section 2: Disaster Recovery Targets. The Recovery Time Objective (RTO) is defined as less than 4 hours for production databases and customer tracking ingestion services. The Recovery Point Objective (RPO) is defined as less than 1 hour, meaning no more than 1 hour of customer transactional data can be lost in a failover event.`, section_title: 'Section 2: Disaster Recovery Targets', page_number: 1, token_count: 65, created_at: new Date().toISOString() },
@@ -947,7 +955,7 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
           { id: 'chunk-bd-5', document_id: doc.id, chunk_index: 5, chunk_text: `Section 5: Crisis Communications. In the event of a critical service outage, customer success must notify key enterprise tenants within 2 hours. A public status page will be maintained and updated every 30 minutes.`, section_title: 'Section 5: Crisis Communications', page_number: 2, token_count: 50, created_at: new Date().toISOString() }
         );
       }
-      if (doc.id === 'policy-doc-privacy') {
+      if (doc.id === '00000000-0000-0000-0000-000000000003') {
         allChunks.push(
           { id: 'chunk-pr-1', document_id: doc.id, chunk_index: 0, chunk_text: `Section 1: Personal Data Collection. ScaleFlow processes customer event tracking data, user identifiers, email addresses, and IP addresses. We strictly collect only personal data necessary for attribution services, aligning with the data minimization principle.`, section_title: 'Section 1: Personal Data Collection', page_number: 1, token_count: 50, created_at: new Date().toISOString() },
           { id: 'chunk-pr-2', document_id: doc.id, chunk_index: 1, chunk_text: `Section 2: Consent Management. Explicit consent must be obtained from users prior to tracking or processing their PII. Users have the right to withdraw consent at any time.`, section_title: 'Section 2: Consent Management', page_number: 1, token_count: 35, created_at: new Date().toISOString() },
@@ -1096,16 +1104,22 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
   static async savePolicyChunks(chunks) {
     if (isCloudMode) {
       try {
-        const dbChunks = chunks.map(c => ({
-          id: c.id || undefined,
-          document_id: c.document_id,
-          organization_id: '00000000-0000-0000-0000-000000000000',
-          chunk_index: c.chunk_index,
-          chunk_text: c.chunk_text,
-          section_title: c.section_title,
-          page_number: c.page_number,
-          token_count: c.token_count
-        }));
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const dbChunks = chunks.map(c => {
+          const row = {
+            document_id: c.document_id,
+            organization_id: '00000000-0000-0000-0000-000000000000',
+            chunk_index: c.chunk_index,
+            chunk_text: c.chunk_text,
+            section_title: c.section_title,
+            page_number: c.page_number,
+            token_count: c.token_count
+          };
+          if (c.id && uuidRegex.test(c.id)) {
+            row.id = c.id;
+          }
+          return row;
+        });
         const { error } = await supabaseClient.from('policy_document_chunks').insert(dbChunks);
         if (error) throw error;
         return chunks;
@@ -1192,7 +1206,9 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
     const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
     
     if (queryWords.length === 0) {
-      return allChunks.slice(0, limit);
+      const fallback = allChunks.slice(0, limit);
+      fallback.forEach(c => { c.score = 0; });
+      return fallback;
     }
     
     const scored = allChunks.map(chunk => {
@@ -1214,10 +1230,18 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
     });
     
     scored.sort((a, b) => b.score - a.score);
+    
+    // Attach score to each chunk object
+    scored.forEach(s => {
+      s.chunk.score = s.score;
+    });
+    
     const top = scored.filter(s => s.score > 0).map(s => s.chunk);
     
     if (top.length === 0) {
-      return allChunks.slice(0, limit);
+      const fallback = allChunks.slice(0, limit);
+      fallback.forEach(c => { c.score = 0; });
+      return fallback;
     }
     
     return top.slice(0, limit);

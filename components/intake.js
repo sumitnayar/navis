@@ -32,7 +32,26 @@ export class IntakeComponent {
     this.allDocsSelected = true;
     this.policyQALoading = false;
     this.showPolicyUploadDrawer = false;
+    this.policyQuery = '';
+    this.debugMode = false;
+    this.evidenceExpanded = false;
+    this.sessionMetrics = {
+      questionsAsked: 0,
+      questionsBypassed: 0,
+      questionsAnswered: 0,
+      noEvidenceResponses: 0,
+      weakRetrievals: 0
+    };
+    this.policyChunks = [];
     this._container = null;
+  }
+
+  generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
 
   // ─── DATA LOADING ─────────────────────────────────────────────────────────
@@ -52,6 +71,11 @@ export class IntakeComponent {
       this.policyDocs = await StorageService.getPolicyDocuments();
     } catch (e) {
       this.policyDocs = [];
+    }
+    try {
+      this.policyChunks = await StorageService.getPolicyChunks();
+    } catch (e) {
+      this.policyChunks = [];
     }
     this.resyncSelection();
   }
@@ -78,8 +102,18 @@ export class IntakeComponent {
       d.status === 'fully_processed' || d.status === 'partially_processed' || d.status === 'Ready'
     );
 
-    const hasRealDocs = processedVaultDocs.some(d => !d.is_demo);
-    const docs = hasRealDocs ? processedVaultDocs.filter(d => !d.is_demo) : processedVaultDocs;
+    const filteredDocs = processedVaultDocs.filter(d => {
+      // 1. Must have a matching policy_document in policyDocs
+      const matchedPolicy = (this.policyDocs || []).find(p => p.id === d.id);
+      if (!matchedPolicy) return false;
+      
+      // 2. Must have at least one chunk in policyChunks
+      const hasChunks = (this.policyChunks || []).some(c => c.document_id === d.id);
+      return hasChunks;
+    });
+
+    const hasRealDocs = filteredDocs.some(d => !d.is_demo);
+    const docs = hasRealDocs ? filteredDocs.filter(d => !d.is_demo) : filteredDocs;
 
     return docs.map(d => {
       let title = d.documentName || 'Untitled Document';
@@ -811,63 +845,17 @@ export class IntakeComponent {
 
     // --- POLICY TAB BINDINGS ---
     
-    // Collapsible upload drawer
-    body.querySelector('#btn-show-upload-drawer')?.addEventListener('click', () => {
-      this.showPolicyUploadDrawer = true;
-      this.renderBody();
-    });
-
-    body.querySelector('#btn-close-upload-drawer')?.addEventListener('click', () => {
-      this.showPolicyUploadDrawer = false;
-      this.renderBody();
-    });
-
-    body.querySelector('#btn-trigger-upload-empty')?.addEventListener('click', () => {
-      this.showPolicyUploadDrawer = true;
-      this.renderBody();
-    });
-
-    // Policy Dropzone
-    const policyDropzone = body.querySelector('#policy-dropzone');
-    if (policyDropzone) {
-      policyDropzone.addEventListener('dragover', (e) => { e.preventDefault(); policyDropzone.classList.add('dragover'); });
-      policyDropzone.addEventListener('dragleave', () => policyDropzone.classList.remove('dragover'));
-      policyDropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        policyDropzone.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        if (file) this.setupPolicyMetadataForm(file);
-      });
-    }
-
-    // Policy File Input
-    const policyFileInput = body.querySelector('#policy-file-input');
-    if (policyFileInput) {
-      policyFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) this.setupPolicyMetadataForm(file);
-      });
-    }
-
-    // Cancel Policy Upload
-    const cancelUploadBtn = body.querySelector('#btn-cancel-policy-upload');
-    if (cancelUploadBtn) {
-      cancelUploadBtn.addEventListener('click', () => {
-        this.pendingPolicyFile = null;
-        const metaSection = body.querySelector('#policy-upload-meta');
-        if (metaSection) metaSection.style.display = 'none';
-      });
-    }
-
-    // Submit Policy Upload
-    const submitUploadBtn = body.querySelector('#btn-submit-policy-upload');
-    if (submitUploadBtn) {
-      submitUploadBtn.addEventListener('click', () => {
-        const docType = body.querySelector('#policy-upload-type').value;
-        const framework = body.querySelector('#policy-upload-framework').value;
-        if (this.pendingPolicyFile) {
-          this.handlePolicyUpload(this.pendingPolicyFile, docType, framework);
+    // Go to Upload & Extract empty state redirect button
+    const goUploadBtn = body.querySelector('#btn-go-upload-workflow');
+    if (goUploadBtn) {
+      goUploadBtn.addEventListener('click', () => {
+        this.activeTab = 'upload';
+        const tabBar = this._container.querySelector('#intake-tab-bar');
+        if (tabBar) {
+          this._container.innerHTML = this.renderShell();
         }
+        this.renderBody();
+        this.bindEvents(this._container);
       });
     }
 
@@ -907,6 +895,7 @@ export class IntakeComponent {
     body.querySelectorAll('.policy-suggest-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const query = btn.dataset.query;
+        this.policyQuery = query;
         const input = body.querySelector('#policy-qa-input');
         if (input) input.value = query;
         this.handlePolicyQAQuery(query);
@@ -918,6 +907,7 @@ export class IntakeComponent {
       item.addEventListener('click', () => {
         const idx = parseInt(item.dataset.historyIdx);
         this.activeQuestion = this.sessionQuestions[idx];
+        this.policyQuery = this.activeQuestion.question; // restore question
         this.renderBody();
       });
     });
@@ -926,6 +916,11 @@ export class IntakeComponent {
     const qaSubmitBtn = body.querySelector('#btn-policy-qa-submit');
     const qaInput = body.querySelector('#policy-qa-input');
     if (qaSubmitBtn && qaInput) {
+      // Sync user typing to state in real-time without re-rendering
+      qaInput.addEventListener('input', (e) => {
+        this.policyQuery = e.target.value;
+      });
+
       qaSubmitBtn.addEventListener('click', () => {
         const query = qaInput.value.trim();
         if (query) {
@@ -939,6 +934,34 @@ export class IntakeComponent {
           const query = qaInput.value.trim();
           if (query) {
             this.handlePolicyQAQuery(query);
+          }
+        }
+      });
+    }
+
+    // Developer Debug Toggle Binding
+    const chkPolicyDebug = body.querySelector('#chk-policy-debug');
+    if (chkPolicyDebug) {
+      chkPolicyDebug.addEventListener('change', () => {
+        this.debugMode = chkPolicyDebug.checked;
+        this.renderBody();
+      });
+    }
+
+    // Toggle Evidence Drawer Binding
+    const toggleEvidenceBtn = body.querySelector('#btn-toggle-evidence');
+    if (toggleEvidenceBtn) {
+      toggleEvidenceBtn.addEventListener('click', () => {
+        this.evidenceExpanded = !this.evidenceExpanded;
+        const content = body.querySelector('#evidence-panel-content');
+        const arrow = toggleEvidenceBtn.querySelector('span');
+        if (content && arrow) {
+          if (this.evidenceExpanded) {
+            content.style.display = 'flex';
+            arrow.textContent = 'Collapse ▴';
+          } else {
+            content.style.display = 'none';
+            arrow.textContent = 'Expand ▾';
           }
         }
       });
@@ -1103,8 +1126,9 @@ export class IntakeComponent {
 
     // Save vault entry
     const result = this.extractionResult;
+    const docId = this.generateUUID();
     const vaultEntry = {
-      id: `vault-${Date.now()}`,
+      id: docId,
       documentName: this.currentFile?.name || 'Unknown',
       documentType: result?.document_type || 'other',
       documentSummary: result?.document_summary || '',
@@ -1126,7 +1150,6 @@ export class IntakeComponent {
 
     // Also save as policy document and chunk it for QA
     if (this.extractedText) {
-      const docId = vaultEntry.id;
       const newDoc = {
         id: docId,
         title: vaultEntry.documentName.replace(/\.[^/.]+$/, ""),
@@ -1146,14 +1169,21 @@ export class IntakeComponent {
       const chunks = DocumentExtractionService.chunkPolicyText(this.extractedText);
       const mappedChunks = chunks.map(c => ({
         ...c,
-        id: `chunk-${docId}-${c.chunk_index}`,
+        id: this.generateUUID(),
         document_id: docId
       }));
       await StorageService.savePolicyChunks(mappedChunks);
     }
 
-    this.vaultEntries = await StorageService.getDocumentVault();
-    this.policyDocs = await StorageService.getPolicyDocuments();
+    const vaultEntries = await StorageService.getDocumentVault();
+    const policyDocuments = await StorageService.getPolicyDocuments();
+    const policyChunks = await StorageService.getPolicyChunks();
+    console.log("Document Vault", vaultEntries);
+    console.log("Policy Documents", policyDocuments);
+    console.log("Chunk Count", policyChunks.length);
+    this.vaultEntries = vaultEntries;
+    this.policyDocs = policyDocuments;
+    this.policyChunks = policyChunks;
 
     // Update app state
     this.onStateChange({ risks: this.state.risks });
@@ -1165,11 +1195,13 @@ export class IntakeComponent {
   }
 
   async handleApplyQueue() {
-    const accepted = this.changeQueue.filter(i => i.decision === 'accepted' && i.itemType === 'Risk');
+    const accepted = this.changeQueue.filter(i => i.decision === 'accepted');
     for (const item of accepted) {
       try {
-        const risk = DocumentExtractionService.extractedRiskToRegisterRisk(item);
-        await StorageService.saveRisk(risk, 'Imported via Change Queue');
+        if (item.itemType === 'Risk') {
+          const risk = DocumentExtractionService.extractedRiskToRegisterRisk(item);
+          await StorageService.saveRisk(risk, 'Imported via Change Queue');
+        }
       } catch (e) {
         console.error('Queue apply failed:', e);
       }
@@ -1177,7 +1209,30 @@ export class IntakeComponent {
     // Remove applied items from queue
     const remaining = this.changeQueue.filter(i => i.decision !== 'accepted');
     await StorageService.saveChangeQueue(remaining);
+    
+    // Sync vault status for processed documents
+    const affectedDocs = [...new Set(accepted.map(i => i.sourceDocument).filter(Boolean))];
+    for (const docName of affectedDocs) {
+      const remainingForDoc = remaining.filter(i => i.sourceDocument === docName);
+      if (remainingForDoc.length === 0) {
+        const vaultEntry = (this.vaultEntries || []).find(v => v.documentName === docName);
+        if (vaultEntry && vaultEntry.status !== 'fully_processed') {
+          vaultEntry.status = 'fully_processed';
+          await StorageService.saveVaultEntry(vaultEntry);
+        }
+      }
+    }
+
     this.changeQueue = remaining;
+    const vaultEntries = await StorageService.getDocumentVault();
+    const policyDocuments = await StorageService.getPolicyDocuments();
+    const policyChunks = await StorageService.getPolicyChunks();
+    console.log("Document Vault", vaultEntries);
+    console.log("Policy Documents", policyDocuments);
+    console.log("Chunk Count", policyChunks.length);
+    this.vaultEntries = vaultEntries;
+    this.policyDocs = policyDocuments;
+    this.policyChunks = policyChunks;
     this.state.risks = await StorageService.getRisks();
     this.onStateChange({ risks: this.state.risks });
     this.renderBody();
@@ -1187,92 +1242,45 @@ export class IntakeComponent {
 
   // --- POLICY INTELLIGENCE METHODS ---
 
+  getActiveWorkspaceChunksCount() {
+    const activeDocs = this.getActiveWorkspaceDocs();
+    const activeDocIds = activeDocs.map(d => d.id);
+    return (this.policyChunks || []).filter(c => activeDocIds.includes(c.document_id)).length;
+  }
+
   renderPoliciesTab() {
     const activeDocs = this.getActiveWorkspaceDocs();
     const hasDocs = activeDocs.length > 0;
-    const showUploadDrawer = this.showPolicyUploadDrawer || false;
     
     return `
       <div class="ask-docs-container" style="margin-top: 16px; display: flex; flex-direction: column; gap: 16px; height: calc(100vh - 240px); min-height: 600px;">
         
-        <!-- Collapsible Upload Drawer -->
-        <div id="policy-upload-drawer" class="glass-panel" style="display: ${showUploadDrawer ? 'block' : 'none'}; padding: 16px; margin-bottom: 8px; border: 1px solid var(--border-color); background: var(--panel-bg);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h4 style="font-size:12px; font-weight:700; color:var(--text-primary); text-transform:uppercase; margin:0;">Upload New Policy Document</h4>
-            <button id="btn-close-upload-drawer" class="btn btn-secondary btn-small" style="font-size:9px; padding:2px 8px;">✕ Close</button>
-          </div>
-          
-          <div class="intake-dropzone" id="policy-dropzone" style="padding: 24px; border: 1px dashed var(--border-color); border-radius: 8px; text-align: center; background: rgba(0,0,0,0.02);">
-            <div class="dropzone-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:40px;height:40px;color:var(--color-teal);margin:0 auto 12px;display:block;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-              </svg>
-              <span style="font-size:12px; font-weight:600; color:var(--text-primary); display:block; margin-bottom:4px;" id="policy-upload-filename-display">Drag document here or click to browse</span>
-              <input type="file" id="policy-file-input" accept=".pdf,.docx,.txt,.md" style="display:none;">
-              <label for="policy-file-input" class="btn btn-secondary btn-small" style="cursor:pointer; padding:4px 12px; font-size:10px; margin-top:4px;">Choose File</label>
-            </div>
-          </div>
-
-          <!-- Metadata parameters -->
-          <div id="policy-upload-meta" style="margin-top: 12px; display: none; border-top: 1px solid var(--border-color); padding-top: 12px; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div>
-              <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Document Type</label>
-              <select id="policy-upload-type" class="form-control" style="font-size:11px;padding:4px;height:28px;">
-                <option value="Access Control Policy">Access Control Policy</option>
-                <option value="BCP/DR Policy">BCP/DR Policy</option>
-                <option value="Privacy Policy">Privacy Policy</option>
-                <option value="Information Security Policy">Information Security Policy</option>
-                <option value="Vendor Risk Policy">Vendor Risk Policy</option>
-                <option value="Incident Response Policy">Incident Response Policy</option>
-                <option value="Audit Report">Audit Report</option>
-                <option value="SOP">SOP</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Framework / Category</label>
-              <select id="policy-upload-framework" class="form-control" style="font-size:11px;padding:4px;height:28px;">
-                <option value="SOC 2">SOC 2</option>
-                <option value="ISO 27001">ISO 27001</option>
-                <option value="GDPR">GDPR</option>
-                <option value="DPDP">DPDP</option>
-                <option value="ISO 27701">ISO 27701</option>
-                <option value="CCPA">CCPA</option>
-                <option value="Internal Governance">Internal Governance</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div style="grid-column: span 2; display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
-              <button id="btn-cancel-policy-upload" class="btn btn-secondary btn-small" style="font-size:10px;padding:4px 10px;">Cancel</button>
-              <button id="btn-submit-policy-upload" class="btn btn-primary btn-small" style="font-size:10px;padding:4px 10px;">Extract &amp; Process</button>
-            </div>
-          </div>
-        </div>
-
         <!-- Main Workspace: 3 Columns -->
         <div style="display: grid; grid-template-columns: 280px 1.2fr 1.5fr; gap: 16px; flex-grow: 1; min-height: 0;">
           
-          <!-- LEFT PANEL: Available Documents -->
+          <!-- LEFT PANEL: Available Knowledge Sources -->
           <div class="glass-panel" style="display: flex; flex-direction: column; padding: 16px; min-height: 0; overflow: hidden; background: var(--panel-bg); border: 1px solid var(--border-color);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink:0;">
-              <h3 style="font-size:11px; font-weight:700; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px; margin:0;">
-                Documents (${activeDocs.length})
+            <div style="display: flex; flex-direction: column; margin-bottom: 12px; flex-shrink:0;">
+              <h3 style="font-size:11px; font-weight:700; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px; margin:0 0 6px 0;">
+                Knowledge Sources (${activeDocs.length})
               </h3>
-              <button id="btn-show-upload-drawer" class="btn btn-secondary btn-small" style="font-size:9px; padding:2px 8px; display: ${showUploadDrawer ? 'none' : 'block'};">
-                ＋ Add
-              </button>
+              <div style="font-size: 9px; color: var(--text-muted); display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                <div>Knowledge sources available: <strong>${activeDocs.length}</strong></div>
+                <div>Chunks indexed: <strong>${this.getActiveWorkspaceChunksCount()}</strong></div>
+              </div>
             </div>
             
             ${!hasDocs ? `
               <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding: 20px;">
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Upload documents to begin policy intelligence analysis.</p>
-                <button id="btn-trigger-upload-empty" class="btn btn-primary btn-small" style="font-size:11px;">Upload Document</button>
+                <p style="font-size:11px; color:var(--text-secondary); margin-bottom:6px; font-weight:600;">No approved knowledge sources are available for analysis.</p>
+                <p style="font-size:10px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">Upload and approve documents using the Upload & Extract workflow.</p>
+                <button id="btn-go-upload-workflow" class="btn btn-primary btn-small" style="font-size:11px; padding: 6px 12px;">Go to Upload & Extract</button>
               </div>
             ` : `
               <!-- Document List Content -->
               <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px; flex-shrink:0;">
                 <input type="checkbox" id="chk-all-docs" ${this.allDocsSelected ? 'checked' : ''} style="cursor: pointer;" />
-                <label for="chk-all-docs" style="font-size: 11px; font-weight: 600; color: var(--text-primary); cursor: pointer; user-select: none;">All Documents</label>
+                <label for="chk-all-docs" style="font-size: 11px; font-weight: 600; color: var(--text-primary); cursor: pointer; user-select: none;">All Knowledge Sources</label>
               </div>
               
               <div class="policy-docs-list-scrollable" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
@@ -1314,7 +1322,7 @@ export class IntakeComponent {
             </h3>
             
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; flex-shrink:0;">
-              <textarea id="policy-qa-input" class="form-control" rows="3" placeholder="Enter a governance or policy question..." style="font-size:12px; line-height: 1.4; resize: none; width: 100%; border-radius: 6px; padding: 8px 10px;" ${!hasDocs ? 'disabled' : ''}></textarea>
+              <textarea id="policy-qa-input" class="form-control" rows="3" placeholder="Enter a governance or policy question..." style="font-size:12px; line-height: 1.4; resize: none; width: 100%; border-radius: 6px; padding: 8px 10px;" ${!hasDocs ? 'disabled' : ''}>${this.policyQuery || ''}</textarea>
               <button id="btn-policy-qa-submit" class="btn btn-primary" style="width: 100%; font-size:12px; padding: 8px;" ${!hasDocs || this.selectedDocIds.length === 0 ? 'disabled' : ''}>
                 Ask Analyst
               </button>
@@ -1362,6 +1370,11 @@ export class IntakeComponent {
                   `;
                 }).join('')}
               </div>
+            </div>
+            <!-- Developer Debug Toggle -->
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; flex-shrink:0;">
+              <input type="checkbox" id="chk-policy-debug" ${this.debugMode ? 'checked' : ''} style="cursor: pointer;" />
+              <label for="chk-policy-debug" style="font-size: 10px; font-weight: 600; color: var(--text-muted); cursor: pointer; user-select: none;">Show Retrieval Diagnostics</label>
             </div>
           </div>
           
@@ -1414,10 +1427,12 @@ export class IntakeComponent {
 
     const q = this.activeQuestion;
     const aiResponse = q.answer;
-    
-    // Check for matching evidence empty state
     const hasEvidence = aiResponse.citations && aiResponse.citations.length > 0;
-    if (!hasEvidence && (!aiResponse.direct_answer || aiResponse.direct_answer.toLowerCase().includes("no relevant evidence") || aiResponse.direct_answer.toLowerCase().includes("insufficient data") || aiResponse.direct_answer.toLowerCase().includes("do not find any matching"))) {
+
+    // Check for matching evidence empty state
+    const isNoEvidence = !hasEvidence && (!aiResponse.direct_answer || aiResponse.direct_answer.toLowerCase().includes("no evidence") || aiResponse.direct_answer.toLowerCase().includes("no relevant evidence") || aiResponse.direct_answer.toLowerCase().includes("insufficient data") || aiResponse.direct_answer.toLowerCase().includes("do not find any matching") || aiResponse.direct_answer.toLowerCase().includes("no matching evidence"));
+    
+    if (isNoEvidence) {
       return `
         <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px;">
           <div style="width:48px;height:48px;border-radius:50%;background:rgba(245,158,11,0.06);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
@@ -1432,18 +1447,50 @@ export class IntakeComponent {
     }
 
     // Map confidence values to CSS variables
-    const confLevel = (aiResponse.confidence || 'Medium').trim();
+    const confLevel = (aiResponse.confidence || 'Low').trim();
     const confColor = { High: 'var(--color-safe-text)', Medium: 'var(--color-warning-text)', Low: 'var(--color-critical-text)' }[confLevel] || 'var(--text-muted)';
     const confBg = { High: 'var(--color-safe-bg)', Medium: 'var(--color-warning-bg)', Low: 'var(--color-critical-bg)' }[confLevel] || 'rgba(255,255,255,0.05)';
     const confBorder = { High: 'rgba(26,122,74,0.2)', Medium: 'rgba(194,97,14,0.2)', Low: 'rgba(192,57,43,0.2)' }[confLevel] || 'rgba(255,255,255,0.05)';
 
     const formattedAnswer = this.formatPoliciesMarkdown(aiResponse.direct_answer || aiResponse.directAnswer);
 
+    // Provenance Banner
     let html = `
+      <!-- Provenance Banner -->
+      <div class="glass-panel" style="padding: 10px 12px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.01); border-radius: 8px; margin-bottom: 12px; font-size: 11px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
+          <div>
+            <div style="font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Selected</div>
+            <div style="font-size: 13px; font-weight: 800; color: var(--text-primary); margin-top: 2px;">${q.documentsSelected || 0}</div>
+          </div>
+          <div>
+            <div style="font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Used</div>
+            <div style="font-size: 13px; font-weight: 800; color: var(--text-primary); margin-top: 2px;">${q.documentsUsed || 0}</div>
+          </div>
+          <div>
+            <div style="font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Chunks</div>
+            <div style="font-size: 13px; font-weight: 800; color: var(--text-primary); margin-top: 2px;">${q.chunksRetrieved || 0}</div>
+          </div>
+          <div>
+            <div style="font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Strength</div>
+            <div style="margin-top: 2px;">
+              <span class="status-badge" style="font-size: 8px; padding: 0px 4px; border-radius: 3px; font-weight: 600; 
+                background: ${q.evidenceStrength === 'High' ? 'var(--color-safe-bg)' : q.evidenceStrength === 'Medium' ? 'var(--color-warning-bg)' : 'var(--color-critical-bg)'}; 
+                color: ${q.evidenceStrength === 'High' ? 'var(--color-safe-text)' : q.evidenceStrength === 'Medium' ? 'var(--color-warning-text)' : 'var(--color-critical-text)'};">
+                ${q.evidenceStrength || 'Low'}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size: 10px; color: var(--text-muted); line-height: 1.3;">
+          <strong>Used Documents:</strong> ${q.usedDocNames && q.usedDocNames.length > 0 ? q.usedDocNames.join(', ') : 'None'}
+        </div>
+      </div>
+
       <!-- Question Header info -->
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:8px;">
         <div style="font-size:11px; color:var(--text-muted);">
-          Queried: <strong style="color:var(--text-secondary);">${q.selectedDocNames || 'Selected Documents'}</strong>
+          Confidence Indicator
         </div>
         <span class="status-badge" style="background:${confBg}; color:${confColor}; border:1px solid ${confBorder}; font-size:9px; padding:1px 6px; border-radius:3px; text-transform:uppercase; font-weight: 600;">
           ${confLevel} Confidence
@@ -1454,6 +1501,29 @@ export class IntakeComponent {
       <div class="glass-panel" style="padding:12px 14px; border:1px solid var(--border-color); background:rgba(255,255,255,0.015); border-radius:8px; margin-bottom:16px;">
         <h4 style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-top:0; margin-bottom:8px;">Direct Answer</h4>
         <div style="font-size:12px; color:var(--text-primary); line-height:1.5;">${formattedAnswer}</div>
+      </div>
+
+      <!-- Why This Answer Panel -->
+      <div class="glass-panel" style="padding: 10px 12px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.015); border-radius: 8px; margin-bottom: 16px;">
+        <h4 style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0; margin-bottom: 6px;">Why this answer?</h4>
+        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-secondary);">
+          <div style="display: flex; justify-content: space-between;">
+            <span>Matching excerpts:</span>
+            <strong style="color: var(--text-primary);">${q.chunksRetrieved || 0}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Documents used:</span>
+            <strong style="color: var(--text-primary);">${q.documentsUsed || 0}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Average retrieval score:</span>
+            <strong style="color: var(--text-primary);">${q.averageScore ? q.averageScore.toFixed(1) : '0.0'}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Evidence strength:</span>
+            <strong style="color: ${q.evidenceStrength === 'High' ? 'var(--color-safe-text)' : q.evidenceStrength === 'Medium' ? 'var(--color-warning-text)' : 'var(--color-critical-text)'};">${q.evidenceStrength || 'Low'}</strong>
+          </div>
+        </div>
       </div>
 
       <!-- Section 2: Evidence & Citations -->
@@ -1538,6 +1608,57 @@ export class IntakeComponent {
       </div>
     `;
 
+    // Collapsible Retrieved Evidence Section
+    const chunksSupplied = q.chunksSupplied || [];
+    html += `
+      <div class="glass-panel" style="margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+        <div id="btn-toggle-evidence" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+          <h4 style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">Retrieved Evidence</h4>
+          <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">${this.evidenceExpanded ? 'Collapse ▴' : 'Expand ▾'}</span>
+        </div>
+        <div id="evidence-panel-content" style="display: ${this.evidenceExpanded ? 'flex' : 'none'}; flex-direction: column; gap: 8px; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          ${chunksSupplied.length === 0 ? `
+            <div style="font-size:11px; color:var(--text-secondary); font-style:italic;">No database chunks were supplied to Gemini (scores below relevance threshold).</div>
+          ` : chunksSupplied.map((c, idx) => `
+            <div style="background: rgba(0,0,0,0.015); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-weight: 600; color: var(--text-primary); flex-wrap: wrap; gap: 4px;">
+                <span>📄 ${c.document_title || c.documentName || 'Policy Document'} (Chunk #${c.chunk_index !== undefined ? c.chunk_index + 1 : idx + 1})</span>
+                <span class="status-badge" style="font-size: 9px; padding: 1px 5px; background: rgba(0,181,181,0.06); color: var(--color-teal); border: 1px solid rgba(0,181,181,0.15);">Score: ${c.score !== undefined ? c.score.toFixed(1) : '0.0'}</span>
+              </div>
+              <div style="color: var(--text-secondary); line-height: 1.4; font-style: italic;">"${c.chunk_text}"</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // Developer Debug Diagnostics Panel
+    if (this.debugMode) {
+      html += `
+        <div class="glass-panel" style="margin-top: 16px; padding: 12px; border: 1px solid rgba(194, 97, 14, 0.3); background: rgba(194, 97, 14, 0.02); border-radius: 8px;">
+          <h4 style="font-size: 9px; font-weight: 800; color: var(--color-warning); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0; margin-bottom: 8px;">Developer Debug Diagnostics</h4>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 10px; font-family: monospace; color: var(--text-secondary); line-height: 1.4;">
+            <div><strong>Question:</strong> ${q.question}</div>
+            <div><strong>Selected Doc IDs:</strong> ${JSON.stringify(this.selectedDocIds)}</div>
+            <div><strong>Retrieved Doc IDs:</strong> ${JSON.stringify(q.retrievedDocIds || [])}</div>
+            <div><strong>Retrieved Chunk IDs:</strong> ${JSON.stringify(q.retrievedChunkIds || [])}</div>
+            <div><strong>Chunk Scores:</strong> ${JSON.stringify(q.chunkScores || [])}</div>
+            <div><strong>Context Length:</strong> ${q.contextLength || 0} chars</div>
+            <div style="border-top: 1px solid rgba(194, 97, 14, 0.2); padding-top: 6px; margin-top: 4px;">
+              <strong>Session Metrics:</strong>
+              <ul style="margin: 4px 0 0 12px; padding: 0;">
+                <li>Asked: ${this.sessionMetrics.questionsAsked}</li>
+                <li>Bypassed: ${this.sessionMetrics.questionsBypassed}</li>
+                <li>Answered: ${this.sessionMetrics.questionsAnswered}</li>
+                <li>No-evidence responses: ${this.sessionMetrics.noEvidenceResponses}</li>
+                <li>Weak retrievals: ${this.sessionMetrics.weakRetrievals}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     return html;
   }
 
@@ -1552,113 +1673,7 @@ export class IntakeComponent {
     return `${this.selectedDocIds.length} Documents`;
   }
 
-  setupPolicyMetadataForm(file) {
-    this.pendingPolicyFile = file;
-    const body = this._container.querySelector('#intake-body');
-    if (body) {
-      const filenameDisplay = body.querySelector('#policy-upload-filename-display');
-      if (filenameDisplay) filenameDisplay.textContent = `Selected: ${file.name}`;
-      
-      const metaSection = body.querySelector('#policy-upload-meta');
-      if (metaSection) metaSection.style.display = 'grid';
-    }
-  }
-
-  async handlePolicyUpload(file, docType, framework) {
-    this.pendingPolicyFile = null;
-    const body = this._container.querySelector('#intake-body');
-    
-    const metaSection = body.querySelector('#policy-upload-meta');
-    if (metaSection) metaSection.style.display = 'none';
-
-    const filenameDisplay = body.querySelector('#policy-upload-filename-display');
-    if (filenameDisplay) filenameDisplay.textContent = 'Extracting and parsing text...';
-
-    const docId = `policy-${Date.now()}`;
-    const newDoc = {
-      id: docId,
-      title: file.name.replace(/\.[^/.]+$/, ""),
-      document_type: docType,
-      framework_tags: [framework],
-      file_name: file.name,
-      file_url: '',
-      mime_type: file.type || 'application/octet-stream',
-      status: 'Processing',
-      extracted_text: '',
-      summary: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    await StorageService.savePolicyDocument(newDoc);
-    
-    // Save corresponding Document Vault entry with status 'Processing'
-    const vaultEntry = {
-      id: docId,
-      documentName: file.name,
-      documentType: docType,
-      documentSummary: '',
-      uploadDate: newDoc.created_at,
-      extractedCounts: { risks: 0, controls: 0, policies: 1, actions: 0, gaps: 0 },
-      status: 'Processing',
-      changesAccepted: 0,
-      changesDismissed: 0,
-      rawExtraction: null
-    };
-    await StorageService.saveVaultEntry(vaultEntry);
-
-    await this.loadData();
-    this.renderBody();
-
-    try {
-      const { text, error } = await DocumentExtractionService.extractText(file);
-      if (error) {
-        throw new Error(error);
-      }
-
-      newDoc.extracted_text = text;
-      newDoc.summary = text.slice(0, 150) + (text.length > 150 ? '...' : '');
-      newDoc.status = 'Ready';
-      
-      await StorageService.savePolicyDocument(newDoc);
-
-      // Update vault entry status to fully_processed
-      vaultEntry.status = 'fully_processed';
-      vaultEntry.documentSummary = newDoc.summary;
-      await StorageService.saveVaultEntry(vaultEntry);
-
-      const chunks = DocumentExtractionService.chunkPolicyText(text);
-      const mappedChunks = chunks.map(c => ({
-        ...c,
-        id: `chunk-${docId}-${c.chunk_index}`,
-        document_id: docId
-      }));
-      await StorageService.savePolicyChunks(mappedChunks);
-
-      if (filenameDisplay) filenameDisplay.textContent = 'Policy processed successfully!';
-    } catch (err) {
-      console.error('Policy processing error:', err);
-      newDoc.status = 'Failed';
-      newDoc.summary = `Failed to process document: ${err.message}`;
-      await StorageService.savePolicyDocument(newDoc);
-      
-      // Update vault entry status to Failed
-      vaultEntry.status = 'Failed';
-      vaultEntry.documentSummary = newDoc.summary;
-      await StorageService.saveVaultEntry(vaultEntry);
-
-      if (filenameDisplay) filenameDisplay.textContent = `Processing failed: ${err.message}`;
-    }
-
-    await this.loadData();
-    // Auto-select newly uploaded document
-    if (!this.selectedDocIds.includes(docId)) {
-      this.selectedDocIds.push(docId);
-    }
-    const activeDocs = this.getActiveWorkspaceDocs();
-    this.allDocsSelected = this.selectedDocIds.length === activeDocs.length;
-    this.renderBody();
-  }
+  // Upload helper methods removed to enforce READ-ONLY workflow for Ask Documents tab
 
   async handleDeletePolicy(docId) {
     await StorageService.deletePolicyDocument(docId);
@@ -1672,6 +1687,7 @@ export class IntakeComponent {
   async handlePolicyQAQuery(query) {
     if (!query) return;
     
+    this.sessionMetrics.questionsAsked++;
     this.policyQALoading = true;
     this.activeQuestion = null;
     this.renderBody(); // Re-render immediately to show spinner loader
@@ -1679,50 +1695,105 @@ export class IntakeComponent {
     try {
       const selectedDocIds = this.selectedDocIds || [];
       const matchingChunks = await StorageService.retrieveRelevantChunks(query, selectedDocIds, 4);
-      const settings = this.state.settings || {};
       
-      let aiResponse;
-      if (matchingChunks.length === 0) {
-        aiResponse = {
-          direct_answer: "No relevant evidence was found in the selected documents.",
-          citations: [],
-          gaps_detected: [],
-          recommended_actions: [],
-          confidence: "Low"
-        };
+      const settings = {
+        ...this.state.settings,
+        selectedDocIds: this.selectedDocIds
+      };
+      
+      const aiResponse = await AIService.answerPolicyQuestion(query, matchingChunks, settings);
+      
+      // Update session metrics
+      const directAnswer = aiResponse.direct_answer || "";
+      const isBypassed = directAnswer.toLowerCase().includes("no evidence") ||
+                         directAnswer.toLowerCase().includes("no relevant evidence");
+      
+      if (isBypassed) {
+        if (aiResponse.metadata && aiResponse.metadata.chunksRetrieved === 0) {
+          this.sessionMetrics.questionsBypassed++;
+        }
+        this.sessionMetrics.noEvidenceResponses++;
       } else {
-        aiResponse = await AIService.answerPolicyQuestion(query, matchingChunks, settings);
+        this.sessionMetrics.questionsAnswered++;
+      }
+
+      if (aiResponse.metadata && aiResponse.metadata.evidenceStrength !== 'High') {
+        this.sessionMetrics.weakRetrievals++;
       }
       
+      // Build session question object
       const newQuestion = {
         id: `q-session-${Date.now()}`,
         question: query,
         answer: aiResponse,
         timestamp: new Date().toISOString(),
-        selectedDocNames: this.getSelectedDocNamesSummary()
+        selectedDocNames: this.getSelectedDocNamesSummary(),
+        // Save metadata fields onto the session question object for diagnostics / provenance display
+        documentsSelected: selectedDocIds.length,
+        documentsUsed: aiResponse.metadata?.documentsUsed || 0,
+        chunksRetrieved: aiResponse.metadata?.chunksRetrieved || 0,
+        evidenceStrength: aiResponse.metadata?.evidenceStrength || 'Low',
+        usedDocNames: aiResponse.metadata?.usedDocIds?.map(id => {
+          const activeDocs = this.getActiveWorkspaceDocs();
+          const doc = activeDocs.find(d => d.id === id);
+          return doc ? doc.title : 'Unknown';
+        }) || [],
+        averageScore: aiResponse.metadata?.averageScore || 0,
+        retrievedDocIds: aiResponse.metadata?.retrievedDocIds || [],
+        retrievedChunkIds: aiResponse.metadata?.retrievedChunkIds || [],
+        chunkScores: aiResponse.metadata?.chunkScores || [],
+        contextLength: aiResponse.metadata?.contextLength || 0,
+        chunksSupplied: aiResponse.metadata?.chunksSupplied || []
       };
       
       this.sessionQuestions.push(newQuestion);
       this.activeQuestion = newQuestion;
     } catch (err) {
       console.error('Q&A analysis error:', err);
+      this.sessionMetrics.questionsBypassed++;
+      this.sessionMetrics.noEvidenceResponses++;
+      
       const failedQuestion = {
         id: `q-session-fail-${Date.now()}`,
         question: query,
         answer: {
-          direct_answer: "No relevant evidence was found in the selected documents.",
+          direct_answer: "No evidence was found in the selected documents.",
           citations: [],
-          gaps_detected: [],
-          recommended_actions: [],
-          confidence: "Low"
+          gaps_detected: [
+            {
+              title: "Information Gap",
+              description: "Unable to determine from available information."
+            }
+          ],
+          recommended_actions: [
+            {
+              title: "Review Policy Coverage",
+              type: "action",
+              description: "Upload additional evidence or review the policy."
+            }
+          ],
+          confidence: "Low",
+          evidence_strength: "Low"
         },
         timestamp: new Date().toISOString(),
-        selectedDocNames: this.getSelectedDocNamesSummary()
+        selectedDocNames: this.getSelectedDocNamesSummary(),
+        documentsSelected: this.selectedDocIds.length,
+        documentsUsed: 0,
+        chunksRetrieved: 0,
+        evidenceStrength: 'Low',
+        usedDocNames: [],
+        averageScore: 0,
+        retrievedDocIds: [],
+        retrievedChunkIds: [],
+        chunkScores: [],
+        contextLength: 0,
+        chunksSupplied: []
       };
       this.sessionQuestions.push(failedQuestion);
       this.activeQuestion = failedQuestion;
     } finally {
       this.policyQALoading = false;
+      this.policyQuery = ''; // Clear input draft upon successful submit
       this.renderBody();
     }
   }

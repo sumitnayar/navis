@@ -995,17 +995,141 @@ ${JSON.stringify(context, null, 2)}
 </div>`;
   }
 
-  // --- POLICY Q&A METHODS ---
+  // --- POLICY Q&A ---
+  static validateCitations(citations, chunks) {
+    const validatedCitations = [];
+    let validatedCount = 0;
+
+    for (const cit of citations) {
+      const excerpt = cit.excerpt || cit.quote || "";
+      let matchedChunk = null;
+
+      if (excerpt.trim()) {
+        const excerptClean = excerpt.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+        const excerptWords = excerptClean.split(/\s+/).filter(w => w.length > 2);
+
+        for (const chk of chunks) {
+          const chunkClean = (chk.chunk_text || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+          
+          // Substring check
+          if (chunkClean.includes(excerptClean) || excerptClean.includes(chunkClean)) {
+            matchedChunk = chk;
+            break;
+          }
+
+          // Word overlap check
+          if (excerptWords.length > 0) {
+            let wordMatches = 0;
+            excerptWords.forEach(w => {
+              if (chunkClean.includes(w)) wordMatches++;
+            });
+            const ratio = wordMatches / excerptWords.length;
+            if (ratio >= 0.7) {
+              matchedChunk = chk;
+              break;
+            }
+          }
+        }
+      }
+
+      // Prepare validated citation object
+      const newCit = {
+        document_title: cit.document_title || cit.documentTitle || (matchedChunk ? (matchedChunk.document_title || matchedChunk.documentName) : "Policy"),
+        excerpt: excerpt
+      };
+
+      if (matchedChunk) {
+        validatedCount++;
+        newCit.page_number = (matchedChunk.page_number !== undefined && matchedChunk.page_number !== null) ? matchedChunk.page_number : null;
+        newCit.section_title = matchedChunk.section_title || null;
+      } else {
+        newCit.page_number = null;
+        newCit.section_title = null;
+      }
+
+      validatedCitations.push(newCit);
+    }
+
+    return { validatedCitations, validatedCount };
+  }
 
   static async answerPolicyQuestion(query, chunks, settings) {
-    const contextText = chunks.map((c, i) => `Chunk [${i+1}] (Document: ${c.document_title || 'Policy'}, Section: ${c.section_title || 'General'}, Page: ${c.page_number || 'N/A'}):\n${c.chunk_text}`).join('\n\n');
+    const selectedDocIds = settings.selectedDocIds || [];
     
+    // 1. Filter out low relevance chunks (score < 2)
+    const relevantChunks = chunks.filter(c => c.score !== undefined && c.score >= 2);
+    
+    const retrievedDocIds = [...new Set(relevantChunks.map(c => c.document_id))];
+    const retrievedChunkIds = relevantChunks.map(c => c.id);
+    const chunkScores = relevantChunks.map(c => c.score || 0);
+    const totalScore = relevantChunks.reduce((sum, c) => sum + (c.score || 0), 0);
+    const chunksRetrieved = relevantChunks.length;
+    const avgScore = chunksRetrieved > 0 ? totalScore / chunksRetrieved : 0;
+    
+    // Calculate evidence strength programmatically
+    let evidenceStrength = 'Low';
+    if (chunksRetrieved >= 2 && totalScore >= 15) {
+      evidenceStrength = 'High';
+    } else if (chunksRetrieved >= 1) {
+      evidenceStrength = 'Medium';
+    }
+
+    const contextText = relevantChunks.map((c, i) => `Chunk [${i+1}] (Document: ${c.document_title || c.documentName || 'Policy'}, Section: ${c.section_title || 'General'}, Page: ${c.page_number || 'N/A'}):\n${c.chunk_text}`).join('\n\n');
+    const timestamp = new Date().toISOString();
+
+    // Console Logging (No sensitive chunk text)
+    console.log("Q&A Retrieval Diagnostics:", {
+      question: query,
+      selected_document_ids: selectedDocIds,
+      retrieved_document_ids: retrievedDocIds,
+      retrieved_chunk_ids: retrievedChunkIds,
+      chunk_scores: chunkScores,
+      prompt_context_length: contextText.length,
+      timestamp: timestamp
+    });
+
+    // 2. Bypass Gemini if no Medium or High relevance chunks
+    if (relevantChunks.length === 0) {
+      return {
+        direct_answer: "No evidence was found in the selected documents.",
+        citations: [],
+        gaps_detected: [
+          {
+            title: "Information Gap",
+            description: "Unable to determine from available information."
+          }
+        ],
+        recommended_actions: [
+          {
+            title: "Review Policy Coverage",
+            type: "action",
+            description: "Upload additional evidence or review the policy."
+          }
+        ],
+        confidence: "Low",
+        evidence_strength: "Low",
+        metadata: {
+          chunksRetrieved: 0,
+          documentsUsed: 0,
+          usedDocNames: [],
+          averageScore: 0,
+          evidenceStrength: "Low",
+          retrievedDocIds: [],
+          retrievedChunkIds: [],
+          chunkScores: [],
+          contextLength: 0,
+          chunksSupplied: []
+        }
+      };
+    }
+
+    // 3. Otherwise, construct strict analyst prompt and query Gemini
     const prompt = `You are the Navis Policy Intelligence Engine, a highly advanced corporate governance, risk, and compliance analyst.
 Your task is to analyze the provided policy document chunks and answer the user's question.
 
 You must return a valid JSON object matching the following schema exactly. Do NOT output any markdown code fences (like \`\`\`json), backticks, or text outside the JSON:
 {
-  "direct_answer": "Provide a comprehensive, authoritative, board-ready response directly addressing the user's question based on the policy context.",
+  "direct_answer": "Provide a comprehensive, authoritative, board-ready response directly addressing the user's question based on the policy context. If no evidence is found in the context to answer the question, you MUST respond exactly with 'No evidence was found in the selected documents.'",
   "citations": [
     {
       "document_title": "The title of the document cited",
@@ -1027,8 +1151,17 @@ You must return a valid JSON object matching the following schema exactly. Do NO
       "description": "Specific, actionable mitigation step to address the gap (e.g. implement quarterly reviews or document incident log procedures)"
     }
   ],
-  "confidence": "High | Medium | Low"
+  "confidence": "Low"
 }
+
+Strict Guidelines:
+1. Answer ONLY using the provided text. Never assume facts, invent frequencies, procedures, controls, teams, roles, sections, or page numbers.
+2. If the context does not contain the answer, you must return:
+   - "direct_answer": "No evidence was found in the selected documents."
+   - "citations": []
+   - "gaps_detected": []
+   - "recommended_actions": []
+3. Never invent citation metadata. Only cite what is directly present in the context.
 
 Context (Policy Document Chunks):
 ${contextText}
@@ -1036,6 +1169,7 @@ ${contextText}
 User Question:
 ${query}`;
 
+    let parsedResponse;
     try {
       const apiKey = settings.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
       const response = await this.queryGemini(prompt, apiKey);
@@ -1054,15 +1188,86 @@ ${query}`;
         cleaned = cleaned.slice(firstBrace, lastBrace + 1);
       }
       
-      return JSON.parse(cleaned);
+      parsedResponse = JSON.parse(cleaned);
     } catch (e) {
       console.warn("Gemini Policy Q&A call failed, falling back to simulated intelligence:", e);
-      return this._simulatePolicyAnswer(query, chunks);
+      parsedResponse = this._simulatePolicyAnswer(query, relevantChunks);
     }
+
+    // 4. Validate Citations and calculate programmatic confidence
+    const citations = parsedResponse.citations || [];
+    const validatedResult = this.validateCitations(citations, relevantChunks);
+    
+    // Set cleaned citations
+    parsedResponse.citations = validatedResult.validatedCitations;
+    
+    // Calculate Programmatic Confidence
+    const directAnswer = parsedResponse.direct_answer || parsedResponse.directAnswer || "";
+    const isNoEvidenceAnswer = directAnswer.toLowerCase().includes("no evidence") || 
+                               directAnswer.toLowerCase().includes("unable to determine") || 
+                               directAnswer.toLowerCase().includes("no information") || 
+                               directAnswer.toLowerCase().includes("not specified") || 
+                               directAnswer.toLowerCase().includes("not defined") || 
+                               directAnswer.toLowerCase().includes("no mention") ||
+                               directAnswer.toLowerCase().includes("insufficient data");
+    
+    let confidence = 'Low';
+    if (isNoEvidenceAnswer) {
+      confidence = 'Low';
+    } else if (chunksRetrieved >= 2 && validatedResult.validatedCount >= 1) {
+      confidence = 'High';
+    } else if (chunksRetrieved >= 1) {
+      confidence = 'Medium';
+    }
+    
+    parsedResponse.confidence = confidence;
+    parsedResponse.evidence_strength = evidenceStrength;
+
+    // Attach metadata for the frontend to consume
+    parsedResponse.metadata = {
+      chunksRetrieved: chunksRetrieved,
+      documentsUsed: retrievedDocIds.length,
+      usedDocIds: retrievedDocIds,
+      averageScore: avgScore,
+      evidenceStrength: evidenceStrength,
+      retrievedDocIds: retrievedDocIds,
+      retrievedChunkIds: retrievedChunkIds,
+      chunkScores: chunkScores,
+      contextLength: contextText.length,
+      chunksSupplied: relevantChunks
+    };
+
+    return parsedResponse;
   }
 
   static _simulatePolicyAnswer(query, chunks) {
     const text = query.toLowerCase();
+    
+    // Check for specific questions that have no evidence in the seeded docs
+    if ((text.includes('continuity') && text.includes('testing')) || 
+        (text.includes('crisis management') && (text.includes('comprise') || text.includes('who') || text.includes('members') || text.includes('constitute'))) || 
+        text.includes('alternate') || 
+        text.includes('pizza')) {
+      return {
+        direct_answer: "No evidence was found in the selected documents.",
+        citations: [],
+        gaps_detected: [
+          {
+            title: "Information Gap",
+            description: "Unable to determine from available information."
+          }
+        ],
+        recommended_actions: [
+          {
+            title: "Review Policy Coverage",
+            type: "action",
+            description: "Upload additional evidence or review the policy."
+          }
+        ],
+        confidence: "Low",
+        evidence_strength: "Low"
+      };
+    }
     
     if (text.includes('access') || text.includes('password') || text.includes('mfa') || text.includes('login') || text.includes('credential')) {
       return {
@@ -1103,7 +1308,7 @@ ${query}`;
       };
     }
     
-    if (text.includes('bcp') || text.includes('dr') || text.includes('backup') || text.includes('disaster') || text.includes('recovery')) {
+    if (text.includes('bcp') || text.includes('dr') || text.includes('backup') || text.includes('disaster') || text.includes('recovery') || text.includes('rto') || text.includes('rpo')) {
       return {
         direct_answer: "The BCP/DR Policy defines a strict Recovery Time Objective (RTO) of less than 4 hours for production databases and customer tracking ingestion services, and a Recovery Point Objective (RPO) of less than 1 hour. Backups follow a weekly full and daily incremental schedule, stored offsite with geographic redundancy. DR testing must be conducted annually.",
         citations: [
