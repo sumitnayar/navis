@@ -42,7 +42,7 @@ Please select one of the core board questions on the left, or type a custom quer
 
   render(container) {
     const settings = this.state.settings;
-    const isApiConnected = Boolean(settings.geminiApiKey);
+    const isApiConnected = Boolean(settings.geminiApiKey || this.state.serverGeminiConfigured);
 
     // Preset Boardroom questions
     const presets = [
