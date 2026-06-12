@@ -16,11 +16,13 @@ import { CultureComponent } from './components/culture.js';
 import { SettingsComponent } from './components/settings.js';
 import { BoardQAComponent } from './components/boardQA.js';
 import { IntakeComponent } from './components/intake.js';
+import { PolicyStudioComponent } from './components/policyStudio.js';
 
 const TAB_ROUTES = {
   dashboard: '/dashboard',
   boardQA: '/ai',
   intake: '/intake',
+  policyStudio: '/policy',
   objectives: '/objectives',
   scenario: '/scenario',
   portfolio: '/portfolio',
@@ -39,6 +41,8 @@ const PROTECTED_ROUTES = {
   '/board-qa': 'boardQA',
   '/ai': 'boardQA',
   '/intake': 'intake',
+  '/policy': 'policyStudio',
+  '/policy-studio': 'policyStudio',
   '/objectives': 'objectives',
   '/scenario': 'scenario',
   '/scenarios': 'scenario',
@@ -628,6 +632,7 @@ class RiskOSApplication {
         dashboard: DashboardComponent,
         boardQA: BoardQAComponent,
         intake: IntakeComponent,
+        policyStudio: PolicyStudioComponent,
         objectives: ObjectivesComponent,
         scenario: ScenarioComponent,
         portfolio: PortfolioComponent,

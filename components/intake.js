@@ -1201,6 +1201,45 @@ export class IntakeComponent {
         if (item.itemType === 'Risk') {
           const risk = DocumentExtractionService.extractedRiskToRegisterRisk(item);
           await StorageService.saveRisk(risk, 'Imported via Change Queue');
+        } else if (item.itemType === 'Control') {
+          const riskId = item.metadata?.riskId || 'risk-001';
+          const targetRisk = this.state.risks.find(r => r.id === riskId);
+          if (targetRisk) {
+            const controls = targetRisk.controls || [];
+            controls.push({
+              name: item.title.replace('Map mitigating control: ', ''),
+              effectiveness: item.metadata?.effectiveness || 'Highly Effective',
+              status: 'Active'
+            });
+            targetRisk.controls = controls;
+            await StorageService.saveRisk(targetRisk);
+          }
+        } else if (item.itemType === 'Action') {
+          const riskId = item.metadata?.riskId || 'risk-001';
+          const targetRisk = this.state.risks.find(r => r.id === riskId);
+          if (targetRisk) {
+            const actions = targetRisk.actions || [];
+            actions.push({
+              title: item.title,
+              owner: item.metadata?.owner || 'CISO',
+              dueDate: item.metadata?.dueDate || new Date().toISOString().split('T')[0],
+              status: 'Not Started'
+            });
+            targetRisk.actions = actions;
+            await StorageService.saveRisk(targetRisk);
+          }
+        } else if (item.itemType === 'ObjectiveLink') {
+          const riskId = item.metadata?.riskId || 'risk-001';
+          const targetRisk = this.state.risks.find(r => r.id === riskId);
+          if (targetRisk) {
+            const objectiveIds = targetRisk.objectiveIds || [];
+            const objId = item.metadata?.objectiveId || 'obj-cyber';
+            if (!objectiveIds.includes(objId)) {
+              objectiveIds.push(objId);
+              targetRisk.objectiveIds = objectiveIds;
+              await StorageService.saveRisk(targetRisk);
+            }
+          }
         }
       } catch (e) {
         console.error('Queue apply failed:', e);
