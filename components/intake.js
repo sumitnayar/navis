@@ -1272,9 +1272,9 @@ export class IntakeComponent {
             
             ${!hasDocs ? `
               <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding: 20px;">
-                <p style="font-size:11px; color:var(--text-secondary); margin-bottom:6px; font-weight:600;">No approved knowledge sources are available for analysis.</p>
-                <p style="font-size:10px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">Upload and approve documents using the Upload & Extract workflow.</p>
-                <button id="btn-go-upload-workflow" class="btn btn-primary btn-small" style="font-size:11px; padding: 6px 12px;">Go to Upload & Extract</button>
+                <p style="font-size:11px; color:var(--text-secondary); margin-bottom:6px; font-weight:600;">No approved knowledge sources are available.</p>
+                <p style="font-size:10px; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">Please process and approve documents in the intelligence desk workflow.</p>
+                <button id="btn-go-upload-workflow" class="btn btn-primary btn-small" style="font-size:11px; padding: 6px 12px;">Go to Intelligence Desk</button>
               </div>
             ` : `
               <!-- Document List Content -->
@@ -1341,8 +1341,8 @@ export class IntakeComponent {
                 <button class="btn btn-secondary btn-small policy-suggest-btn" data-query="Which policies discuss incident reporting?" style="text-align: left; font-size: 10px; width: 100%; white-space: normal; line-height:1.3; padding: 5px 8px;" ${!hasDocs ? 'disabled' : ''}>
                   "Which policies discuss incident reporting?"
                 </button>
-                <button class="btn btn-secondary btn-small policy-suggest-btn" data-query="Summarise the major weaknesses across all uploaded documents." style="text-align: left; font-size: 10px; width: 100%; white-space: normal; line-height:1.3; padding: 5px 8px;" ${!hasDocs ? 'disabled' : ''}>
-                  "Summarise the major weaknesses across all uploaded documents."
+                <button class="btn btn-secondary btn-small policy-suggest-btn" data-query="Summarise the major weaknesses across all approved policies." style="text-align: left; font-size: 10px; width: 100%; white-space: normal; line-height:1.3; padding: 5px 8px;" ${!hasDocs ? 'disabled' : ''}>
+                  "Summarise the major weaknesses across all approved policies."
                 </button>
               </div>
             </div>
@@ -1411,7 +1411,7 @@ export class IntakeComponent {
       if (!hasDocs) {
         return `
           <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px;">
-            <p style="font-size:12px; color:var(--text-secondary);">Upload documents to begin policy intelligence analysis.</p>
+            <p style="font-size:12px; color:var(--text-secondary);">Processed documents in the vault will appear here.</p>
           </div>
         `;
       }
@@ -1769,7 +1769,7 @@ export class IntakeComponent {
             {
               title: "Review Policy Coverage",
               type: "action",
-              description: "Upload additional evidence or review the policy."
+              description: "Please check the approved sources in the Document Vault or verify details in the policy document."
             }
           ],
           confidence: "Low",

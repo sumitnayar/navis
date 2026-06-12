@@ -48,6 +48,20 @@ function normalizeAction(action) {
 }
 
 export class StorageService {
+  static async getActiveOrgId() {
+    if (!isCloudMode) return '00000000-0000-0000-0000-000000000000';
+    try {
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      const session = data?.session;
+      const orgId = session?.user?.user_metadata?.organization_id;
+      return orgId || '00000000-0000-0000-0000-000000000000';
+    } catch (e) {
+      console.error("Error fetching active org ID:", e);
+      return '00000000-0000-0000-0000-000000000000';
+    }
+  }
+
   static init() {
     const isSeeded = localStorage.getItem(STORAGE_KEYS.SEEDED);
     if (!isSeeded) {
@@ -255,9 +269,11 @@ export class StorageService {
           return risk;
         }
 
+        const orgId = await this.getActiveOrgId();
+
         const dbRisk = {
           id: risk.id,
-          organization_id: '00000000-0000-0000-0000-000000000000', // default Demo Tenant Organization UUID
+          organization_id: orgId, // default Demo Tenant Organization UUID
           title: risk.title,
           category: risk.category,
           l1: risk.category,
@@ -288,7 +304,7 @@ export class StorageService {
         if (risk.fragility) {
           await supabaseClient.from('risk_fragilities').upsert({
             risk_id: risk.id,
-            organization_id: '00000000-0000-0000-0000-000000000000',
+            organization_id: orgId,
             revenue: risk.fragility.revenue || 1,
             growth: risk.fragility.growth || 1,
             customer_trust: risk.fragility.customerTrust || 1,
@@ -303,7 +319,7 @@ export class StorageService {
         if (risk.assurance) {
           await supabaseClient.from('assurance_mappings').upsert({
             risk_id: risk.id,
-            organization_id: '00000000-0000-0000-0000-000000000000',
+            organization_id: orgId,
             first_line: risk.assurance.firstLine || 'CRO',
             second_line: risk.assurance.secondLine || 'Committee',
             third_line: risk.assurance.thirdLine || 'None',
@@ -317,7 +333,7 @@ export class StorageService {
             await supabaseClient.from('risk_to_objectives').insert({
               risk_id: risk.id,
               objective_id: objId,
-              organization_id: '00000000-0000-0000-0000-000000000000'
+              organization_id: orgId
             });
           }
         }
@@ -485,9 +501,11 @@ export class StorageService {
           return objective;
         }
 
+        const orgId = await this.getActiveOrgId();
+
         const dbObj = {
           id: objective.id,
-          organization_id: '00000000-0000-0000-0000-000000000000',
+          organization_id: orgId,
           title: objective.title,
           owner: objective.owner,
           target_date: objective.targetDate,
@@ -597,8 +615,10 @@ export class StorageService {
           return metrics;
         }
 
+        const orgId = await this.getActiveOrgId();
+
         const dbCulture = {
-          organization_id: '00000000-0000-0000-0000-000000000000',
+          organization_id: orgId,
           policy_acknowledgement_rate: metrics.policyAcknowledgementRate,
           training_completion_rate: metrics.trainingCompletionRate,
           incident_report_velocity_days: metrics.incidentReportVelocityDays,
@@ -689,9 +709,11 @@ export class StorageService {
           return updated;
         }
 
+        const orgId = await this.getActiveOrgId();
+
         const dbSettings = {
           id: 'default_config',
-          organization_id: '00000000-0000-0000-0000-000000000000',
+          organization_id: orgId,
           brand_name: updated.brandName,
           company_name: updated.companyName,
           revenue_bracket: updated.revenueBracket,
@@ -708,7 +730,7 @@ export class StorageService {
           for (const bu of settings.businessUnits) {
             await supabaseClient.from('settings_business_units').insert({
               settings_id: 'default_config',
-              organization_id: '00000000-0000-0000-0000-000000000000',
+              organization_id: orgId,
               unit_name: bu
             });
           }
@@ -793,8 +815,10 @@ export class StorageService {
   static async saveVaultEntry(entry) {
     if (isCloudMode) {
       try {
+        const orgId = await this.getActiveOrgId();
         const dbEntry = {
           id: entry.id,
+          organization_id: orgId,
           document_name: entry.documentName,
           document_type: entry.documentType,
           document_summary: entry.documentSummary,
@@ -1006,9 +1030,10 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
   static async savePolicyDocument(doc) {
     if (isCloudMode) {
       try {
+        const orgId = await this.getActiveOrgId();
         const dbDoc = {
           id: doc.id,
-          organization_id: '00000000-0000-0000-0000-000000000000',
+          organization_id: orgId,
           title: doc.title,
           document_type: doc.document_type,
           framework_tags: doc.framework_tags || [],
@@ -1104,11 +1129,12 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
   static async savePolicyChunks(chunks) {
     if (isCloudMode) {
       try {
+        const orgId = await this.getActiveOrgId();
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const dbChunks = chunks.map(c => {
           const row = {
             document_id: c.document_id,
-            organization_id: '00000000-0000-0000-0000-000000000000',
+            organization_id: orgId,
             chunk_index: c.chunk_index,
             chunk_text: c.chunk_text,
             section_title: c.section_title,
@@ -1166,9 +1192,10 @@ Section 5: Data Protection Officer. The DPO is responsible for oversight of priv
   static async savePolicyQuestion(q) {
     if (isCloudMode) {
       try {
+        const orgId = await this.getActiveOrgId();
         const dbQ = {
           id: q.id || undefined,
-          organization_id: '00000000-0000-0000-0000-000000000000',
+          organization_id: orgId,
           question: q.question,
           answer: q.answer,
           cited_chunks: q.cited_chunks || [],
