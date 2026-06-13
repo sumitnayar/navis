@@ -328,10 +328,10 @@ export class NetworkComponent {
         
         <!-- LEFT SCREEN: INTERACTIVE SVG NETWORK CONTAINER -->
         <div class="details-panel" style="flex-grow: 1;">
-          <div class="network-container">
+          <div class="network-container" style="display: flex; flex-direction: column;">
             
             <!-- TOP CONTROL BAR -->
-            <div class="network-header-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid ${this.isBoardMode ? '#1E293B' : 'var(--border-color)'}; background: ${this.isBoardMode ? '#0A1628' : 'rgba(13,27,42,0.02)'}; height: 44px; box-sizing: border-box; flex-shrink: 0; width: 100%;">
+            <div class="network-header-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid ${this.isBoardMode ? '#1E293B' : 'var(--border-color)'}; background: ${this.isBoardMode ? '#0A1628' : '#FAFBFD'}; height: 44px; box-sizing: border-box; flex-shrink: 0; width: 100%; position: relative; z-index: 10;">
               <div class="playback-group" style="margin: 0; display: flex; border: 1px solid ${this.isBoardMode ? '#1E293B' : 'var(--border-color)'}; background: ${this.isBoardMode ? '#0F172A' : 'var(--bg-secondary)'}; border-radius: 6px; padding: 2px;">
                 <button class="playback-btn ${this.timeStep === 'today' ? 'active' : ''}" data-step="today">Today</button>
                 <button class="playback-btn ${this.timeStep === '30' ? 'active' : ''}" data-step="30">30D</button>
@@ -358,7 +358,7 @@ export class NetworkComponent {
             </div>
 
             <!-- SVG CANVAS -->
-            <svg class="network-svg" id="risk-cascade-svg" style="cursor: grab;">
+            <svg class="network-svg" id="risk-cascade-svg" style="cursor: grab; flex-grow: 1; height: auto; display: block; width: 100%; position: relative; z-index: 1;">sor: grab;">
               
               <!-- GLOW DEFS AND CLONE BASE -->
               <g id="network-viewport" transform="translate(${this.panX}, ${this.panY}) scale(${this.zoomScale})">
