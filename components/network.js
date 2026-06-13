@@ -358,7 +358,7 @@ export class NetworkComponent {
             </div>
 
             <!-- SVG CANVAS -->
-            <svg class="network-svg" id="risk-cascade-svg" style="cursor: grab; flex-grow: 1; height: auto; display: block; width: 100%; position: relative; z-index: 1;">sor: grab;">
+            <svg class="network-svg" id="risk-cascade-svg" style="cursor: grab; flex-grow: 1; height: auto; display: block; width: 100%; position: relative; z-index: 1;">
               
               <!-- GLOW DEFS AND CLONE BASE -->
               <g id="network-viewport" transform="translate(${this.panX}, ${this.panY}) scale(${this.zoomScale})">
