@@ -330,23 +330,22 @@ export class NetworkComponent {
         <div class="details-panel" style="flex-grow: 1;">
           <div class="network-container">
             
-            <!-- PLAYBACK TOOLBAR (LEFT) -->
-            <div class="network-toolbar">
-              <div class="playback-group">
+            <!-- TOP CONTROL BAR -->
+            <div class="network-header-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid ${this.isBoardMode ? '#1E293B' : 'var(--border-color)'}; background: ${this.isBoardMode ? '#0A1628' : 'rgba(13,27,42,0.02)'}; height: 44px; box-sizing: border-box; flex-shrink: 0; width: 100%;">
+              <div class="playback-group" style="margin: 0; display: flex; border: 1px solid ${this.isBoardMode ? '#1E293B' : 'var(--border-color)'}; background: ${this.isBoardMode ? '#0F172A' : 'var(--bg-secondary)'}; border-radius: 6px; padding: 2px;">
                 <button class="playback-btn ${this.timeStep === 'today' ? 'active' : ''}" data-step="today">Today</button>
                 <button class="playback-btn ${this.timeStep === '30' ? 'active' : ''}" data-step="30">30D</button>
                 <button class="playback-btn ${this.timeStep === '90' ? 'active' : ''}" data-step="90">90D</button>
                 <button class="playback-btn ${this.timeStep === '180' ? 'active' : ''}" data-step="180">180D</button>
               </div>
-            </div>
 
-            <!-- BOARD MODE TOGGLE BUTTON (RIGHT) -->
-            <button id="btn-toggle-board" class="btn btn-secondary btn-small board-mode-toggle-btn" style="padding: 0 10px; height: 32px; font-size:10px; font-weight:700; border-radius:6px; display:flex; align-items:center; gap:6px;">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0V3m7.5 13.5V3" />
-              </svg>
-              <span>${this.isBoardMode ? 'Light UI' : 'Board Mode'}</span>
-            </button>
+              <button id="btn-toggle-board" class="btn btn-secondary btn-small" style="padding: 0 10px; height: 28px; font-size:10px; font-weight:700; border-radius:6px; display:flex; align-items:center; gap:6px; margin: 0; background: ${this.isBoardMode ? 'rgba(255,255,255,0.05)' : ''}; border-color: ${this.isBoardMode ? '#1E293B' : ''}; color: ${this.isBoardMode ? '#FFFFFF' : ''};">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0V3m7.5 13.5V3" />
+                </svg>
+                <span>${this.isBoardMode ? 'Light UI' : 'Board Mode'}</span>
+              </button>
+            </div>
 
             <!-- CANVAS CONTROLS (ZOOM/PAN/FIT) -->
             <div class="canvas-controls">
