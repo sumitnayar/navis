@@ -6,7 +6,7 @@ import { DashboardComponent } from './components/dashboard.js';
 import { ObjectivesComponent } from './components/objectives.js';
 import { ScenarioComponent } from './components/scenario.js';
 import { PortfolioComponent } from './components/portfolio.js';
-import { NetworkComponent } from './components/network.js';
+import { NetworkComponent } from './components/network.js?v=3.0.2';
 import { RegisterComponent } from './components/register.js';
 import { TaxonomyComponent } from './components/taxonomy.js';
 import { AssuranceComponent } from './components/assurance.js';

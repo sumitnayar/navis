@@ -149,7 +149,7 @@ export class NetworkComponent {
   getNodePositions(canvasWidth = 720, canvasHeight = 380) {
     const paddingLeft = 48;
     const paddingRight = 48;
-    const paddingTop = 32;
+    const paddingTop = 75;
     const paddingBottom = 32;
     const horizontalDistance = 180;
     const verticalDistance = 60;
@@ -406,7 +406,7 @@ export class NetworkComponent {
                   ${[1, 2, 3, 4].map(l => {
                     const x = 48 + (l - 1) * 180;
                     return `
-                      <text x="${x}" y="20" 
+                      <text x="${x}" y="52" 
                             text-anchor="middle"
                             style="font-family: var(--font-header); font-size: 8px; font-weight: 700; fill: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">
                         ${this.layers[l].name}
