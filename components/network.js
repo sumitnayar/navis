@@ -148,10 +148,10 @@ export class NetworkComponent {
   // Node Positions: strictly vertical layout per column layer
   getNodePositions(canvasWidth = 720, canvasHeight = 380) {
     const paddingLeft = 48;
-    const paddingRight = 48;
+    const paddingRight = 120;
     const paddingTop = 75;
     const paddingBottom = 32;
-    const horizontalDistance = 180;
+    const horizontalDistance = (canvasWidth - paddingLeft - paddingRight) / 3;
     const verticalDistance = 60;
 
     const positions = {};
@@ -288,8 +288,19 @@ export class NetworkComponent {
     const dynamicData = this.calculateDynamicScores();
     const centrality = this.getNodeCentrality();
 
-    const canvasWidth = 740;
-    const canvasHeight = 400;
+    const renderContainer = document.getElementById('page-render-container') || container;
+    const containerWidth = renderContainer.clientWidth || 1216;
+    
+    // Width of the left column (the SVG network container)
+    let leftColumnWidth = this.isExpanded ? containerWidth : (containerWidth - 360 - 24);
+    if (leftColumnWidth < 500) leftColumnWidth = 740; // safety fallback
+
+    // Height of the SVG network container
+    const leftColumnHeight = this.isExpanded ? 580 : 440;
+    const svgHeight = leftColumnHeight - 44; // subtract header bar (44px)
+
+    const canvasWidth = leftColumnWidth;
+    const canvasHeight = svgHeight;
     const positions = this.getNodePositions(canvasWidth, canvasHeight);
 
     // Active Highlight calculations
@@ -358,7 +369,7 @@ export class NetworkComponent {
             </div>
 
             <!-- SVG CANVAS -->
-            <svg class="network-svg" id="risk-cascade-svg" viewBox="0 0 740 400" preserveAspectRatio="xMidYMid meet" style="cursor: grab; flex-grow: 1; height: auto; display: block; width: 100%; position: relative; z-index: 1;">
+            <svg class="network-svg" id="risk-cascade-svg" viewBox="0 0 ${canvasWidth} ${canvasHeight}" preserveAspectRatio="xMidYMid meet" style="cursor: grab; flex-grow: 1; height: auto; display: block; width: 100%; position: relative; z-index: 1;">
               
               <!-- GLOW DEFS AND CLONE BASE -->
               <g id="network-viewport" transform="translate(${this.panX}, ${this.panY}) scale(${this.zoomScale})">
@@ -402,9 +413,9 @@ export class NetworkComponent {
                     `;
                   }).join('')}
 
-                  <!-- 2. DRAW COLUMN LAYER BACKGROUNDS AND LABELS -->
                   ${[1, 2, 3, 4].map(l => {
-                    const x = 48 + (l - 1) * 180;
+                    const horizontalDistance = (canvasWidth - 48 - 120) / 3;
+                    const x = 48 + (l - 1) * horizontalDistance;
                     return `
                       <text x="${x}" y="52" 
                             text-anchor="middle"
@@ -512,9 +523,8 @@ export class NetworkComponent {
               </g>
             </svg>
 
-            <!-- CANVAS MINI-MAP IN THE BOTTOM-LEFT CORNER -->
             <div class="network-minimap">
-              <svg viewBox="0 0 740 400" style="width:100%;height:100%;pointer-events:none;">
+              <svg viewBox="0 0 ${canvasWidth} ${canvasHeight}" style="width:100%;height:100%;pointer-events:none;">
                 <use href="#static-network-graph" />
               </svg>
             </div>
