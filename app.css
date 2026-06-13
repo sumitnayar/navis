@@ -2708,7 +2708,7 @@ body.app-page {
 /* ── GLOBAL POSTURE BAR ── */
 .posture-bar {
   height: 36px;
-  background-color: #FFFFFF;
+  background-color: #F7F6F4;
   border-bottom: 1px solid rgba(13, 27, 42, 0.08);
   display: flex;
   align-items: center;

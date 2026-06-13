@@ -6,7 +6,7 @@ import { DashboardComponent } from './components/dashboard.js';
 import { ObjectivesComponent } from './components/objectives.js';
 import { ScenarioComponent } from './components/scenario.js';
 import { PortfolioComponent } from './components/portfolio.js';
-import { NetworkComponent } from './components/network.js?v=3.0.2';
+import { NetworkComponent } from './components/network.js?v=3.0.3';
 import { RegisterComponent } from './components/register.js';
 import { TaxonomyComponent } from './components/taxonomy.js';
 import { AssuranceComponent } from './components/assurance.js';
@@ -836,8 +836,15 @@ class RiskOSApplication {
       postureColor = "#4A6FA5"; // MODERATE = slate
     }
 
-    const postureBar = document.getElementById('posture-bar');
-    if (!postureBar) return;
+    const mainContent = document.querySelector('.main-content');
+    if (!mainContent) return;
+
+    let postureBar = mainContent.querySelector('.posture-bar');
+    if (!postureBar) {
+      postureBar = document.createElement('div');
+      postureBar.className = 'posture-bar no-print';
+      mainContent.insertBefore(postureBar, mainContent.firstChild);
+    }
 
     postureBar.innerHTML = `
       <div class="posture-bar-content">
@@ -848,14 +855,17 @@ class RiskOSApplication {
           <span class="posture-stat-label">Above Appetite</span>
           <span class="posture-stat-value" style="color: var(--color-critical);">${aboveAppetiteCount}</span>
         </div>
+        <div class="posture-divider"></div>
         <div class="posture-stat">
           <span class="posture-stat-label">KRI Breaches</span>
           <span class="posture-stat-value" style="color: var(--color-warning);">${breachedKRIs}</span>
         </div>
+        <div class="posture-divider"></div>
         <div class="posture-stat">
           <span class="posture-stat-label">Worsening</span>
           <span class="posture-stat-value" style="color: var(--color-warning);">${worseningCount}</span>
         </div>
+        <div class="posture-divider"></div>
         <div class="posture-stat">
           <span class="posture-stat-label">Overdue Actions</span>
           <span class="posture-stat-value" style="color: var(--color-critical);">${overdueActionsCount}</span>
