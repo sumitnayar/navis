@@ -3,6 +3,14 @@
 import { StorageService } from '../services/storageService.js';
 import { AIInsightService } from '../services/aiInsightService.js';
 
+const cleanTitle = (title) => {
+  if (!title) return '';
+  return title
+    .replace(/^\[demo-trk-risk-\d+\]\s*/i, '')
+    .replace(/^\[DEMO Trackier SaaS\]\s*/i, '')
+    .trim();
+};
+
 export class AssuranceComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -129,8 +137,8 @@ export class AssuranceComponent {
                   return `
                     <tr data-risk-id="${r.id}" style="${hasGap ? 'background:rgba(225,29,72,0.01);' : ''}">
                       <td>
-                        <strong style="color:var(--text-primary); cursor:pointer; display:inline-flex; align-items:center; gap:4px;" class="ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}">
-                          <span>[${r.id}] ${r.title}</span>
+                        <strong style="color:var(--text-primary); cursor:pointer; display:inline-flex; align-items:center; gap:4px;" class="ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}" title="ID: ${r.id}">
+                          <span>${cleanTitle(r.title)}</span>
                           <button class="ai-explain-icon-btn" aria-label="AI Explain" style="border:none;background:none;cursor:pointer;color:var(--color-indigo);padding:0;display:flex;align-items:center;">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />

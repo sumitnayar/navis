@@ -3,6 +3,14 @@
 import { StorageService } from '../services/storageService.js';
 import { AIInsightService } from '../services/aiInsightService.js';
 
+const cleanTitle = (title) => {
+  if (!title) return '';
+  return title
+    .replace(/^\[demo-trk-risk-\d+\]\s*/i, '')
+    .replace(/^\[DEMO Trackier SaaS\]\s*/i, '')
+    .trim();
+};
+
 export class ControlsComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -71,7 +79,7 @@ export class ControlsComponent {
                   <div class="form-group">
                     <label>Target Board Risk</label>
                     <select class="form-control" id="control-risk-id" required>
-                      ${risks.map(r => `<option value="${r.id}">[${r.id}] ${r.title}</option>`).join('')}
+                      ${risks.map(r => `<option value="${r.id}" title="ID: ${r.id}">${cleanTitle(r.title)}</option>`).join('')}
                     </select>
                   </div>
                   <div class="form-group">
@@ -168,7 +176,7 @@ export class ControlsComponent {
                   <div class="form-group">
                     <label>Target Board Risk</label>
                     <select class="form-control" id="kri-risk-id" required>
-                      ${risks.map(r => `<option value="${r.id}">[${r.id}] ${r.title}</option>`).join('')}
+                      ${risks.map(r => `<option value="${r.id}" title="ID: ${r.id}">${cleanTitle(r.title)}</option>`).join('')}
                     </select>
                   </div>
                   <div class="form-group">

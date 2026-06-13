@@ -16,7 +16,7 @@
   --color-navy-text:       #E8EDF2;  /* Navy text on dark surfaces */
   --color-navy-secondary:  #8FA3B1;  /* Navy secondary text */
 
-  --bg-primary:            #F7F6F4;  /* Warmer off-white Page background */
+  --bg-primary:            #FFFFFF;  /* Plain White Page background */
   --bg-secondary:          #FFFFFF;  /* Surface (cards/panels) */
   --bg-tertiary:           #F0EFED;  /* Surface secondary */
   --panel-bg:              #FFFFFF;
@@ -2602,8 +2602,8 @@ body.app-page {
 
 .main-content {
   margin-left: 0 !important;
-  padding-top: 88px !important; /* navbar (48px) + posture bar (40px) */
-  height: calc(100vh - 88px) !important;
+  padding-top: 48px !important; /* navbar (48px) only, posture bar is inside content area */
+  height: calc(100vh - 48px) !important;
   width: 100vw !important;
   background-color: var(--bg-primary);
   overflow-y: auto;
@@ -2704,14 +2704,13 @@ body.app-page {
 
 /* ── GLOBAL POSTURE BAR ── */
 .posture-bar {
-  position: fixed;
-  top: 48px; left: 0; right: 0;
-  height: 40px;
-  background-color: var(--color-navy);
-  z-index: 999;
+  height: 36px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid rgba(13, 27, 42, 0.08);
   display: flex;
   align-items: center;
   padding: 0 24px;
+  width: 100%;
 }
 
 .posture-bar-content {
@@ -2723,26 +2722,26 @@ body.app-page {
 }
 
 .posture-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--color-navy-secondary);
   letter-spacing: 0.08em;
   margin-right: 12px;
 }
 
 .posture-pill {
-  font-size: 11px;
-  font-weight: 600; /* semibold */
+  font-size: 10px;
+  font-weight: 600;
   color: #FFFFFF;
   border-radius: 4px;
-  padding: 2px 8px;
+  padding: 2px 6px;
   margin-right: 16px;
   text-transform: uppercase;
 }
 
 .posture-divider {
-  width: 0.5px;
-  height: 20px;
-  background-color: rgba(255, 255, 255, 0.15);
+  width: 1px;
+  height: 16px;
+  background-color: rgba(13, 27, 42, 0.08);
   margin-right: 16px;
 }
 
@@ -2751,15 +2750,16 @@ body.app-page {
   align-items: center;
   gap: 6px;
   margin-right: 20px;
+  font-size: 12px;
 }
 
 .posture-stat-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--color-navy-secondary);
 }
 
 .posture-stat-value {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600; /* semibold for posture bar numbers */
 }
 
@@ -2787,7 +2787,7 @@ body.app-page {
 }
 
 .posture-live-text {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--color-navy-secondary);
 }
 

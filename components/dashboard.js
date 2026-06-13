@@ -4,6 +4,14 @@ import { AIService } from '../services/aiService.js';
 import { AIInsightService } from '../services/aiInsightService.js';
 import { RiskIntelligenceService } from '../services/riskIntelligenceService.js';
 
+const cleanTitle = (title) => {
+  if (!title) return '';
+  return title
+    .replace(/^\[demo-trk-risk-\d+\]\s*/i, '')
+    .replace(/^\[DEMO Trackier SaaS\]\s*/i, '')
+    .trim();
+};
+
 export class DashboardComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -89,56 +97,36 @@ export class DashboardComponent {
       `;
     }).join('');
 
-    // Eager-fetch active intelligence feed synchronously
-    let insights = [];
-    try {
-      insights = RiskIntelligenceService.generateInsightsSync(risks, null);
-    } catch (e) {
-      console.warn("Sync intelligence load failed, running fallback:", e);
-    }
-
-    const getDaysSinceReview = (r) => {
-      const lastReviewedStr = r.last_reviewed_date || r.lastReviewedDate || r.created_at || new Date().toISOString();
-      const lastReviewed = new Date(lastReviewedStr);
-      return Math.ceil(Math.abs(new Date() - lastReviewed) / 86400000);
-    };
-
-    const staleRisks = risks.filter(r => {
-      const days = getDaysSinceReview(r);
-      return (r.appetiteStatus === 'Above Appetite' && days > 7) || days > 30;
+    // Filter risks for Active Intelligence signals
+    const signalRisks = risks.filter(r => {
+      const isAboveAppetite = r.appetiteStatus === 'Above Appetite';
+      const hasBreachedKRI = r.kris?.some(k => k.status === 'BREACHED');
+      return isAboveAppetite || hasBreachedKRI;
     });
-    const maxStaleDays = staleRisks.length > 0 ? Math.max(...staleRisks.map(getDaysSinceReview)) : 0;
 
-    const activeInsights = insights.slice(0, 8);
-    const insightsHTML = activeInsights.length ? activeInsights.map(ins => {
-      let sevColor = 'var(--color-slate)';
-      let borderLeftColor = 'var(--border-color)';
-      if (ins.severity === 'Critical') {
-        sevColor = 'var(--color-critical)';
-        borderLeftColor = 'var(--color-critical)';
-      } else if (ins.severity === 'Warning') {
-        sevColor = 'var(--color-warning)';
-        borderLeftColor = 'var(--color-warning)';
-      }
+    // Rank by residual score descending
+    signalRisks.sort((a, b) => (b.residualScore || 0) - (a.residualScore || 0));
 
-      let detailContext = '';
-      if (ins.insight_type === 'KRI Trajectory') {
-        const days = ins.source_data?.daysToBreach;
-        detailContext = days ? `(Breach in ${days}d)` : '';
-      } else if (ins.insight_type === 'Register Staleness') {
-        detailContext = maxStaleDays > 0 ? `(Max stale: ${maxStaleDays}d)` : '';
-      }
+    // Get top 5
+    const topSignals = signalRisks.slice(0, 5);
+
+    // Render signals HTML
+    const insightsHTML = topSignals.length ? topSignals.map(r => {
+      const objectivesCount = r.objectiveIds ? r.objectiveIds.length : 0;
+      const velocityText = r.timeToImpact || r.velocity || 'N/A';
+      const cleanRTitle = cleanTitle(r.title);
 
       return `
-        <div class="insight-card" style="padding: 12px; background: #FFFFFF; border: 0.5px solid var(--border-color); border-left: 3px solid ${borderLeftColor}; border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-top-left-radius: 0; border-bottom-left-radius: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <div class="insight-card clickable" data-risk-id="${r.id}" style="padding: 12px; background: #FFFFFF; border: 0.5px solid var(--border-color); border-left: 4px solid #E24B4A; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer;" title="ID: ${r.id}">
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-              <span style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: ${sevColor}; letter-spacing: 0.07em;">${ins.severity}</span>
-              <span style="font-size: 11px; color: var(--color-navy-secondary);">${ins.insight_type}</span>
+            <div style="font-size: 13px; font-weight: 500; color: var(--color-navy);">${cleanRTitle}</div>
+            <div style="display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--color-navy-secondary);">
+              <span>Score: <strong style="color: var(--color-critical);">${r.residualScore}</strong></span>
+              <span>Velocity: <strong>${velocityText}</strong></span>
+              <span>Objectives: <strong>${objectivesCount}</strong></span>
             </div>
-            <div style="font-size: 13px; font-weight: 500; color: var(--color-navy);">${ins.insight_text} ${detailContext}</div>
           </div>
-          <button class="btn btn-secondary btn-small btn-insight-review" data-type="${ins.insight_type}" data-filter="${ins.source_data?.filter || ''}" style="font-size: 11px; padding: 4px 10px;">Review &rarr;</button>
+          <span style="color: var(--color-navy-secondary); font-size: 14px;">&rarr;</span>
         </div>
       `;
     }).join('') : `
@@ -146,6 +134,13 @@ export class DashboardComponent {
         ✓ No active intelligence alerts or forecast breaches detected.
       </div>
     `;
+
+    // View all N signals link below the list
+    const signalsFooterHTML = signalRisks.length > 5 ? `
+      <div style="margin-top: 12px; text-align: right;">
+        <a href="/risks" class="view-all-signals-link" style="font-size: 12px; font-weight: 600; color: var(--color-indigo); text-decoration: none;">View all ${signalRisks.length} signals &rarr;</a>
+      </div>
+    ` : '';
 
     // Movement panels: Top worsening / Top improving
     const worseningRisks = risks
@@ -158,19 +153,25 @@ export class DashboardComponent {
       .sort((a, b) => (b.residualScore || 0) - (a.residualScore || 0))
       .slice(0, 3);
 
-    const worseningHTML = worseningRisks.length ? worseningRisks.map(r => `
-      <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;">
-        <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${r.title}">${r.title}</span>
-        <span style="background: var(--color-critical-bg); color: var(--color-critical); padding: 2px 6px; border-radius: 4px; font-weight: 600;">${r.residualScore} ↑</span>
-      </div>
-    `).join('') : `<div style="font-size: 11px; color: var(--color-navy-secondary); text-align: center; padding: 20px 0;">No worsening risks.</div>`;
+    const worseningHTML = worseningRisks.length ? worseningRisks.map(r => {
+      const cleanRTitle = cleanTitle(r.title);
+      return `
+        <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;" title="${cleanRTitle}">
+          <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; min-width: 0;">${cleanRTitle}</span>
+          <span style="background: var(--color-critical-bg); color: var(--color-critical); padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">${r.residualScore} ↑</span>
+        </div>
+      `;
+    }).join('') : `<div style="font-size: 11px; color: var(--color-navy-secondary); text-align: center; padding: 20px 0;">No worsening risks.</div>`;
 
-    const improvingHTML = improvingRisks.length ? improvingRisks.map(r => `
-      <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;">
-        <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${r.title}">${r.title}</span>
-        <span style="background: var(--color-safe-bg); color: var(--color-safe); padding: 2px 6px; border-radius: 4px; font-weight: 600;">${r.residualScore} ↓</span>
-      </div>
-    `).join('') : `<div style="font-size: 11px; color: var(--color-navy-secondary); text-align: center; padding: 20px 0;">No improving risks.</div>`;
+    const improvingHTML = improvingRisks.length ? improvingRisks.map(r => {
+      const cleanRTitle = cleanTitle(r.title);
+      return `
+        <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;" title="${cleanRTitle}">
+          <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; min-width: 0;">${cleanRTitle}</span>
+          <span style="background: var(--color-safe-bg); color: var(--color-safe); padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">${r.residualScore} ↓</span>
+        </div>
+      `;
+    }).join('') : `<div style="font-size: 11px; color: var(--color-navy-secondary); text-align: center; padding: 20px 0;">No improving risks.</div>`;
 
     // Render primary HTML layout
     container.innerHTML = `
@@ -188,6 +189,7 @@ export class DashboardComponent {
             <div id="active-intel-list">
               ${insightsHTML}
             </div>
+            ${signalsFooterHTML}
           </div>
 
           <!-- Panel 2: Strategic Fragility -->
@@ -322,13 +324,17 @@ export class DashboardComponent {
             data: bubbleData,
             backgroundColor: (context) => {
               const dataPoint = context.raw;
-              if (!dataPoint) return 'var(--color-safe)';
+              if (!dataPoint) return '#1D9E75';
               const status = dataPoint.riskObj.appetiteStatus;
-              return status === 'Above Appetite' ? 'var(--color-critical)' : status === 'Near Appetite' ? 'var(--color-warning)' : 'var(--color-safe)';
+              return status === 'Above Appetite' ? '#E24B4A' : status === 'Near Appetite' ? '#EF9F27' : '#1D9E75';
             },
-            borderColor: '#FFFFFF',
+            borderColor: (context) => {
+              const dataPoint = context.raw;
+              if (!dataPoint) return '#0F6E56';
+              const status = dataPoint.riskObj.appetiteStatus;
+              return status === 'Above Appetite' ? '#A32D2D' : status === 'Near Appetite' ? '#854F0B' : '#0F6E56';
+            },
             borderWidth: 2,
-            hoverBorderColor: 'var(--color-navy)',
             hoverBorderWidth: 2
           }]
         },
@@ -348,20 +354,18 @@ export class DashboardComponent {
             legend: { display: false },
             tooltip: {
               enabled: true,
-              backgroundColor: 'var(--color-navy)',
+              backgroundColor: '#0D1B2A',
               titleColor: '#FFFFFF',
               bodyColor: '#FFFFFF',
               titleFont: { size: 12, family: 'Calibri', weight: 'bold' },
               bodyFont: { size: 11, family: 'Calibri' },
               padding: 10,
               callbacks: {
-                title: (context) => context[0].raw.riskObj.title,
+                title: (context) => cleanTitle(context[0].raw.riskObj.title),
                 label: (context) => {
                   const rawPoint = context.raw;
                   return [
-                    `Residual Score: ${rawPoint.riskObj.residualScore}`,
-                    `Likelihood: L${rawPoint.x}`,
-                    `Impact: I${rawPoint.y}`,
+                    `Score: ${rawPoint.riskObj.residualScore}`,
                     `Status: ${rawPoint.riskObj.appetiteStatus}`
                   ];
                 }
@@ -438,7 +442,8 @@ export class DashboardComponent {
           <button id="btn-close-drawer" style="border: none; background: none; font-size: 20px; cursor: pointer; color: var(--color-navy-secondary);">&times;</button>
         </div>
         
-        <h2 style="font-size: 20px; font-weight: 600; color: var(--color-navy); margin-bottom: 8px;">${risk.title}</h2>
+        <h2 style="font-size: 20px; font-weight: 600; color: var(--color-navy); margin-bottom: 4px;">${cleanTitle(risk.title)}</h2>
+        <div style="font-size: 11px; color: var(--color-navy-secondary); margin-bottom: 12px; font-weight: 500;">ID: ${risk.id}</div>
         <span class="status-badge ${appClass}" style="font-size: 10px; padding: 2px 8px; margin-bottom: 16px; display: inline-block;">
           ${risk.appetiteStatus} (${risk.residualScore})
         </span>
@@ -492,17 +497,21 @@ export class DashboardComponent {
   }
 
   bindEvents(container) {
-    // Review button clicks on Active Intelligence
-    container.querySelectorAll('.btn-insight-review').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const type = btn.dataset.type;
-        if (type === 'KRI Trajectory') {
-          this.navigateToPage('/controls', 'controls');
-        } else if (type === 'Register Staleness') {
-          this.navigateToPage('/risks?staleness=true', 'register');
+    // Click triggers on Active Intelligence cards
+    container.querySelectorAll('.insight-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const rId = card.dataset.riskId;
+        const targetRisk = this.state.risks.find(r => r.id === rId);
+        if (targetRisk) {
+          this.openRiskDrawer(targetRisk);
         }
       });
+    });
+
+    // View all N signals link click
+    container.querySelector('.view-all-signals-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.navigateToPage('/risks', 'register');
     });
 
     // Row Click triggers on Worsening/Improving Movement entries
@@ -529,7 +538,8 @@ export class DashboardComponent {
         const isClickInside = drawer.contains(e.target);
         const isClickOnCanvas = e.target.closest('#heatmap-chart-canvas');
         const isClickOnMovement = e.target.closest('.movement-row');
-        if (!isClickInside && !isClickOnCanvas && !isClickOnMovement) {
+        const isClickOnInsight = e.target.closest('.insight-card');
+        if (!isClickInside && !isClickOnCanvas && !isClickOnMovement && !isClickOnInsight) {
           drawer.style.right = '-380px';
         }
       }

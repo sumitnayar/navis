@@ -3,6 +3,14 @@
 import { StorageService } from '../services/storageService.js';
 import { AIService } from '../services/aiService.js';
 
+const cleanTitle = (title) => {
+  if (!title) return '';
+  return title
+    .replace(/^\[demo-trk-risk-\d+\]\s*/i, '')
+    .replace(/^\[DEMO Trackier SaaS\]\s*/i, '')
+    .trim();
+};
+
 export class RegisterComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -191,7 +199,7 @@ export class RegisterComponent {
                   <tr data-id="${r.id}" data-risk-id="${r.id}">
                     <td style="font-family:var(--font-header);font-weight:700;color:var(--text-secondary);">${r.id}</td>
                     <td>
-                      <div style="font-weight:600;color:var(--text-primary);">${r.title}</div>
+                      <div style="font-weight:600;color:var(--text-primary);">${cleanTitle(r.title)}</div>
                       <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;">
                         ${r.description}
                       </div>
@@ -305,7 +313,8 @@ export class RegisterComponent {
       <div class="page-header">
         <div class="page-title-wrap">
           <span class="profile-role-badge">Risk Mesh Compiler</span>
-          <h1>${r.id ? `Modify Board Risk [${r.id}]` : 'Create Board Risk Element'}</h1>
+          <h1>${r.id ? 'Modify Board Risk' : 'Create Board Risk Element'}</h1>
+          ${r.id ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:4px;">ID: ${r.id}</p>` : ''}
           <p class="page-subtitle">Configure multi-dimensional scores, dependency cascades, and AI suggested controls.</p>
         </div>
         <div>
@@ -455,7 +464,7 @@ export class RegisterComponent {
                   <label>Parent Risk (Triggers us)</label>
                   <select class="form-control" id="risk-parent">
                     <option value="">None</option>
-                    ${risks.map(o => `<option value="${o.id}" ${r.parentRiskId === o.id ? 'selected' : ''}>[${o.id}] ${o.title}</option>`).join('')}
+                    ${risks.map(o => `<option value="${o.id}" ${r.parentRiskId === o.id ? 'selected' : ''} title="ID: ${o.id}">${cleanTitle(o.title)}</option>`).join('')}
                   </select>
                 </div>
                 <div class="form-group">

@@ -48,6 +48,12 @@ export class ObjectivesComponent {
   render(container) {
     const objectives = this.state.objectives || [];
     const risks = this.state.risks || [];
+    
+    // Auto-select the first objective if none is selected
+    if (!this.selectedObjectiveId && objectives.length > 0) {
+      this.selectedObjectiveId = objectives[0].id;
+    }
+    
     const selectedObj = objectives.find(o => o.id === this.selectedObjectiveId);
 
     // Map objectives with their active linked risks
@@ -179,7 +185,7 @@ export class ObjectivesComponent {
             <div style="padding:8px 10px;background:rgba(0,0,0,0.015);border:1px solid var(--border-color);border-radius:6px;display:flex;justify-content:space-between;align-items:center;font-size:11px;">
               <div class="ai-explain-trigger" data-explain-type="risk" data-explain-id="${r.id}" style="cursor:pointer;flex-grow:1;">
                 <strong style="color:var(--text-primary);display:flex;align-items:center;gap:4px;">
-                  <span>[${r.id}] ${r.title}</span>
+                  <span title="ID: ${r.id}">${r.title}</span>
                   <button class="ai-explain-icon-btn" aria-label="AI Explain">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 10px; height: 10px;">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43a9.002 9.002 0 0010.457-12.827L15.904 9.813a9.002 9.002 0 00-10.457 12.827z" />
@@ -204,7 +210,7 @@ export class ObjectivesComponent {
             <label style="display:block;font-size:10px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px;font-weight:600;">Link Existing risk element</label>
             <div style="display:flex;gap:8px;">
               <select class="form-control" id="select-unlinked-risk" style="font-size:11px;padding:6px;height:30px;">
-                ${unlinked.map(r => `<option value="${r.id}">[${r.id}] ${r.title}</option>`).join('')}
+                ${unlinked.map(r => `<option value="${r.id}" title="ID: ${r.id}">${r.title}</option>`).join('')}
               </select>
               <button class="btn btn-primary btn-small" id="btn-submit-link" style="padding:4px 12px;height:30px;">Link</button>
             </div>

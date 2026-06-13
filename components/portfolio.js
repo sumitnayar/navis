@@ -132,7 +132,7 @@ export class PortfolioComponent {
     };
 
     return {
-      risk: `[${risk.id}] ${cleanTitle(risk.title)}`,
+      risk: cleanTitle(risk.title),
       ...target
     };
   }
@@ -210,9 +210,10 @@ export class PortfolioComponent {
                   <div class="glass-panel clickable-risk ${isSelected ? 'selected' : ''}" 
                        data-id="${r.id}"
                        data-risk-id="${r.id}"
-                       style="cursor:pointer; padding: 12px; border:1px solid ${isSelected ? 'var(--color-indigo)' : 'var(--border-color)'};">
+                       style="cursor:pointer; padding: 12px; border:1px solid ${isSelected ? 'var(--color-indigo)' : 'var(--border-color)'};"
+                       title="ID: ${r.id}">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 4px;">
-                      <strong style="font-size:12px; color:var(--text-primary);">[${r.id}] ${cleanTitle(r.title)}</strong>
+                      <strong style="font-size:12px; color:var(--text-primary);">${cleanTitle(r.title)}</strong>
                       <span class="status-badge ${r.appetiteStatus === 'Above Appetite' ? 'above' : r.appetiteStatus === 'Near Appetite' ? 'near' : 'within'}" style="font-size:8px; padding: 1px 4px;">
                         ${r.residualScore}
                       </span>
@@ -240,7 +241,7 @@ export class PortfolioComponent {
               <!-- CASCADE FLOWCHART PANELS -->
               <div class="cascade-flow-wrap" style="display:flex; flex-direction:column; gap:20px; position:relative;">
                           <!-- Step 1: Risk Node -->
-                <div class="cascade-step-card ai-explain-trigger" data-explain-type="risk" data-explain-id="${activeRisk.id}" style="position:relative; padding:16px; border:1px solid var(--color-critical); background: var(--color-critical-bg); border-radius:10px; cursor:pointer;">
+                <div class="cascade-step-card ai-explain-trigger" data-explain-type="risk" data-explain-id="${activeRisk.id}" style="position:relative; padding:16px; border:1px solid var(--color-critical); background: var(--color-critical-bg); border-radius:10px; cursor:pointer;" title="ID: ${activeRisk.id}">
                   <span class="profile-role-badge above" style="font-size: 8px; margin-bottom: 4px;">1. Threat Vector Element <span style="font-size:9px;margin-left:4px;">(Click to Explain)</span></span>
                   <strong style="color:var(--text-primary); font-size:13px; display:block;">${cascade.risk}</strong>
                   <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">
