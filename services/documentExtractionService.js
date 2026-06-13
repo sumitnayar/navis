@@ -41,8 +41,22 @@ export class DocumentExtractionService {
       return { text: '', error: 'PDF processing library failed to load. Please refresh and try again.', fileType: 'pdf' };
     }
 
-    // Set the worker source (classic build CDN)
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    // Solve CORS worker issue: Fetch worker script via standard fetch, convert to blob URL,
+    // which operates on the same-origin and bypasses CORS when instantiating the worker.
+    try {
+      if (!this._pdfWorkerUrl) {
+        const workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        const response = await fetch(workerSrc);
+        if (!response.ok) throw new Error(`Failed to fetch PDF worker script: ${response.statusText}`);
+        const blobText = await response.text();
+        const blob = new Blob([blobText], { type: 'application/javascript' });
+        this._pdfWorkerUrl = URL.createObjectURL(blob);
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = this._pdfWorkerUrl;
+    } catch (err) {
+      console.warn('Failed to construct local PDF worker blob URL. Falling back to CDN URL directly.', err);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    }
 
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });

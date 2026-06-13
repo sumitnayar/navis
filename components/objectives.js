@@ -8,9 +8,9 @@ export class ObjectivesComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
     this.onStateChange = onStateChange;
-    this.selectedObjectiveId = null;
+    this.selectedObjectiveId = this.state.editingObjectiveId || null;
     this.isLinkingRisk = false;
-    this.deepLinked = false;
+    this.deepLinked = !!this.state.editingObjectiveId;
 
     // Parse search query parameters
     const params = new URLSearchParams(window.location.search);
@@ -24,6 +24,9 @@ export class ObjectivesComponent {
   clearFilters() {
     this.selectedObjectiveId = null;
     this.deepLinked = false;
+    if (this.state) {
+      this.state.editingObjectiveId = null;
+    }
   }
 
   // Calculate aggregate exposure of linked risks

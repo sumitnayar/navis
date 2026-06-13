@@ -554,6 +554,88 @@ export class NetworkComponent {
     const status = dynamicData.statuses[node.id];
     const trend = dynamicData.trends[node.id];
 
+    if (node.type === 'objective') {
+      const objObj = this.state.objectives ? this.state.objectives.find(o => o.id === node.id) : null;
+      
+      // Mapped Upstream Threat Risks
+      const upstreamRisks = risks.filter(r => r.objectiveIds && r.objectiveIds.includes(node.id));
+      
+      // Downstream Enterprise Value Impacts (from this.links where source === node.id)
+      const downstreamValImpacts = this.layerNodes.filter(n => n.layer === 4 && this.links.some(l => l.source === node.id && l.target === n.id));
+
+      return `
+        <div style="flex-grow: 1; overflow-y: auto; max-height: 420px; padding-right:4px;">
+          <span class="profile-role-badge" style="margin-bottom:6px;">Strategic Objective Details</span>
+          <h3 style="font-size:16px; font-weight:700; line-height:1.2; margin-bottom:12px; color: ${this.isBoardMode ? '#FFFFFF' : '#0A1628'};">
+            ${node.label}
+          </h3>
+
+          <!-- STATUS TAGS -->
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <span class="status-badge ${status.includes('Critical') || status.includes('Above') ? 'above' : status.includes('Risk') || status.includes('Near') || status.includes('Warning') ? 'near' : 'within'}" style="font-size:10px; border-radius:12px; padding:2px 8px;">
+              Exposure: ${score}
+            </span>
+            <span class="trend-tag ${status.includes('Critical') ? 'deteriorating' : 'stable'}" style="font-size:10px;">
+              ${status}
+            </span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px; border-top:1px solid ${this.isBoardMode ? '#1E293B' : 'var(--border-color)'}; padding-top:12px;">
+            
+            <!-- CORPORATE METRICS -->
+            ${objObj ? `
+              <div style="background: ${this.isBoardMode ? '#1E293B' : '#F8FAFC'}; border: 1px solid ${this.isBoardMode ? '#334155' : 'var(--border-color)'}; border-radius:10px; padding:12px;">
+                <span class="cascade-section-label" style="font-weight:700; font-size:9px; text-transform:uppercase; display:block; margin-bottom:6px; color:#00B5B5;">Target Success Metrics</span>
+                <p style="font-size:11px; line-height:1.4; margin-bottom:8px; color: ${this.isBoardMode ? '#E2E8F0' : '#374151'};">${objObj.successMetrics}</p>
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); border-top:1px solid ${this.isBoardMode ? '#334155' : '#E2E8F0'}; padding-top:8px; margin-top:8px;">
+                  <span>Date: <strong>${objObj.targetDate}</strong></span>
+                  <span>Owner: <strong>${objObj.owner}</strong></span>
+                  <span>Priority: <strong>${objObj.importance}</strong></span>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- UPSTREAM THREAT LEADER -->
+            <div>
+              <span class="cascade-section-label" style="font-weight:700; font-size:9px; text-transform:uppercase; display:block; margin-bottom:6px;">Active Threat Vectors (${upstreamRisks.length})</span>
+              <div style="display:flex; flex-direction:column; gap:6px; max-height:140px; overflow-y:auto; padding-right:2px;">
+                ${upstreamRisks.length ? upstreamRisks.map(r => `
+                  <div style="font-size:11px; display:flex; justify-content:space-between; align-items:center; background:${this.isBoardMode ? '#1E293B' : '#F1F5F9'}; padding:6px 8px; border-radius:4px;">
+                    <span style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; color:${this.isBoardMode ? '#FFFFFF' : '#0A1628'};">${r.title}</span>
+                    <span class="status-badge ${r.appetiteStatus === 'Above Appetite' ? 'above' : r.appetiteStatus === 'Near Appetite' ? 'near' : 'within'}" style="font-size:9px; padding:1px 6px;">
+                      Score: ${r.residualScore}
+                    </span>
+                  </div>
+                `).join('') : `<div style="font-size:10px; color:#64748B; font-style:italic;">No active risks mapped.</div>`}
+              </div>
+            </div>
+
+            <!-- DOWNSTREAM VALUE IMPACT -->
+            <div>
+              <span class="cascade-section-label" style="font-weight:700; font-size:9px; text-transform:uppercase; display:block; margin-bottom:6px;">Enterprise Value Impact Mapped</span>
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                ${downstreamValImpacts.length ? downstreamValImpacts.map(v => {
+                  const s = dynamicData.statuses[v.id];
+                  const color = s === 'Critical' ? 'var(--color-critical)' : s === 'Warning' ? 'var(--color-warning)' : 'var(--color-safe)';
+                  return `
+                    <div style="font-size:11px; display:flex; justify-content:space-between; align-items:center; background:${this.isBoardMode ? '#1E293B' : '#F8FAFC'}; padding:4px 8px; border-radius:4px;">
+                      <span style="font-weight:500; color:${this.isBoardMode ? '#FFFFFF' : '#0A1628'};">${v.label}</span>
+                      <span style="font-weight:700; font-size:9px; color:${color};">${s}</span>
+                    </div>
+                  `;
+                }).join('') : `<div style="font-size:10px; color:#64748B; font-style:italic;">No enterprise value impact mapped.</div>`}
+              </div>
+            </div>
+
+          </div>
+        </div>
+        
+        <button class="btn btn-secondary btn-small" id="btn-inspect-objective" style="margin-top:16px; width:100%; justify-content:center; border-radius:6px; font-weight:700; height:32px;">
+          Inspect Objective Details
+        </button>
+      `;
+    }
+
     // Compute chain metrics
     const downstreamChain = this.getDownstreamChain(node.id);
     const pathLength = downstreamChain.length;
@@ -882,6 +964,17 @@ export class NetworkComponent {
         this.onStateChange({
           activeTab: 'register',
           editingRiskId: this.selectedNodeId
+        });
+      });
+    }
+
+    // --- INSPECT OBJECTIVE DIRECT LINK ---
+    const inspectObjBtn = container.querySelector('#btn-inspect-objective');
+    if (inspectObjBtn && this.selectedNodeId) {
+      inspectObjBtn.addEventListener('click', () => {
+        this.onStateChange({
+          activeTab: 'objectives',
+          editingObjectiveId: this.selectedNodeId
         });
       });
     }

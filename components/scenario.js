@@ -130,7 +130,7 @@ export class ScenarioComponent {
                 <label style="font-weight: 700; font-size:11px; text-transform:uppercase; color:var(--text-secondary); margin:0;">
                   Stress Severity Multiplier
                 </label>
-                <span class="status-badge ${this.simulatedSeverity > 130 ? 'above' : this.simulatedSeverity > 80 ? 'near' : 'within'}" style="font-size:11px; font-weight:700;">
+                <span class="stress-severity-label status-badge ${this.simulatedSeverity > 130 ? 'above' : this.simulatedSeverity > 80 ? 'near' : 'within'}" style="font-size:11px; font-weight:700;">
                   ${this.simulatedSeverity}% Scale
                 </span>
               </div>
@@ -188,7 +188,7 @@ export class ScenarioComponent {
             <!-- Best Case Card -->
             <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="best" style="border-top: 4px solid var(--color-within-appetite); padding: 16px; cursor: pointer;">
               <span class="profile-role-badge within" style="font-size: 9px; margin-bottom: 6px;">Best Case</span>
-              <h3 style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-within-appetite);">
+              <h3 class="best-revenue" style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-within-appetite);">
                 ${scaledRevenue.best}
               </h3>
               <p style="font-size:11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
@@ -197,11 +197,11 @@ export class ScenarioComponent {
               <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 11px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                   <span style="color:var(--text-muted);">EBITDA Margin:</span>
-                  <span style="font-weight: 600; color: var(--color-within-appetite);">${scaledEbitda.best}</span>
+                  <span class="best-ebitda" style="font-weight: 600; color: var(--color-within-appetite);">${scaledEbitda.best}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                   <span style="color:var(--text-muted);">Cash impact:</span>
-                  <span style="font-weight: 600; color: var(--color-within-appetite);">${scaledCash.best}</span>
+                  <span class="best-cash" style="font-weight: 600; color: var(--color-within-appetite);">${scaledCash.best}</span>
                 </div>
               </div>
             </div>
@@ -209,7 +209,7 @@ export class ScenarioComponent {
             <!-- Expected Case Card -->
             <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="expected" style="border-top: 4px solid var(--color-near-appetite); padding: 16px; background: rgba(217, 119, 6, 0.02); cursor: pointer;">
               <span class="profile-role-badge near" style="font-size: 9px; margin-bottom: 6px;">Expected Case</span>
-              <h3 style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-near-appetite);">
+              <h3 class="expected-revenue" style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-near-appetite);">
                 ${scaledRevenue.expected}
               </h3>
               <p style="font-size:11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
@@ -218,11 +218,11 @@ export class ScenarioComponent {
               <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 11px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                   <span style="color:var(--text-muted);">EBITDA Margin:</span>
-                  <span style="font-weight: 600; color: var(--color-near-appetite);">${scaledEbitda.expected}</span>
+                  <span class="expected-ebitda" style="font-weight: 600; color: var(--color-near-appetite);">${scaledEbitda.expected}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                   <span style="color:var(--text-muted);">Cash impact:</span>
-                  <span style="font-weight: 600; color: var(--color-near-appetite);">${scaledCash.expected}</span>
+                  <span class="expected-cash" style="font-weight: 600; color: var(--color-near-appetite);">${scaledCash.expected}</span>
                 </div>
               </div>
             </div>
@@ -230,7 +230,7 @@ export class ScenarioComponent {
             <!-- Worst Case Card -->
             <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="worst" style="border-top: 4px solid var(--color-above-appetite); padding: 16px; background: rgba(225, 29, 72, 0.02); cursor: pointer;">
               <span class="profile-role-badge above" style="font-size: 9px; margin-bottom: 6px;">Worst Case</span>
-              <h3 style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-above-appetite);">
+              <h3 class="worst-revenue" style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-above-appetite);">
                 ${scaledRevenue.worst}
               </h3>
               <p style="font-size:11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
@@ -239,11 +239,11 @@ export class ScenarioComponent {
               <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 11px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                   <span style="color:var(--text-muted);">EBITDA Margin:</span>
-                  <span style="font-weight: 600; color: var(--color-above-appetite);">${scaledEbitda.worst}</span>
+                  <span class="worst-ebitda" style="font-weight: 600; color: var(--color-above-appetite);">${scaledEbitda.worst}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                   <span style="color:var(--text-muted);">Cash impact:</span>
-                  <span style="font-weight: 600; color: var(--color-above-appetite);">${scaledCash.worst}</span>
+                  <span class="worst-cash" style="font-weight: 600; color: var(--color-above-appetite);">${scaledCash.worst}</span>
                 </div>
               </div>
             </div>
@@ -273,7 +273,7 @@ export class ScenarioComponent {
 
             <!-- INTERACTIVE STRATEGIC BRIEF GENERATED -->
             <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px; font-size:12px; line-height:1.4; color: var(--text-secondary);">
-              <strong>*CRO Boardroom Advisory:</strong> An expected EBITDA shock of <strong style="color:var(--color-near-appetite);">${scaledEbitda.expected}</strong> coupled with cash drain of <strong style="color:var(--color-near-appetite);">${scaledCash.expected}</strong> directly breaches the corporate risk tolerance models. The board is advised to prioritize the validation of the corresponding IT backup architectures and redundant cloud integrations.
+              *CRO Boardroom Advisory: An expected EBITDA shock of <strong class="advisory-ebitda" style="color:var(--color-near-appetite);">${scaledEbitda.expected}</strong> coupled with cash drain of <strong class="advisory-cash" style="color:var(--color-near-appetite);">${scaledCash.expected}</strong> directly breaches the corporate risk tolerance models. The board is advised to prioritize the validation of the corresponding IT backup architectures and redundant cloud integrations.
             </div>
 
           </div>
@@ -291,6 +291,9 @@ export class ScenarioComponent {
   }
 
   bindEvents(container) {
+    const scenarios = this.state.scenarios || [];
+    const currentScenario = scenarios.find(s => s.id === this.selectedScenarioId);
+
     // 1. Select template change
     const select = container.querySelector('#select-scenario-template');
     if (select) {
@@ -300,21 +303,71 @@ export class ScenarioComponent {
       });
     }
 
-    // 2. Resilience severity slider input
+    // 2. Resilience severity slider input (Synchronous inline updates to prevent focus glitches)
     const slider = container.querySelector('#resilience-severity-slider');
-    if (slider) {
+    if (slider && currentScenario) {
       slider.addEventListener('input', () => {
         this.simulatedSeverity = parseInt(slider.value);
-        
-        // Re-render template dynamic values without doing a complete redraw
-        // to prevent slider focus glitch, let's just do a normal render for simplicity:
-        this.render(container);
+        const factor = this.simulatedSeverity / 100;
+
+        // Recalculate values locally
+        const rev = currentScenario.revenueImpact;
+        const ebi = currentScenario.ebitdaImpact;
+        const cash = currentScenario.cashImpact;
+
+        const bestRevText = this.formatValue(this.parseValue(rev.best) * factor);
+        const expectedRevText = this.formatValue(this.parseValue(rev.expected) * factor);
+        const worstRevText = this.formatValue(this.parseValue(rev.worst) * factor);
+
+        const bestEbitdaText = this.scalePercent(ebi.best, factor);
+        const expectedEbitdaText = this.scalePercent(ebi.expected, factor);
+        const worstEbitdaText = this.scalePercent(ebi.worst, factor);
+
+        const bestCashText = this.formatValue(this.parseValue(cash.best) * factor);
+        const expectedCashText = this.formatValue(this.parseValue(cash.expected) * factor);
+        const worstCashText = this.formatValue(this.parseValue(cash.worst) * factor);
+
+        // Update slider label badge and style class
+        const badge = container.querySelector('.stress-severity-label');
+        if (badge) {
+          badge.textContent = `${this.simulatedSeverity}% Scale`;
+          badge.className = 'stress-severity-label status-badge ' + (this.simulatedSeverity > 130 ? 'above' : this.simulatedSeverity > 80 ? 'near' : 'within');
+        }
+
+        // Update DOM elements in place
+        const bestRevEl = container.querySelector('.best-revenue');
+        if (bestRevEl) bestRevEl.textContent = bestRevText;
+        const bestEbiEl = container.querySelector('.best-ebitda');
+        if (bestEbiEl) bestEbiEl.textContent = bestEbitdaText;
+        const bestCashEl = container.querySelector('.best-cash');
+        if (bestCashEl) bestCashEl.textContent = bestCashText;
+
+        const expectedRevEl = container.querySelector('.expected-revenue');
+        if (expectedRevEl) expectedRevEl.textContent = expectedRevText;
+        const expectedEbiEl = container.querySelector('.expected-ebitda');
+        if (expectedEbiEl) expectedEbiEl.textContent = expectedEbitdaText;
+        const expectedCashEl = container.querySelector('.expected-cash');
+        if (expectedCashEl) expectedCashEl.textContent = expectedCashText;
+
+        const worstRevEl = container.querySelector('.worst-revenue');
+        if (worstRevEl) worstRevEl.textContent = worstRevText;
+        const worstEbiEl = container.querySelector('.worst-ebitda');
+        if (worstEbiEl) worstEbiEl.textContent = worstEbitdaText;
+        const worstCashEl = container.querySelector('.worst-cash');
+        if (worstCashEl) worstCashEl.textContent = worstCashText;
+
+        const advisoryEbiEl = container.querySelector('.advisory-ebitda');
+        if (advisoryEbiEl) advisoryEbiEl.textContent = expectedEbitdaText;
+        const advisoryCashEl = container.querySelector('.advisory-cash');
+        if (advisoryCashEl) advisoryCashEl.textContent = expectedCashText;
       });
     }
 
     // Click-to-Explain Bindings
     container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
       trigger.addEventListener('click', (e) => {
+        // Only trigger explain if slider drag was not active
+        if (e.target.tagName === 'INPUT') return;
         const type = trigger.dataset.explainType;
         const id = trigger.dataset.explainId;
         
@@ -333,4 +386,3 @@ export class ScenarioComponent {
     });
   }
 }
-

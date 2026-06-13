@@ -62,7 +62,7 @@ Please select one of the core board questions on the left, or type a custom quer
         </div>
       </div>
 
-      <div class="board-qa-layout">
+      <div class="board-qa-layout" style="display: grid; grid-template-columns: 35% 65%; gap: 20px; height: 580px;">
         
         <!-- LEFT: PRESET QUICK DIRECTIVES -->
         <div class="details-panel no-print">
@@ -98,14 +98,27 @@ Please select one of the core board questions on the left, or type a custom quer
 
         <!-- RIGHT: CHAT PORTAL -->
         <div class="chat-window">
-          <div class="chat-header">
-            <span class="chat-header-dot" style="background-color: ${isApiConnected ? 'var(--color-within-appetite)' : 'var(--color-near-appetite)'};"></span>
-            <div style="font-family:var(--font-header);font-weight:600;font-size:13px;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-              <span>Navis Director Copilot</span>
-              <span class="status-badge ${isApiConnected ? 'within' : 'near'}" style="font-size:9px;padding:2px 6px;">
-                ${isApiConnected ? 'Live Gemini AI' : 'Simulation Mode'}
-              </span>
+          <div class="chat-header" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: #FFFFFF;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="pulsing-green-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--color-safe); box-shadow: 0 0 0 rgba(29, 158, 117, 0.4); animation: pulseGreen 1.5s infinite;"></span>
+              <style>
+                @keyframes pulseGreen {
+                  0% {
+                    box-shadow: 0 0 0 0 rgba(29, 158, 117, 0.7);
+                  }
+                  70% {
+                    box-shadow: 0 0 0 6px rgba(29, 158, 117, 0);
+                  }
+                  100% {
+                    box-shadow: 0 0 0 0 rgba(29, 158, 117, 0);
+                  }
+                }
+              </style>
+              <span style="font-family: var(--font-header); font-weight: 600; font-size: 13px; color: var(--color-navy);">Navis Director Copilot</span>
             </div>
+            <span class="status-badge" style="font-size: 9px; padding: 3px 8px; border-radius: 4px; background-color: #E6F7F4; color: #0F6E56; font-weight: 600; text-transform: uppercase;">
+              AI Engine Active
+            </span>
           </div>
 
           <!-- MESSAGE SCROLLER -->

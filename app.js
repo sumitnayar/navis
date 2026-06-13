@@ -15,18 +15,18 @@ import { ActionsComponent } from './components/actions.js';
 import { CultureComponent } from './components/culture.js';
 import { SettingsComponent } from './components/settings.js';
 import { BoardQAComponent } from './components/boardQA.js';
-import { IntakeComponent } from './components/intake.js';
-import { PolicyStudioComponent } from './components/policyStudio.js';
+import { IntelligencePolicyComponent } from './components/intelligencePolicy.js';
+import { BoardPackComponent } from './components/boardPack.js';
 
 const TAB_ROUTES = {
   dashboard: '/dashboard',
+  intelligencePolicy: '/policy',
   boardQA: '/ai',
-  intake: '/intake',
-  policyStudio: '/policy',
   objectives: '/objectives',
   scenario: '/scenario',
   portfolio: '/portfolio',
   network: '/network',
+  boardPack: '/board-pack',
   register: '/risks',
   taxonomy: '/taxonomy',
   assurance: '/assurance',
@@ -40,14 +40,16 @@ const PROTECTED_ROUTES = {
   '/dashboard': 'dashboard',
   '/board-qa': 'boardQA',
   '/ai': 'boardQA',
-  '/intake': 'intake',
-  '/policy': 'policyStudio',
-  '/policy-studio': 'policyStudio',
+  '/intake': 'intelligencePolicy',
+  '/policy': 'intelligencePolicy',
+  '/policy-studio': 'intelligencePolicy',
+  '/intelligence-policy': 'intelligencePolicy',
   '/objectives': 'objectives',
   '/scenario': 'scenario',
   '/scenarios': 'scenario',
   '/portfolio': 'portfolio',
   '/network': 'network',
+  '/board-pack': 'boardPack',
   '/risks': 'register',
   '/risk-register': 'register',
   '/register': 'register',
@@ -631,12 +633,12 @@ class RiskOSApplication {
       this.components = {
         dashboard: DashboardComponent,
         boardQA: BoardQAComponent,
-        intake: IntakeComponent,
-        policyStudio: PolicyStudioComponent,
+        intelligencePolicy: IntelligencePolicyComponent,
         objectives: ObjectivesComponent,
         scenario: ScenarioComponent,
         portfolio: PortfolioComponent,
         network: NetworkComponent,
+        boardPack: BoardPackComponent,
         register: RegisterComponent,
         taxonomy: TaxonomyComponent,
         assurance: AssuranceComponent,
@@ -670,6 +672,7 @@ class RiskOSApplication {
 
         this.updateBrandVisuals();
         this.renderTopNav();
+        this.renderPostureBar();
 
         // Check Gemini config status in the background
         fetch('/api/gemini').then(resp => {
@@ -745,6 +748,7 @@ class RiskOSApplication {
     this.currentTab = tabId;
     this.updateTopNavActive(tabId);
     this.updateBrandVisuals();
+    this.renderPostureBar();
 
     const mainContainer = document.querySelector('#page-render-container');
     if (!mainContainer) return;
@@ -807,6 +811,62 @@ class RiskOSApplication {
     await AuthService.signOut();
     this.resetAuthenticatedState();
     this.navigate('/login', { replace: true });
+  }
+
+  renderPostureBar() {
+    const risks = this.state.risks || [];
+    const today = new Date();
+    
+    const aboveAppetiteCount = risks.filter(r => r.appetiteStatus === 'Above Appetite').length;
+    const worseningCount = risks.filter(r => r.trend === 'Deteriorating').length;
+    const breachedKRIs = risks.filter(r => r.kris?.some(k => k.status === 'BREACHED')).length;
+    const overdueActionsCount = risks.flatMap(r => r.actions || [])
+      .filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today).length;
+
+    let postureValue = "LOW";
+    let postureColor = "#1D9E75"; // LOW = green
+    if (aboveAppetiteCount > 15 || breachedKRIs > 20 || overdueActionsCount > 10) {
+      postureValue = "CRITICAL";
+      postureColor = "#E24B4A"; // CRITICAL = red
+    } else if (aboveAppetiteCount > 0 || breachedKRIs > 0 || overdueActionsCount > 0) {
+      postureValue = "ELEVATED";
+      postureColor = "#EF9F27"; // ELEVATED = amber
+    } else if (worseningCount > 0) {
+      postureValue = "MODERATE";
+      postureColor = "#4A6FA5"; // MODERATE = slate
+    }
+
+    const postureBar = document.getElementById('posture-bar');
+    if (!postureBar) return;
+
+    postureBar.innerHTML = `
+      <div class="posture-bar-content">
+        <span class="posture-label">ENTERPRISE RISK POSTURE</span>
+        <span class="posture-pill" style="background-color: ${postureColor}">${postureValue}</span>
+        <div class="posture-divider"></div>
+        <div class="posture-stat">
+          <span class="posture-stat-label">Above Appetite</span>
+          <span class="posture-stat-value" style="color: var(--color-critical);">${aboveAppetiteCount}</span>
+        </div>
+        <div class="posture-stat">
+          <span class="posture-stat-label">KRI Breaches</span>
+          <span class="posture-stat-value" style="color: var(--color-warning);">${breachedKRIs}</span>
+        </div>
+        <div class="posture-stat">
+          <span class="posture-stat-label">Worsening</span>
+          <span class="posture-stat-value" style="color: var(--color-warning);">${worseningCount}</span>
+        </div>
+        <div class="posture-stat">
+          <span class="posture-stat-label">Overdue Actions</span>
+          <span class="posture-stat-value" style="color: var(--color-critical);">${overdueActionsCount}</span>
+        </div>
+        <div style="flex-grow: 1;"></div>
+        <div class="posture-live-indicator">
+          <span class="posture-pulsing-dot"></span>
+          <span class="posture-live-text">Live</span>
+        </div>
+      </div>
+    `;
   }
 
   resetAuthenticatedState() {

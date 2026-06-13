@@ -7,76 +7,70 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Red — desaturated crimson */
-  --color-critical:        #C0392B;  /* badges, borders, critical text */
-  --color-critical-text:   #B91C1C;  /* inline text, numbers */
-  --color-critical-bg:     #FDF2F2;  /* row backgrounds, fills */
+  /* Color Palette */
+  --color-indigo:          #00B89C;  /* Primary Action Teal */
+  --color-indigo-hover:    #009982;  /* Teal Hover */
+  --color-indigo-light:    #E6F7F4;  /* Teal Light BG */
 
-  /* Amber — burnt orange, not yellow */
-  --color-warning:         #C2610E;  /* badges, borders, warning text */
-  --color-warning-text:    #9A3412;  /* inline text, numbers */
-  --color-warning-bg:      #FFF7ED;  /* row backgrounds, fills */
+  --color-navy:            #0D1B2A;  /* Brand Navy */
+  --color-navy-text:       #E8EDF2;  /* Navy text on dark surfaces */
+  --color-navy-secondary:  #8FA3B1;  /* Navy secondary text */
 
-  /* Green — muted forest green */
-  --color-safe:            #1A7A4A;  /* badges, borders, safe text */
-  --color-safe-text:       #166534;  /* inline text, numbers */
-  --color-safe-bg:         #F0FDF4;  /* row backgrounds, fills */
+  --bg-primary:            #F7F6F4;  /* Warmer off-white Page background */
+  --bg-secondary:          #FFFFFF;  /* Surface (cards/panels) */
+  --bg-tertiary:           #F0EFED;  /* Surface secondary */
+  --panel-bg:              #FFFFFF;
 
-  /* Colors */
-  --bg-primary: #F8FAFC;       /* Soft corporate off-white background */
-  --bg-secondary: #FFFFFF;     /* Pure white panels */
-  --bg-tertiary: #F1F5F9;      /* Subtle inputs and headers */
-  --panel-bg: rgba(255, 255, 255, 0.85); /* Frosted white glass */
-  --border-color: rgba(0, 0, 0, 0.06);   /* Ultra-delicate boundary lines */
-  --border-glow: rgba(79, 70, 229, 0.08);
-  
-  /* Text */
-  --text-primary: #0F172A;     /* Deep slate charcoal text */
-  --text-secondary: #475569;   /* Warm dark grey subheaders */
-  --text-muted: #94A3B8;       /* Muted captions */
-  
-  /* Status Colors (Tailored for Light Backdrops) */
-  --color-above-appetite: var(--color-critical-text); /* Clean Crimson Rose */
-  --glow-above-appetite: rgba(225, 29, 72, 0.08);
-  
-  --color-near-appetite: var(--color-warning);  /* Warm Amber */
-  --glow-near-appetite: rgba(217, 119, 6, 0.06);
-  
-  --color-within-appetite: var(--color-safe); /* Rich Emerald */
-  --glow-within-appetite: rgba(5, 150, 105, 0.08);
-  
-  --color-indigo: #00B5B5;       /* NAVIS Premium Compass Teal */
-  --glow-indigo: rgba(0, 181, 181, 0.15);
-  
-  --color-blue: #2563EB;         /* Corporate Blue */
-  --glow-blue: rgba(37, 99, 235, 0.08);
-  
-  /* Fonts */
-  --font-header: 'Outfit', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --color-slate:           #4A6FA5;  /* Secondary Accent Slate */
+  --color-slate-light:     #EDF1F7;  /* Slate light bg */
 
-  /* Type scale */
-  --text-xs:    9px;   /* Footnotes, captions, status labels */
-  --text-sm:    11px;  /* Nav items, table body, secondary content */
-  --text-base:  13px;  /* Primary body text, insight rows */
-  --text-md:    15px;  /* Module headings, card titles */
-  --text-lg:    18px;  /* Section headers */
-  --text-xl:    24px;  /* Page titles */
-  --text-2xl:   32px;  /* Hero numbers, KPI values */
+  /* Status Colors */
+  --color-critical:        #E24B4A;  /* Status - danger red */
+  --color-critical-bg:     #FDECEC;  /* Status - danger bg */
+  --color-warning:         #EF9F27;  /* Status - warning amber */
+  --color-warning-bg:      #FEF6E7;  /* Status - warning bg */
+  --color-safe:            #1D9E75;  /* Status - success green */
+  --color-safe-bg:         #E6F5F0;  /* Status - success bg */
 
-  /* Weights */
-  --weight-regular: 400;
-  --weight-medium:  500;
-  --weight-bold:    700;
+  /* Status mappings */
+  --color-above-appetite:  var(--color-critical);
+  --color-near-appetite:   var(--color-warning);
+  --color-within-appetite: var(--color-safe);
+  --glow-above-appetite:   rgba(226, 75, 74, 0.08);
+  --glow-near-appetite:    rgba(239, 159, 39, 0.06);
+  --glow-within-appetite:  rgba(29, 158, 117, 0.08);
+  --glow-indigo:           rgba(0, 184, 156, 0.15);
 
-  /* Letter spacing */
-  --tracking-tight:  -0.01em;
-  --tracking-normal:  0;
-  --tracking-wide:    0.05em;
-  --tracking-wider:   0.1em;
+  /* Borders */
+  --border-color:          rgba(13, 27, 42, 0.12);  /* Border default */
+  --border-emphasis:       rgba(13, 27, 42, 0.24);  /* Border emphasis */
 
-  /* Layout */
-  --sidebar-width: 280px;
+  /* Typography */
+  --font-header: 'Calibri', 'Inter', system-ui, sans-serif;
+  --font-body: 'Calibri', 'Inter', system-ui, sans-serif;
+
+  /* Type Scale */
+  --text-xs:               11px;
+  --text-sm:               13px;
+  --text-base:             14px;
+  --text-md:               16px;
+  --text-lg:               20px;
+  --text-xl:               24px;
+  --text-2xl:              32px;
+
+  /* Font Weights */
+  --weight-regular:        400;
+  --weight-medium:         500;
+  --weight-semibold:       600;
+
+  /* Spacing & Radius */
+  --radius-sm:             4px;
+  --radius-md:             8px;
+  --radius-lg:             12px;
+  --radius-xl:             16px;
+  --radius-pill:           999px;
+  
+  --sidebar-width:         280px;
 }
 
 /* --- GLOBAL RESETS --- */
@@ -2608,17 +2602,25 @@ body.app-page {
 
 .main-content {
   margin-left: 0 !important;
-  padding-top: 52px !important;
-  height: calc(100vh - 52px) !important;
+  padding-top: 88px !important; /* navbar (48px) + posture bar (40px) */
+  height: calc(100vh - 88px) !important;
   width: 100vw !important;
+  background-color: var(--bg-primary);
+  overflow-y: auto;
+}
+
+#page-render-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 32px;
 }
 
 /* ── TOP NAV ── */
 .top-nav {
   position: fixed; top: 0; left: 0; right: 0;
-  height: 52px;
+  height: 48px;
   background: #FFFFFF;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 0.5px solid var(--border-color);
   display: flex; align-items: center;
   padding: 0 24px; gap: 0;
   z-index: 1000;
@@ -2626,79 +2628,54 @@ body.app-page {
 
 .top-nav-brand {
   display: flex; align-items: center; gap: 8px;
-  flex-shrink: 0; margin-right: 32px;
+  flex-shrink: 0; margin-right: 24px;
 }
 
 .nv-logo {
   width: 28px; height: 28px;
-  background: #00B5B5; border-radius: 4px;
+  background: var(--color-indigo); border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: #FFFFFF;
+  font-size: 11px; font-weight: 600; color: #FFFFFF;
 }
 
 .top-nav-wordmark {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-wider);  /* 0.1em */
-  color: #0A1628;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-navy);
 }
 
 .top-nav-modules {
   display: flex; align-items: center;
-  flex: 1; justify-content: center; gap: 0;
+  flex: 1; justify-content: flex-start; gap: 4px;
 }
 
 .top-nav-item {
-  padding: 0 16px; height: 52px;
+  padding: 6px 12px; height: 36px;
   display: flex; align-items: center;
-  font-size: 11px !important;
+  font-size: var(--text-sm) !important;
   font-weight: 500 !important;
-  color: #64748B;
+  color: var(--color-navy-secondary);
   cursor: pointer; white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, background-color 0.15s;
   position: relative;
-  letter-spacing: 0;
+  letter-spacing: normal;
+  border-radius: 6px;
 }
 
 .top-nav-item:hover {
-  color: #0A1628;
-  font-weight: 500 !important;
+  color: var(--color-navy);
+  background-color: var(--bg-tertiary);
 }
 
 .top-nav-item.active {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  color: #0A1628;
-  border-bottom: 2px solid #00B5B5;
-}
-
-/* More dropdown */
-.top-nav-more { cursor: pointer; }
-
-.top-nav-dropdown {
-  display: none; position: absolute;
-  top: 52px; left: 0;
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  min-width: 180px; z-index: 1001;
-}
-
-.top-nav-more.open .top-nav-dropdown { display: block; }
-
-.top-nav-dropdown-item {
-  padding: 10px 16px;
-  font-size: 11px !important;
+  font-size: var(--text-sm) !important;
   font-weight: 500 !important;
-  color: #0A1628;
-  cursor: pointer;
-  border-bottom: 1px solid #F1F5F9;
+  color: var(--color-navy);
+  border-radius: 0;
+  border-bottom: 2px solid var(--color-indigo);
+  background-color: transparent;
 }
-
-.top-nav-dropdown-item:last-child { border-bottom: none; }
-.top-nav-dropdown-item:hover { background: #F8FAFC; }
 
 /* Right section */
 .top-nav-right {
@@ -2707,22 +2684,117 @@ body.app-page {
 }
 
 .top-nav-company {
-  font-size: var(--text-xs);      /* 9px */
+  font-size: var(--text-xs);
   font-weight: var(--weight-regular);
-  color: #64748B;
-  max-width: 180px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--color-slate);
+  padding: 4px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
 }
 
 .top-nav-divider {
-  width: 1px; height: 16px; background: #E2E8F0;
+  width: 1px; height: 16px; background: var(--border-color);
 }
 
 .top-nav-settings {
-  font-size: 14px; color: #64748B;
+  font-size: 14px; color: var(--color-navy-secondary);
   cursor: pointer; line-height: 1;
 }
-.top-nav-settings:hover { color: #0A1628; }
+.top-nav-settings:hover { color: var(--color-navy); }
+
+/* ── GLOBAL POSTURE BAR ── */
+.posture-bar {
+  position: fixed;
+  top: 48px; left: 0; right: 0;
+  height: 40px;
+  background-color: var(--color-navy);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.posture-bar-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.posture-label {
+  font-size: 10px;
+  color: var(--color-navy-secondary);
+  letter-spacing: 0.08em;
+  margin-right: 12px;
+}
+
+.posture-pill {
+  font-size: 11px;
+  font-weight: 600; /* semibold */
+  color: #FFFFFF;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-right: 16px;
+  text-transform: uppercase;
+}
+
+.posture-divider {
+  width: 0.5px;
+  height: 20px;
+  background-color: rgba(255, 255, 255, 0.15);
+  margin-right: 16px;
+}
+
+.posture-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 20px;
+}
+
+.posture-stat-label {
+  font-size: 10px;
+  color: var(--color-navy-secondary);
+}
+
+.posture-stat-value {
+  font-size: 14px;
+  font-weight: 600; /* semibold for posture bar numbers */
+}
+
+.posture-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.posture-pulsing-dot {
+  width: 7px;
+  height: 7px;
+  background-color: var(--color-indigo);
+  border-radius: 50%;
+  position: relative;
+}
+
+.posture-pulsing-dot::after {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border: 1px solid var(--color-indigo);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+.posture-live-text {
+  font-size: 10px;
+  color: var(--color-navy-secondary);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
 
 .top-nav-signout {
   font-size: var(--text-xs);

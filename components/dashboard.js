@@ -2,6 +2,7 @@
 
 import { AIService } from '../services/aiService.js';
 import { AIInsightService } from '../services/aiInsightService.js';
+import { RiskIntelligenceService } from '../services/riskIntelligenceService.js';
 
 export class DashboardComponent {
   constructor(appState, onStateChange) {
@@ -10,81 +11,17 @@ export class DashboardComponent {
     this.selectedHeatmapRiskIndex = null;
   }
 
-  // ─── Navigation Helper ────────────────────────────────────────────────────
+  // Navigation Helper
   navigateToPage(url, tabKey) {
     window.history.pushState(null, '', url);
     this.onStateChange({ activeTab: tabKey });
   }
 
-  // ─── Clear Filters ────────────────────────────────────────────────────────
-  clearFilters() {
-    window.history.pushState(null, '', window.location.pathname);
-  }
-
-  // ─── Calculate Dynamic Metrics ───────────────────────────────────────────
-  calculateMetrics(risks) {
-    const today = new Date();
-    const aboveAppetiteCount = risks.filter(r => r.appetiteStatus === 'Above Appetite').length;
-    const worseningCount = risks.filter(r => r.trend === 'Deteriorating').length;
-    const improvingCount = risks.filter(r => r.trend === 'Improving').length;
-    const breachedKRIs = risks.filter(r => r.kris?.some(k => k.status === 'BREACHED')).length;
-    const overdueActionsCount = risks.flatMap(r => r.actions || [])
-      .filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today).length;
-
-    return {
-      aboveAppetiteCount,
-      worseningCount,
-      improvingCount,
-      breachedKRIs,
-      overdueActionsCount
-    };
-  }
-
-  // ─── Zone 1: Status Bar Renderer ──────────────────────────────────────────
-  renderStatusBar(risks) {
-    const metrics = this.calculateMetrics(risks);
-
-    let postureValue = "LOW";
-    let postureClass = "low";
-    if (metrics.aboveAppetiteCount > 15 || metrics.breachedKRIs > 20 || metrics.overdueActionsCount > 10) {
-      postureValue = "CRITICAL";
-      postureClass = "critical";
-    } else if (metrics.aboveAppetiteCount > 0 || metrics.breachedKRIs > 0 || metrics.overdueActionsCount > 0) {
-      postureValue = "ELEVATED";
-      postureClass = ""; // default elevated style (amber var(--color-warning))
-    } else if (metrics.worseningCount > 0) {
-      postureValue = "MODERATE";
-      postureClass = "moderate";
-    }
-
-    const postureBadge = document.getElementById('posture-value-badge');
-    if (postureBadge) {
-      postureBadge.textContent = postureValue;
-      postureBadge.className = `dash-posture-value ${postureClass}`.trim();
-    }
-
-    const setMetric = (id, val, critLimit) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = val;
-        el.className = 'dash-metric-value';
-        if (critLimit !== undefined && val > critLimit) {
-          el.classList.add('red');
-        } else if (val > 0) {
-          el.classList.add('amber');
-        }
-      }
-    };
-
-    setMetric('metric-above-appetite', metrics.aboveAppetiteCount, 15);
-    setMetric('metric-kri-breaches', metrics.breachedKRIs, 20);
-    setMetric('metric-worsening', metrics.worseningCount, 0); // only has amber warning threshold
-    setMetric('metric-overdue-actions', metrics.overdueActionsCount, 10);
-  }
-
-  // ─── Panel B: Strategic Fragility Table Renderer ──────────────────────────
-  renderFragilityTable(risks) {
+  render(container) {
+    const risks = this.state.risks || [];
     const objectives = this.state.objectives || [];
+
+    // Calculate dimensions fragility
     const dimensions = [
       { key: 'revenue', label: 'Revenue' },
       { key: 'growth', label: 'Growth' },
@@ -98,7 +35,6 @@ export class DashboardComponent {
 
     const fragilitySums = { revenue: 0, growth: 0, customerTrust: 0, technology: 0, people: 0, operations: 0, reputation: 0, valuation: 0 };
     const count = risks.length || 1;
-
     risks.forEach(r => {
       if (r.fragility) {
         Object.keys(fragilitySums).forEach(k => {
@@ -107,15 +43,11 @@ export class DashboardComponent {
       }
     });
 
-    const tbody = document.getElementById('fragility-table-body');
-    if (!tbody) return;
-
-    tbody.innerHTML = dimensions.map(dim => {
+    const strategicFragilityRows = dimensions.map(dim => {
       const percent = Math.round((fragilitySums[dim.key] / count) * 20);
-
-      let fragClass = "frag-green";
-      if (percent >= 80) fragClass = "frag-red";
-      else if (percent >= 60) fragClass = "frag-amber";
+      let fragColor = 'var(--color-safe)';
+      if (percent >= 80) fragColor = 'var(--color-critical)';
+      else if (percent >= 60) fragColor = 'var(--color-warning)';
 
       const dimRisks = risks.filter(r => r.fragility && r.fragility[dim.key] > 0);
       let trendSum = 0;
@@ -125,13 +57,13 @@ export class DashboardComponent {
       });
 
       let trendArrow = "→";
-      let trendClass = "trend-flat";
+      let trendColor = 'var(--color-navy-secondary)';
       if (trendSum > 0) {
         trendArrow = "↑";
-        trendClass = "trend-up";
+        trendColor = 'var(--color-critical)';
       } else if (trendSum < 0) {
         trendArrow = "↓";
-        trendClass = "trend-down";
+        trendColor = 'var(--color-safe)';
       }
 
       const linkedObjIds = new Set();
@@ -148,18 +80,74 @@ export class DashboardComponent {
       const objAtRisk = linkedObjIds.size;
 
       return `
-        <tr>
-          <td><strong>${dim.label}</strong></td>
-          <td class="${fragClass}">${percent}%</td>
-          <td class="${trendClass}">${trendArrow}</td>
-          <td>${objAtRisk}</td>
+        <tr class="fragility-row" style="border-bottom: 0.5px solid var(--border-color); transition: background-color 0.15s;">
+          <td style="padding: 10px 0; font-size: 14px; font-weight: 500; color: var(--color-navy);">${dim.label}</td>
+          <td style="padding: 10px 0; font-size: 14px; font-weight: 600; color: ${fragColor};">${percent}%</td>
+          <td style="padding: 10px 0; font-size: 14px; font-weight: 600; color: ${trendColor};">${trendArrow}</td>
+          <td style="padding: 10px 0; font-size: 14px; color: var(--color-navy-secondary);">${objAtRisk}</td>
         </tr>
       `;
     }).join('');
-  }
 
-  // ─── Panel C: Risk Dynamics Renderer ──────────────────────────────────────
-  renderDynamics(risks) {
+    // Eager-fetch active intelligence feed synchronously
+    let insights = [];
+    try {
+      insights = RiskIntelligenceService.generateInsightsSync(risks, null);
+    } catch (e) {
+      console.warn("Sync intelligence load failed, running fallback:", e);
+    }
+
+    const getDaysSinceReview = (r) => {
+      const lastReviewedStr = r.last_reviewed_date || r.lastReviewedDate || r.created_at || new Date().toISOString();
+      const lastReviewed = new Date(lastReviewedStr);
+      return Math.ceil(Math.abs(new Date() - lastReviewed) / 86400000);
+    };
+
+    const staleRisks = risks.filter(r => {
+      const days = getDaysSinceReview(r);
+      return (r.appetiteStatus === 'Above Appetite' && days > 7) || days > 30;
+    });
+    const maxStaleDays = staleRisks.length > 0 ? Math.max(...staleRisks.map(getDaysSinceReview)) : 0;
+
+    const activeInsights = insights.slice(0, 8);
+    const insightsHTML = activeInsights.length ? activeInsights.map(ins => {
+      let sevColor = 'var(--color-slate)';
+      let borderLeftColor = 'var(--border-color)';
+      if (ins.severity === 'Critical') {
+        sevColor = 'var(--color-critical)';
+        borderLeftColor = 'var(--color-critical)';
+      } else if (ins.severity === 'Warning') {
+        sevColor = 'var(--color-warning)';
+        borderLeftColor = 'var(--color-warning)';
+      }
+
+      let detailContext = '';
+      if (ins.insight_type === 'KRI Trajectory') {
+        const days = ins.source_data?.daysToBreach;
+        detailContext = days ? `(Breach in ${days}d)` : '';
+      } else if (ins.insight_type === 'Register Staleness') {
+        detailContext = maxStaleDays > 0 ? `(Max stale: ${maxStaleDays}d)` : '';
+      }
+
+      return `
+        <div class="insight-card" style="padding: 12px; background: #FFFFFF; border: 0.5px solid var(--border-color); border-left: 3px solid ${borderLeftColor}; border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-top-left-radius: 0; border-bottom-left-radius: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: ${sevColor}; letter-spacing: 0.07em;">${ins.severity}</span>
+              <span style="font-size: 11px; color: var(--color-navy-secondary);">${ins.insight_type}</span>
+            </div>
+            <div style="font-size: 13px; font-weight: 500; color: var(--color-navy);">${ins.insight_text} ${detailContext}</div>
+          </div>
+          <button class="btn btn-secondary btn-small btn-insight-review" data-type="${ins.insight_type}" data-filter="${ins.source_data?.filter || ''}" style="font-size: 11px; padding: 4px 10px;">Review &rarr;</button>
+        </div>
+      `;
+    }).join('') : `
+      <div style="text-align: center; color: var(--color-navy-secondary); padding: 40px 0; font-size: 13px;">
+        ✓ No active intelligence alerts or forecast breaches detected.
+      </div>
+    `;
+
+    // Movement panels: Top worsening / Top improving
     const worseningRisks = risks
       .filter(r => r.trend === 'Deteriorating')
       .sort((a, b) => (b.residualScore || 0) - (a.residualScore || 0))
@@ -170,181 +158,120 @@ export class DashboardComponent {
       .sort((a, b) => (b.residualScore || 0) - (a.residualScore || 0))
       .slice(0, 3);
 
-    const worseningList = document.getElementById('dynamics-worsening-list');
-    if (worseningList) {
-      if (worseningRisks.length === 0) {
-        worseningList.innerHTML = `<div class="dash-dynamics-row"><span class="dash-dynamics-name" style="color:#64748B;">No worsening trends</span></div>`;
-      } else {
-        worseningList.innerHTML = worseningRisks.map(r => `
-          <div class="dash-dynamics-row" data-risk-id="${r.id}" style="cursor: pointer;">
-            <span class="dash-dynamics-name" title="${r.title}">${r.title}</span>
-            <span class="dash-dynamics-score">${r.residualScore || 0}</span>
-            <span class="dash-dynamics-arrow trend-up">↑</span>
+    const worseningHTML = worseningRisks.length ? worseningRisks.map(r => `
+      <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;">
+        <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${r.title}">${r.title}</span>
+        <span style="background: var(--color-critical-bg); color: var(--color-critical); padding: 2px 6px; border-radius: 4px; font-weight: 600;">${r.residualScore} ↑</span>
+      </div>
+    `).join('') : `<div style="font-size: 11px; color: var(--color-navy-secondary); text-align: center; padding: 20px 0;">No worsening risks.</div>`;
+
+    const improvingHTML = improvingRisks.length ? improvingRisks.map(r => `
+      <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;">
+        <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;" title="${r.title}">${r.title}</span>
+        <span style="background: var(--color-safe-bg); color: var(--color-safe); padding: 2px 6px; border-radius: 4px; font-weight: 600;">${r.residualScore} ↓</span>
+      </div>
+    `).join('') : `<div style="font-size: 11px; color: var(--color-navy-secondary); text-align: center; padding: 20px 0;">No improving risks.</div>`;
+
+    // Render primary HTML layout
+    container.innerHTML = `
+      <div style="display: grid; grid-template-columns: 58% 42%; gap: 20px;">
+        
+        <!-- LEFT COLUMN -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Panel 1: Active Intelligence -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">ACTIVE INTELLIGENCE</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">Ranked signals requiring board attention</span>
+            </div>
+            <div id="active-intel-list">
+              ${insightsHTML}
+            </div>
           </div>
-        `).join('');
-      }
-    }
 
-    const improvingList = document.getElementById('dynamics-improving-list');
-    if (improvingList) {
-      if (improvingRisks.length === 0) {
-        improvingList.innerHTML = `<div class="dash-dynamics-row"><span class="dash-dynamics-name" style="color:#64748B;">No improving trends</span></div>`;
-      } else {
-        improvingList.innerHTML = improvingRisks.map(r => `
-          <div class="dash-dynamics-row" data-risk-id="${r.id}" style="cursor: pointer;">
-            <span class="dash-dynamics-name" title="${r.title}">${r.title}</span>
-            <span class="dash-dynamics-score">${r.residualScore || 0}</span>
-            <span class="dash-dynamics-arrow trend-down">↓</span>
+          <!-- Panel 2: Strategic Fragility -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">STRATEGIC FRAGILITY</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">Structural vulnerability and objectives exposure</span>
+            </div>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Dimension</th>
+                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Fragility %</th>
+                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Trend</th>
+                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Objectives at Risk</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${strategicFragilityRows}
+              </tbody>
+            </table>
           </div>
-        `).join('');
-      }
-    }
 
-    // Bind click triggers to show AI explanation modal
-    const dynamicsRows = document.querySelectorAll('.dash-dynamics-row[data-risk-id]');
-    dynamicsRows.forEach(row => {
-      row.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const riskId = row.getAttribute('data-risk-id');
-        const riskItem = risks.find(r => r.id === riskId);
-        if (riskItem) {
-          AIInsightService.showExplanationModal('risk', riskItem, this.state);
-        }
-      });
-    });
-  }
-
-  // ─── Panel A: Active Intelligence Feed (Async) ───────────────────────────
-  async renderInsights(risks) {
-    const listContainer = document.getElementById('active-intel-list');
-    if (!listContainer) return;
-
-    try {
-      const { RiskIntelligenceService } = await import('../services/riskIntelligenceService.js');
-      const insights = await RiskIntelligenceService.generateInsights(risks, null);
-
-      if (!insights || insights.length === 0) {
-        listContainer.innerHTML = `
-          <div class="dash-insight-empty">
-            <span style="font-size:14px;">✓</span>
-            <span>No active intelligence alerts or forecast breaches detected.</span>
-          </div>
-        `;
-        return;
-      }
-
-      const getDaysSinceReview = (r) => {
-        const lastReviewedStr = r.last_reviewed_date || r.lastReviewedDate || r.created_at || new Date().toISOString();
-        const lastReviewed = new Date(lastReviewedStr);
-        return Math.ceil(Math.abs(new Date() - lastReviewed) / 86400000);
-      };
-
-      const staleRisks = risks.filter(r => {
-        const days = getDaysSinceReview(r);
-        return (r.appetiteStatus === 'Above Appetite' && days > 7) || days > 30 || (r.appetiteStatus === 'Within Appetite' && days > 60);
-      });
-      const maxStaleDays = staleRisks.length > 0 ? Math.max(...staleRisks.map(getDaysSinceReview)) : 0;
-
-      const activeInsights = insights.slice(0, 8);
-
-      listContainer.innerHTML = activeInsights.map(ins => {
-        let sevClass = 'advisory';
-        if (ins.severity === 'Critical') {
-          sevClass = 'critical';
-        } else if (ins.severity === 'Warning') {
-          sevClass = 'warning';
-        }
-
-        let detailContext = '';
-        if (ins.insight_type === 'KRI Trajectory') {
-          const days = ins.source_data?.daysToBreach;
-          detailContext = days ? `(Breach in ${days}d)` : '';
-        } else if (ins.insight_type === 'Register Staleness') {
-          detailContext = maxStaleDays > 0 ? `(Max stale: ${maxStaleDays}d)` : '';
-        }
-
-        return `
-          <div class="dash-insight-row">
-            <span class="dash-severity ${sevClass}">${ins.severity.toUpperCase()}</span>
-            <span class="dash-insight-text" title="${ins.insight_text}">${ins.insight_text}</span>
-            ${detailContext ? `<span class="dash-insight-detail">${detailContext}</span>` : ''}
-            <span class="dash-insight-link btn-insight-review" 
-                  data-type="${ins.insight_type}" 
-                  data-risk-id="${ins.source_data?.riskId || ''}" 
-                  data-filter="${ins.source_data?.filter || ''}">Review &rarr;</span>
-          </div>
-        `;
-      }).join('');
-
-      listContainer.querySelectorAll('.btn-insight-review').forEach(link => {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          const type = link.dataset.type;
-          const filter = link.dataset.filter;
-
-          if (type === 'KRI Trajectory') {
-            this.navigateToPage('/controls', 'controls');
-          } else if (type === 'Register Staleness' && filter === 'stale') {
-            this.navigateToPage('/risks?staleness=true', 'register');
-          }
-        });
-      });
-
-    } catch (err) {
-      console.error("Failed to generate intelligence feed:", err);
-      listContainer.innerHTML = `
-        <div class="dash-insight-empty" style="color: var(--color-critical);">
-          <span>⚠️</span>
-          <span>Failed to generate intelligence feed.</span>
         </div>
-      `;
-    }
-  }
 
-  // ─── Heatmap Shading and Drilldown Renderer ────────────────────────────────
-  renderHeatmapDrilldown(risk) {
-    if (!risk) {
-      return `<p style="font-size:10px; color:#64748B; text-align:center; line-height: 1.4; margin: 12px 0;">Click on any plotted risk point in the heatmap scatter grid to pin and inspect item specifics.</p>`;
-    }
+        <!-- RIGHT COLUMN -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Panel 3: Risk Portfolio (Heatmap) -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">RISK PORTFOLIO</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">Likelihood vs impact — click any point to inspect</span>
+            </div>
+            <div style="position: relative; height: 260px; margin-bottom: 12px; background: #FFFFFF; border: 1.5px solid var(--border-color); border-radius: 8px; padding: 10px;">
+              <canvas id="heatmap-chart-canvas"></canvas>
+            </div>
+            <a href="#" id="link-open-full-analysis" style="font-size: 12px; color: var(--color-slate); text-decoration: none; font-weight: 500;">Open full analysis →</a>
+          </div>
 
-    return `
-      <div class="dashboard-fade-in" style="padding: 12px; background: rgba(0, 181, 181, 0.03); border: 1px solid rgba(0, 181, 181, 0.15); border-radius: 8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <h4 style="font-size:12px; color:#0A1628; font-weight:700; margin:0;">${risk.title}</h4>
-          <button class="dash-print-btn" id="btn-clear-heatmap" style="padding:2px 8px; font-size:10px; margin: 0;">Clear Pin</button>
+          <!-- Panel 4: Risk Movement -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 16px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">RISK MOVEMENT</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">Leading indicators of risk vector updates</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              
+              <!-- Column: Worsening -->
+              <div>
+                <h4 style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--color-critical); letter-spacing: 0.07em; margin-bottom: 10px;">Top Worsening</h4>
+                <div id="dynamics-worsening-list">
+                  ${worseningHTML}
+                </div>
+              </div>
+
+              <!-- Column: Improving -->
+              <div>
+                <h4 style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--color-safe); letter-spacing: 0.07em; margin-bottom: 10px;">Top Improving</h4>
+                <div id="dynamics-improving-list">
+                  ${improvingHTML}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
-        <div style="font-size:11px; color:#64748B; line-height:1.5; margin-bottom:8px;">
-          ${risk.description}
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size:10px; border-top: 1px solid #E2E8F0; padding-top:8px; margin-top:8px;">
-          <div>Owner: <strong>${risk.owner}</strong></div>
-          <div>Category: <strong>${risk.category}</strong></div>
-          <div>Likelihood: <strong>L${risk.likelihoodResidual || risk.likelihood}</strong></div>
-          <div>Impact: <strong>I${risk.impactResidual || risk.impact}</strong></div>
-          <div>Residual Score: <strong style="padding: 2px 6px; font-size:10px; border-radius:4px; font-weight:bold; background: ${risk.appetiteStatus === 'Above Appetite' ? 'var(--color-critical-bg)' : 'var(--color-safe-bg)'};">${risk.residualScore}</strong></div>
-          <div>Appetite Status: <strong style="color: ${risk.appetiteStatus === 'Above Appetite' ? 'var(--color-critical)' : risk.appetiteStatus === 'Near Appetite' ? 'var(--color-warning)' : 'var(--color-safe)'}">${risk.appetiteStatus}</strong></div>
+
+      </div>
+
+      <!-- RISK SLIDE-IN DRAWER -->
+      <div id="risk-detail-drawer" style="position: fixed; top: 0; right: -380px; width: 380px; height: 100%; background: #FFFFFF; box-shadow: -4px 0 24px rgba(13,27,42,0.15); transition: right 0.3s ease; z-index: 2000; padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div id="drawer-content-container">
+          <!-- Populated dynamically on node click -->
         </div>
       </div>
     `;
+
+    this.initHeatmap(container);
+    this.bindEvents(container);
   }
 
-  bindHeatmapClearEvent(container, heatmapChartInstance) {
-    const clearBtn = container.querySelector('#btn-clear-heatmap');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        this.selectedHeatmapRiskIndex = null;
-        const ddContainer = container.querySelector('#heatmap-drilldown-container');
-        if (ddContainer) {
-          ddContainer.innerHTML = this.renderHeatmapDrilldown(null);
-        }
-        if (heatmapChartInstance) {
-          heatmapChartInstance.update();
-        }
-      });
-    }
-  }
-
-  // ─── Heatmap Chart Initializer ───────────────────────────────────────────
+  // Heatmap Chart Initializer
   initHeatmap(container) {
     const risks = this.state.risks || [];
     const canvas = container.querySelector('#heatmap-chart-canvas');
@@ -358,38 +285,32 @@ export class DashboardComponent {
       index: index
     }));
 
-    const xVals = risks.map(r => r.likelihoodResidual || r.likelihood || 1);
-    const yVals = risks.map(r => r.impactResidual || r.impact || 1);
-    const xMin = Math.min(...xVals, 1);
-    const xMax = Math.max(...xVals, 5);
-    const yMin = Math.min(...yVals, 1);
-    const yMax = Math.max(...yVals, 5);
-
-    const scaleMinX = Math.max(0.5, xMin - 0.5);
-    const scaleMaxX = Math.min(5.5, xMax + 0.5);
-    const scaleMinY = Math.max(0.5, yMin - 0.5);
-    const scaleMaxY = Math.min(5.5, yMax + 0.5);
-
     const quadrantPlugin = {
       id: 'quadrantShading',
       beforeDraw(chart) {
-        const { ctx: chartCtx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
-        chartCtx.save();
-        const xPixel = x.getPixelForValue(3);
-        const yPixel = y.getPixelForValue(3);
-        const xMaxVal = Math.max(3, x.max);
-        const yMaxVal = Math.max(3, y.max);
-        const xMaxPixel = x.getPixelForValue(xMaxVal);
-        const yMaxPixel = y.getPixelForValue(yMaxVal);
+        const { ctx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
+        ctx.save();
+        
+        const x3 = x.getPixelForValue(3);
+        const y3 = y.getPixelForValue(3);
 
-        chartCtx.fillStyle = 'rgba(239, 68, 68, 0.02)';
-        chartCtx.fillRect(
-          Math.max(left, xPixel),
-          Math.max(top, yMaxPixel),
-          Math.max(0, xMaxPixel - xPixel),
-          Math.max(0, yPixel - yMaxPixel)
-        );
-        chartCtx.restore();
+        // Bottom-Left: Low zone (#E6F5F0)
+        ctx.fillStyle = '#E6F5F0';
+        ctx.fillRect(left, y3, x3 - left, bottom - y3);
+
+        // Top-Left: Elevated (#FEF6E7)
+        ctx.fillStyle = '#FEF6E7';
+        ctx.fillRect(left, top, x3 - left, y3 - top);
+
+        // Bottom-Right: Elevated (#FEF6E7)
+        ctx.fillStyle = '#FEF6E7';
+        ctx.fillRect(x3, y3, right - x3, bottom - y3);
+
+        // Top-Right: Critical (#FDECEC)
+        ctx.fillStyle = '#FDECEC';
+        ctx.fillRect(x3, top, right - x3, y3 - top);
+
+        ctx.restore();
       }
     };
 
@@ -401,13 +322,13 @@ export class DashboardComponent {
             data: bubbleData,
             backgroundColor: (context) => {
               const dataPoint = context.raw;
-              if (!dataPoint) return 'rgba(26, 122, 74, 0.85)';
+              if (!dataPoint) return 'var(--color-safe)';
               const status = dataPoint.riskObj.appetiteStatus;
-              return status === 'Above Appetite' ? 'rgba(192, 57, 43, 0.85)' : status === 'Near Appetite' ? 'rgba(194, 97, 14, 0.85)' : 'rgba(26, 122, 74, 0.85)';
+              return status === 'Above Appetite' ? 'var(--color-critical)' : status === 'Near Appetite' ? 'var(--color-warning)' : 'var(--color-safe)';
             },
             borderColor: '#FFFFFF',
             borderWidth: 2,
-            hoverBorderColor: '#0F172A',
+            hoverBorderColor: 'var(--color-navy)',
             hoverBorderWidth: 2
           }]
         },
@@ -416,41 +337,25 @@ export class DashboardComponent {
           responsive: true,
           maintainAspectRatio: false,
           onClick: (event, elements) => {
-            const ddContainer = container.querySelector('#heatmap-drilldown-container');
             if (elements && elements.length > 0) {
               const datasetIndex = elements[0].datasetIndex;
               const index = elements[0].index;
               const clickedPoint = heatmapChartInstance.data.datasets[datasetIndex].data[index];
-
-              this.selectedHeatmapRiskIndex = clickedPoint.index;
-
-              if (ddContainer) {
-                ddContainer.innerHTML = this.renderHeatmapDrilldown(clickedPoint.riskObj);
-                this.bindHeatmapClearEvent(container, heatmapChartInstance);
-              }
-            } else {
-              this.selectedHeatmapRiskIndex = null;
-              if (ddContainer) {
-                ddContainer.innerHTML = this.renderHeatmapDrilldown(null);
-              }
+              this.openRiskDrawer(clickedPoint.riskObj);
             }
-            heatmapChartInstance.update();
           },
           plugins: {
             legend: { display: false },
             tooltip: {
               enabled: true,
-              backgroundColor: '#0F172A',
+              backgroundColor: 'var(--color-navy)',
               titleColor: '#FFFFFF',
               bodyColor: '#FFFFFF',
-              titleFont: { size: 10, family: 'Inter', weight: 'bold' },
-              bodyFont: { size: 9, family: 'Inter' },
+              titleFont: { size: 12, family: 'Calibri', weight: 'bold' },
+              bodyFont: { size: 11, family: 'Calibri' },
               padding: 10,
               callbacks: {
-                title: (context) => {
-                  const rawPoint = context[0].raw;
-                  return rawPoint.riskObj.title;
-                },
+                title: (context) => context[0].raw.riskObj.title,
                 label: (context) => {
                   const rawPoint = context.raw;
                   return [
@@ -465,199 +370,169 @@ export class DashboardComponent {
           },
           scales: {
             x: {
-              min: scaleMinX,
-              max: scaleMaxX,
+              min: 0.5,
+              max: 5.5,
               ticks: {
                 stepSize: 1,
-                color: '#64748B',
-                font: { family: 'Inter', size: 10 }
+                color: 'var(--color-navy)',
+                font: { family: 'Calibri', size: 11 }
               },
               grid: {
-                color: 'rgba(0, 0, 0, 0.04)',
+                color: 'rgba(13, 27, 42, 0.05)',
                 drawTicks: false
               },
-              border: { color: 'rgba(0, 0, 0, 0.06)' },
+              border: { color: 'var(--border-color)' },
               title: {
                 display: true,
                 text: 'Likelihood →',
-                color: '#64748B',
-                font: { family: 'Outfit', size: 11, weight: 'bold' }
+                color: 'var(--color-navy)',
+                font: { family: 'Calibri', size: 12, weight: 'bold' }
               }
             },
             y: {
-              min: scaleMinY,
-              max: scaleMaxY,
+              min: 0.5,
+              max: 5.5,
               ticks: {
                 stepSize: 1,
-                color: '#64748B',
-                font: { family: 'Inter', size: 10 }
+                color: 'var(--color-navy)',
+                font: { family: 'Calibri', size: 11 }
               },
               grid: {
-                color: 'rgba(0, 0, 0, 0.04)',
+                color: 'rgba(13, 27, 42, 0.05)',
                 drawTicks: false
               },
-              border: { color: 'rgba(0, 0, 0, 0.06)' },
+              border: { color: 'var(--border-color)' },
               title: {
                 display: true,
                 text: 'Impact ↑',
-                color: '#64748B',
-                font: { family: 'Outfit', size: 11, weight: 'bold' }
+                color: 'var(--color-navy)',
+                font: { family: 'Calibri', size: 12, weight: 'bold' }
               }
             }
           }
         }
       });
-    } else {
-      console.warn("Chart.js is not loaded. Skipping heatmap scatter chart initialization.");
     }
   }
 
-  // ─── Main Render Entry ───────────────────────────────────────────────────
-  render(container) {
-    const risks = this.state.risks || [];
+  // Open Sliding Drawer
+  openRiskDrawer(risk) {
+    const drawer = document.getElementById('risk-detail-drawer');
+    const container = document.getElementById('drawer-content-container');
+    if (!drawer || !container) return;
 
-    // Shell HTML with specified classes
+    let appClass = 'within';
+    let appColor = 'var(--color-safe)';
+    if (risk.appetiteStatus === 'Above Appetite') {
+      appClass = 'above';
+      appColor = 'var(--color-critical)';
+    } else if (risk.appetiteStatus === 'Near Appetite') {
+      appClass = 'near';
+      appColor = 'var(--color-warning)';
+    }
+
     container.innerHTML = `
-      <div class="dashboard-wrap">
-        <!-- ZONE 1: Status Bar -->
-        <div class="dash-status-bar">
-          <span class="dash-posture-label">Enterprise Risk Posture</span>
-          <span class="dash-posture-value low" id="posture-value-badge">LOW</span>
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+          <span class="profile-role-badge" style="font-size: 10px; color: var(--color-slate);">${risk.category}</span>
+          <button id="btn-close-drawer" style="border: none; background: none; font-size: 20px; cursor: pointer; color: var(--color-navy-secondary);">&times;</button>
+        </div>
+        
+        <h2 style="font-size: 20px; font-weight: 600; color: var(--color-navy); margin-bottom: 8px;">${risk.title}</h2>
+        <span class="status-badge ${appClass}" style="font-size: 10px; padding: 2px 8px; margin-bottom: 16px; display: inline-block;">
+          ${risk.appetiteStatus} (${risk.residualScore})
+        </span>
 
-          <div class="dash-sb-divider"></div>
-          <span class="dash-metric-label">Above Appetite</span>
-          <span class="dash-metric-value" id="metric-above-appetite">0</span>
+        <p style="font-size: 13px; color: var(--color-navy); line-height: 1.5; margin-bottom: 20px;">
+          ${risk.description}
+        </p>
 
-          <div class="dash-sb-divider"></div>
-          <span class="dash-metric-label">KRI Breaches</span>
-          <span class="dash-metric-value" id="metric-kri-breaches">0</span>
-
-          <div class="dash-sb-divider"></div>
-          <span class="dash-metric-label">Worsening</span>
-          <span class="dash-metric-value" id="metric-worsening">0</span>
-
-          <div class="dash-sb-divider"></div>
-          <span class="dash-metric-label">Overdue Actions</span>
-          <span class="dash-metric-value" id="metric-overdue-actions">0</span>
-
-          <button class="dash-print-btn" id="btn-print-pack">Print Board Pack</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 11px; margin-bottom: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <div>Owner: <strong style="color: var(--color-navy);">${risk.owner}</strong></div>
+          <div>Business Unit: <strong style="color: var(--color-navy);">${risk.businessUnit || 'Unassigned'}</strong></div>
+          <div>Likelihood: <strong style="color: var(--color-navy);">L${risk.likelihoodResidual || risk.likelihood}</strong></div>
+          <div>Impact: <strong style="color: var(--color-navy);">I${risk.impactResidual || risk.impact}</strong></div>
         </div>
 
-        <!-- ZONE 2 & 3: Two Column Dashboard Layout -->
-        <div class="dash-body">
-          <!-- Left Column (Zone 2) -->
-          <div class="dash-left">
-            <!-- Panel A: Active Intelligence -->
-            <div class="dash-panel" id="panel-active-intel">
-              <div class="dash-panel-label">Active Intelligence</div>
-              <div class="dash-panel-sub">Ranked signals requiring board attention</div>
-              <div class="dash-insight-list" id="active-intel-list">
-                <div class="dash-skeleton-row"></div>
-                <div class="dash-skeleton-row"></div>
-                <div class="dash-skeleton-row"></div>
-              </div>
+        <!-- MAPPED CONTROLS -->
+        <h3 style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em; margin-bottom: 8px;">Mitigating Controls</h3>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; max-height: 120px; overflow-y: auto;">
+          ${risk.controls?.length ? risk.controls.map(c => `
+            <div style="padding: 6px 10px; background: var(--bg-primary); border: 0.5px solid var(--border-color); border-radius: 4px; font-size: 11px; display: flex; justify-content: space-between;">
+              <span style="color: var(--color-navy); font-weight: 500;">${c.name}</span>
+              <span style="color: ${c.effectiveness === 'Highly Effective' ? 'var(--color-safe)' : 'var(--color-warning)'}; font-weight: 600;">${c.effectiveness}</span>
             </div>
-
-            <div class="dash-panel-divider"></div>
-
-            <!-- Panel B: Strategic Fragility -->
-            <div class="dash-panel" id="panel-fragility">
-              <div class="dash-panel-label">Strategic Fragility</div>
-              <div class="dash-panel-sub">Structural vulnerability and objectives exposure</div>
-              <table class="dash-fragility-table">
-                <thead>
-                  <tr>
-                    <th>Dimension</th>
-                    <th>Fragility</th>
-                    <th>Trend</th>
-                    <th>Objectives at Risk</th>
-                  </tr>
-                </thead>
-                <tbody id="fragility-table-body">
-                  <!-- Dynamic rows go here -->
-                </tbody>
-              </table>
-            </div>
-
-            <div class="dash-panel-divider"></div>
-
-            <!-- Panel C: Risk Dynamics -->
-            <div class="dash-panel" id="panel-dynamics">
-              <div class="dash-panel-label">Risk Movement</div>
-              <div class="dash-panel-sub">Leading indicators of risk vector updates</div>
-              <div class="dash-dynamics">
-                <!-- Top Worsening -->
-                <div class="dash-dynamics-col">
-                  <div class="dash-dynamics-header">Top Worsening</div>
-                  <div id="dynamics-worsening-list">
-                    <!-- Dynamic rows go here -->
-                  </div>
-                </div>
-
-                <div class="dash-dynamics-divider"></div>
-
-                <!-- Top Improving -->
-                <div class="dash-dynamics-col">
-                  <div class="dash-dynamics-header">Top Improving</div>
-                  <div id="dynamics-improving-list">
-                    <!-- Dynamic rows go here -->
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Column (Zone 3) -->
-          <div class="dash-right">
-            <div class="dash-panel-label">Risk Portfolio</div>
-            <div class="dash-panel-sub">Likelihood vs impact — click any point to inspect</div>
-            <div class="dash-heatmap-card">
-              <div style="position: relative; height: 260px; margin-bottom: 12px;">
-                <canvas id="heatmap-chart-canvas"></canvas>
-              </div>
-              <div id="heatmap-drilldown-container">
-                <!-- Drilldown details -->
-              </div>
-            </div>
-            <div style="margin-top: 8px;">
-              <a class="dash-open-link" id="link-open-full-analysis" href="#">Open full analysis →</a>
-            </div>
-          </div>
+          `).join('') : '<span style="font-size: 11px; color: var(--color-navy-secondary); font-style: italic;">No active controls.</span>'}
         </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-primary" id="btn-drawer-explain" style="width: 100%; justify-content: center; height: 36px;">Generate AI Briefing</button>
+        <button class="btn btn-secondary" id="btn-drawer-action" style="width: 100%; justify-content: center; height: 36px;">Action Items (${risk.actions?.length || 0})</button>
       </div>
     `;
 
-    // 1. Render sync sections
-    this.renderStatusBar(risks);
-    this.renderFragilityTable(risks);
-    this.renderDynamics(risks);
+    drawer.style.right = '0';
 
-    // 2. Initialize Heatmap
-    this.initHeatmap(container);
+    // Bind Drawer Close
+    const closeBtn = document.getElementById('btn-close-drawer');
+    closeBtn?.addEventListener('click', () => {
+      drawer.style.right = '-380px';
+    });
 
-    // 3. Render async insights
-    this.renderInsights(risks);
+    // Bind AI Explain
+    document.getElementById('btn-drawer-explain')?.addEventListener('click', () => {
+      AIInsightService.showExplanationModal('risk', risk, this.state);
+    });
 
-    // 4. Bind event listeners
-    const printBtn = container.querySelector('#btn-print-pack');
-    if (printBtn) {
-      printBtn.addEventListener('click', () => {
-        window.print();
-      });
-    }
+    // Bind Action page redirect
+    document.getElementById('btn-drawer-action')?.addEventListener('click', () => {
+      this.navigateToPage('/actions', 'actions');
+    });
+  }
 
-    const openFullAnalysis = container.querySelector('#link-open-full-analysis');
-    if (openFullAnalysis) {
-      openFullAnalysis.addEventListener('click', (e) => {
+  bindEvents(container) {
+    // Review button clicks on Active Intelligence
+    container.querySelectorAll('.btn-insight-review').forEach(btn => {
+      btn.addEventListener('click', (e) => {
         e.preventDefault();
-        this.navigateToPage('/portfolio', 'portfolio');
+        const type = btn.dataset.type;
+        if (type === 'KRI Trajectory') {
+          this.navigateToPage('/controls', 'controls');
+        } else if (type === 'Register Staleness') {
+          this.navigateToPage('/risks?staleness=true', 'register');
+        }
       });
-    }
+    });
 
-    // Initialize Drilldown Container to default empty message
-    const ddContainer = container.querySelector('#heatmap-drilldown-container');
-    if (ddContainer) {
-      ddContainer.innerHTML = this.renderHeatmapDrilldown(null);
-    }
+    // Row Click triggers on Worsening/Improving Movement entries
+    container.querySelectorAll('.movement-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const rId = row.dataset.riskId;
+        const targetRisk = this.state.risks.find(r => r.id === rId);
+        if (targetRisk) {
+          this.openRiskDrawer(targetRisk);
+        }
+      });
+    });
+
+    // Open full analysis link
+    container.querySelector('#link-open-full-analysis')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.navigateToPage('/portfolio', 'portfolio');
+    });
+
+    // Close slide-in drawer on outside clicks
+    document.addEventListener('click', (e) => {
+      const drawer = document.getElementById('risk-detail-drawer');
+      if (drawer && drawer.style.right === '0') {
+        const isClickInside = drawer.contains(e.target);
+        const isClickOnCanvas = e.target.closest('#heatmap-chart-canvas');
+        const isClickOnMovement = e.target.closest('.movement-row');
+        if (!isClickInside && !isClickOnCanvas && !isClickOnMovement) {
+          drawer.style.right = '-380px';
+        }
+      }
+    });
   }
 }
