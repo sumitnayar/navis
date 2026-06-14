@@ -459,15 +459,15 @@ export class DashboardComponent {
 
     let spotlightHTML = '';
     if (spotlightTemplate) {
-      const ebitdaImpact = spotlightTemplate.responses.noIntervention.ebitda;
-      const objectivesCount = spotlightTemplate.affectedObjectives.length;
-      const boardActionRequired = spotlightTemplate.boardActions.decisions.length > 0 ? 'Yes' : 'No';
+      const ebitdaImpact = spotlightTemplate.responses?.noIntervention?.ebitda || 'N/A';
+      const objectivesCount = spotlightTemplate.affectedObjectives?.length || 0;
+      const boardActionRequired = spotlightTemplate.boardActions?.decisions?.length > 0 ? 'Yes' : 'No';
 
       spotlightHTML = `
         <div class="glass-panel" style="padding: 20px;">
           <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em; margin-bottom: 12px;">★ Scenario Spotlight</div>
           <h3 style="font-size: 14px; font-weight: 600; color: var(--color-navy); margin-bottom: 6px; margin-top:0;">${spotlightTemplate.title}</h3>
-          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">${spotlightTemplate.trigger}</p>
+          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">${spotlightTemplate.trigger || ''}</p>
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; font-size: 11px; margin-bottom: 12px;">
             <div>
               <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:700;">EBITDA Impact</span>
