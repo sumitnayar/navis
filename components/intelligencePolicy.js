@@ -268,8 +268,8 @@ export class IntelligencePolicyComponent {
       <div class="page-header">
         <div class="page-title-wrap">
           <span class="profile-role-badge">Governance Control Desk</span>
-          <h1>Policy Intelligence Studio</h1>
-          <p class="page-subtitle">Ingest, audit, draft, query, and enforce alignment of corporate policies against GRC frameworks and risk registers.</p>
+          <h1>Intelligence Desk</h1>
+          <p class="page-subtitle">Ingest, audit, and search corporate governance documents.</p>
         </div>
       </div>
 
@@ -286,15 +286,6 @@ export class IntelligencePolicyComponent {
         </button>
         <button class="subtab-btn ${this.activeSubTab === 'ask' ? 'active' : ''}" data-subtab="ask" style="background:none;border:none;padding:10px 16px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'ask' ? 'var(--color-indigo)' : 'var(--color-navy-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'ask' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
           Ask Documents
-        </button>
-        <button class="subtab-btn ${this.activeSubTab === 'generator' ? 'active' : ''}" data-subtab="generator" style="background:none;border:none;padding:10px 16px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'generator' ? 'var(--color-indigo)' : 'var(--color-navy-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'generator' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
-          Policy Library &amp; Generator
-        </button>
-        <button class="subtab-btn ${this.activeSubTab === 'upgrade' ? 'active' : ''}" data-subtab="upgrade" style="background:none;border:none;padding:10px 16px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'upgrade' ? 'var(--color-indigo)' : 'var(--color-navy-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'upgrade' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
-          Upgrade Wizard &amp; Gaps
-        </button>
-        <button class="subtab-btn ${this.activeSubTab === 'versions' ? 'active' : ''}" data-subtab="versions" style="background:none;border:none;padding:10px 16px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'versions' ? 'var(--color-indigo)' : 'var(--color-navy-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'versions' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
-          Approved Versions
         </button>
       </div>
 

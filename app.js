@@ -17,10 +17,12 @@ import { SettingsComponent } from './components/settings.js';
 import { BoardQAComponent } from './components/boardQA.js';
 import { IntelligencePolicyComponent } from './components/intelligencePolicy.js';
 import { BoardPackComponent } from './components/boardPack.js';
+import { PolicyStudioComponent } from './components/policyStudio.js';
 
 const TAB_ROUTES = {
   dashboard: '/dashboard',
   intelligencePolicy: '/policy',
+  policyStudio: '/policy-studio',
   boardQA: '/ai',
   objectives: '/objectives',
   scenario: '/scenario',
@@ -42,7 +44,7 @@ const PROTECTED_ROUTES = {
   '/ai': 'boardQA',
   '/intake': 'intelligencePolicy',
   '/policy': 'intelligencePolicy',
-  '/policy-studio': 'intelligencePolicy',
+  '/policy-studio': 'policyStudio',
   '/intelligence-policy': 'intelligencePolicy',
   '/objectives': 'objectives',
   '/scenario': 'scenario',
@@ -64,6 +66,24 @@ const PROTECTED_ROUTES = {
 };
 
 const PUBLIC_ROUTES = new Set(['/', '/login', '/contact']);
+
+const MODE_TABS = {
+  board: ['dashboard', 'objectives', 'scenario', 'boardQA', 'boardPack'],
+  intelligence: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
+  builder: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack']
+};
+
+const TAB_LABELS = {
+  dashboard: 'Dashboard',
+  intelligencePolicy: 'Intelligence Desk',
+  policyStudio: 'Policy Studio',
+  boardQA: 'Ask Navis',
+  objectives: 'Objectives',
+  scenario: 'Board Decision Room',
+  network: 'Cascade Map',
+  portfolio: 'Portfolio Mapper',
+  boardPack: 'Board Pack'
+};
 
 function getCurrentPath() {
   const path = window.location.pathname.replace(/\/+$/, '');
@@ -92,7 +112,8 @@ class RiskOSApplication {
       cultureMetrics: {},
       activeTab: 'dashboard',
       editingRiskId: null,
-      isLoading: true
+      isLoading: true,
+      operatingMode: localStorage.getItem('navis_operating_mode') || 'board'
     };
 
     this.components = {};
@@ -634,6 +655,7 @@ class RiskOSApplication {
         dashboard: DashboardComponent,
         boardQA: BoardQAComponent,
         intelligencePolicy: IntelligencePolicyComponent,
+        policyStudio: PolicyStudioComponent,
         objectives: ObjectivesComponent,
         scenario: ScenarioComponent,
         portfolio: PortfolioComponent,
@@ -649,6 +671,7 @@ class RiskOSApplication {
       };
 
       this.updateBrandVisuals();
+      this.renderTopNav();
       this.bindTopNavEvents();
       this.appHasInitialized = true;
 
@@ -716,10 +739,39 @@ class RiskOSApplication {
   }
 
   renderTopNav() {
+    const mode = this.state.operatingMode || 'board';
+    const allowedTabs = MODE_TABS[mode];
+    const navContainer = document.getElementById('top-nav-modules');
+    if (navContainer) {
+      navContainer.innerHTML = allowedTabs
+        .filter(tabId => tabId !== 'settings')
+        .map(tabId => `
+          <div class="top-nav-item" id="nav-${tabId}" data-tab="${tabId}">${TAB_LABELS[tabId]}</div>
+        `).join('');
+      
+      navContainer.querySelectorAll('.top-nav-item[data-tab]').forEach(el => {
+        el.addEventListener('click', () => this.routeTo(el.dataset.tab));
+      });
+    }
+
     const companyEl = document.getElementById('top-nav-company');
     if (companyEl && this.state.settings?.companyName) {
       companyEl.textContent = this.state.settings.companyName;
     }
+
+    // Toggle settings gear visibility based on mode
+    const settingsGear = document.getElementById('top-nav-settings');
+    const settingsDivider = document.getElementById('settings-divider');
+    if (settingsGear && settingsDivider) {
+      if (mode === 'builder') {
+        settingsGear.style.display = 'inline-block';
+        settingsDivider.style.display = 'inline-block';
+      } else {
+        settingsGear.style.display = 'none';
+        settingsDivider.style.display = 'none';
+      }
+    }
+
     this.updateTopNavActive(this.currentTab || this.state.activeTab);
   }
 
@@ -728,13 +780,16 @@ class RiskOSApplication {
     const activeEl = document.getElementById(`nav-${tabId}`);
     if (activeEl) {
       activeEl.classList.add('active');
-    } else {
-      // Active tab is in dropdown — highlight More button
-      document.getElementById('nav-more')?.classList.add('active');
     }
   }
 
   routeTo(tabId, options = {}) {
+    const mode = this.state.operatingMode || 'board';
+    const allowedTabs = MODE_TABS[mode];
+    if (!allowedTabs.includes(tabId)) {
+      tabId = 'dashboard';
+    }
+
     if (!this.components[tabId]) return;
 
     if (options.updateUrl !== false) {
@@ -773,31 +828,6 @@ class RiskOSApplication {
   }
 
   bindTopNavEvents() {
-    // Module navigation
-    document.querySelectorAll('.top-nav-item[data-tab]').forEach(el => {
-      el.addEventListener('click', () => this.routeTo(el.dataset.tab));
-    });
-
-    // Dropdown items
-    document.querySelectorAll('.top-nav-dropdown-item[data-tab]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('nav-more')?.classList.remove('open');
-        this.routeTo(el.dataset.tab);
-      });
-    });
-
-    // More toggle
-    document.getElementById('nav-more')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.getElementById('nav-more')?.classList.toggle('open');
-    });
-
-    // Close dropdown on outside click
-    document.addEventListener('click', () => {
-      document.getElementById('nav-more')?.classList.remove('open');
-    });
-
     // Settings
     document.getElementById('top-nav-settings')?.addEventListener('click',
       () => this.routeTo('settings'));
@@ -805,6 +835,53 @@ class RiskOSApplication {
     // Sign out
     document.getElementById('top-nav-signout')?.addEventListener('click',
       () => this.handleSignOut());
+
+    // Mode Switcher
+    this.bindModeSwitcher();
+  }
+
+  bindModeSwitcher() {
+    const switcher = document.getElementById('mode-switcher');
+    if (!switcher) return;
+
+    switcher.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newMode = btn.dataset.mode;
+        this.setOperatingMode(newMode);
+      });
+    });
+
+    this.updateModeSwitcherActive();
+  }
+
+  setOperatingMode(mode) {
+    this.state.operatingMode = mode;
+    localStorage.setItem('navis_operating_mode', mode);
+    
+    this.updateModeSwitcherActive();
+    this.renderTopNav();
+
+    // Intercept active tab if not allowed in new mode
+    const allowedTabs = MODE_TABS[mode];
+    if (!allowedTabs.includes(this.state.activeTab)) {
+      this.routeTo('dashboard');
+    } else {
+      this.routeTo(this.state.activeTab);
+    }
+  }
+
+  updateModeSwitcherActive() {
+    const switcher = document.getElementById('mode-switcher');
+    if (!switcher) return;
+
+    const mode = this.state.operatingMode || 'board';
+    switcher.querySelectorAll('.mode-btn').forEach(btn => {
+      if (btn.dataset.mode === mode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
   }
 
   async handleSignOut() {

@@ -250,3 +250,36 @@ table tr:hover td, .custom-table tr:hover td {
 svg text, .network-node text, .network-svg text {
   font-family: var(--font-family) !important;
 }
+
+/* ── 7. Operating Mode Switcher ── */
+.mode-switcher {
+  display: flex;
+  background-color: var(--color-slate-light);
+  padding: 2px;
+  border-radius: var(--radius-sm); /* 8px rounding */
+  align-items: center;
+  border: 1px solid var(--border-color);
+}
+
+.mode-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+  line-height: 1.2 !important;
+}
+
+.mode-btn.active {
+  background-color: #FFFFFF !important;
+  color: var(--text-primary) !important;
+}
+
+.mode-btn:hover:not(.active) {
+  color: var(--text-primary) !important;
+}

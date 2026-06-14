@@ -26,6 +26,15 @@ export class DashboardComponent {
   }
 
   render(container) {
+    const mode = this.state.operatingMode || 'board';
+    if (mode === 'board') {
+      this.renderBoardMode(container);
+    } else {
+      this.renderStandardMode(container);
+    }
+  }
+
+  renderStandardMode(container) {
     const risks = this.state.risks || [];
     const objectives = this.state.objectives || [];
 
@@ -297,6 +306,332 @@ export class DashboardComponent {
       this.initSparklines(container);
       this.initHeatmap(container);
     }, 0);
+  }
+
+  renderBoardMode(container) {
+    const risks = this.state.risks || [];
+    const objectives = this.state.objectives || [];
+    const scenarios = this.state.scenarios || [];
+
+    const aboveCount = risks.filter(r => r.appetiteStatus === 'Above Appetite').length;
+    const nearCount = risks.filter(r => r.appetiteStatus === 'Near Appetite').length;
+    const withinCount = risks.filter(r => r.appetiteStatus === 'Within Appetite').length;
+    const totalCount = aboveCount + nearCount + withinCount || 1;
+    const worseningCount = risks.filter(r => r.trend === 'Deteriorating').length;
+    const breachedKRIs = risks.filter(r => r.kris?.some(k => k.status === 'BREACHED')).length;
+    
+    const today = new Date();
+    const overdueActionsCount = risks.flatMap(r => r.actions || [])
+      .filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today).length;
+
+    let postureValue = "LOW";
+    let postureColor = "var(--color-safe)";
+    if (aboveCount > 15 || breachedKRIs > 20 || overdueActionsCount > 10) {
+      postureValue = "CRITICAL";
+      postureColor = "var(--color-critical)";
+    } else if (aboveCount > 0 || breachedKRIs > 0 || overdueActionsCount > 0) {
+      postureValue = "ELEVATED";
+      postureColor = "var(--color-warning)";
+    } else if (worseningCount > 0) {
+      postureValue = "MODERATE";
+      postureColor = "var(--color-slate)";
+    }
+
+    const narrativeHTML = `
+      The enterprise risk posture is currently <strong style="color: ${postureColor};">${postureValue}</strong>. 
+      We are tracking <strong style="color: var(--color-critical);">${aboveCount}</strong> risks operating above our defined appetite levels, primarily driven by customer concentration and infrastructure vulnerabilities. 
+      A total of <strong style="color: var(--color-warning);">${breachedKRIs}</strong> Key Risk Indicators are currently breached. 
+      Management is executing corrective actions; however, <strong style="color: var(--color-critical);">${overdueActionsCount}</strong> critical compliance actions are overdue. 
+      Immediate board attention is required on high-velocity items and the IPO timeline exposure.
+    `;
+
+    const signalRisks = risks.filter(r => {
+      const isAboveAppetite = r.appetiteStatus === 'Above Appetite';
+      const hasBreachedKRI = r.kris?.some(k => k.status === 'BREACHED');
+      return isAboveAppetite || hasBreachedKRI;
+    });
+    signalRisks.sort((a, b) => (b.residualScore || 0) - (a.residualScore || 0));
+    const topSignals = signalRisks.slice(0, 5);
+
+    const insightsHTML = topSignals.length ? topSignals.map(r => {
+      const objectivesCount = r.objectiveIds ? r.objectiveIds.length : 0;
+      const velocityText = r.timeToImpact || r.velocity || 'N/A';
+      const cleanRTitle = cleanTitle(r.title);
+
+      return `
+        <div class="insight-card clickable" data-risk-id="${r.id}" style="padding: 12px; background: #FFFFFF; border: 0.5px solid var(--border-color); border-left: 4px solid var(--color-critical); border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer;" title="ID: ${r.id}">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="font-size: 13px; font-weight: 500; color: var(--color-navy);">${cleanRTitle}</div>
+            <div style="display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--color-navy-secondary);">
+              <span>Score: <strong style="color: var(--color-critical);">${r.residualScore}</strong></span>
+              <span>Velocity: <strong>${velocityText}</strong></span>
+              <span>Objectives: <strong>${objectivesCount}</strong></span>
+            </div>
+          </div>
+          <span style="color: var(--color-navy-secondary); font-size: 14px;">&rarr;</span>
+        </div>
+      `;
+    }).join('') : `
+      <div style="text-align: center; color: var(--color-navy-secondary); padding: 30px 0; font-size: 13px;">
+        ✓ No active intelligence alerts or forecast breaches detected.
+      </div>
+    `;
+
+    const threatenedObjectives = objectives.filter(o => o.status === 'Critical Gaps' || o.status === 'At Risk');
+    const objectivesHTML = threatenedObjectives.length ? threatenedObjectives.map(o => {
+      const statusColor = o.status === 'Critical Gaps' ? 'var(--color-critical)' : 'var(--color-warning)';
+      const statusBg = o.status === 'Critical Gaps' ? 'var(--color-critical-bg)' : 'var(--color-warning-bg)';
+      return `
+        <div class="insight-card clickable" data-tab-link="objectives" style="padding: 12px; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="font-size: 13px; font-weight: 500; color: var(--color-navy);">${o.title}</div>
+            <span class="status-badge" style="font-size: 10px; background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusColor}; padding: 2px 6px; border-radius: 12px; font-weight: 700; white-space: nowrap;">
+              ${o.status}
+            </span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between;">
+            <span>Owner: <strong>${o.owner}</strong></span>
+            <span>Target: <strong>${o.targetDate}</strong></span>
+          </div>
+        </div>
+      `;
+    }).join('') : `
+      <div style="text-align: center; color: var(--color-navy-secondary); padding: 30px 0; font-size: 13px;">
+        ✓ All strategic objectives are currently on track.
+      </div>
+    `;
+
+    const overdueActions = risks.flatMap(r => (r.actions || []).map(a => ({ ...a, riskTitle: r.title, riskId: r.id })))
+      .filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today)
+      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+      .slice(0, 5);
+
+    const actionsHTML = overdueActions.length ? overdueActions.map(a => {
+      const formattedDate = new Date(a.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return `
+        <div class="insight-card clickable" data-risk-id="${a.riskId}" style="padding: 12px; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; cursor: pointer;">
+          <div style="font-size: 13px; font-weight: 500; color: var(--color-navy);">${a.title}</div>
+          <div style="font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;">
+            <span>Owner: <strong>${a.owner || 'N/A'}</strong></span>
+            <span style="color: var(--color-critical); font-weight: 600;">Due: ${formattedDate}</span>
+          </div>
+          <div style="font-size: 10px; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+            Risk: ${cleanTitle(a.riskTitle)}
+          </div>
+        </div>
+      `;
+    }).join('') : `
+      <div style="text-align: center; color: var(--color-navy-secondary); padding: 30px 0; font-size: 13px;">
+        ✓ No overdue governance actions.
+      </div>
+    `;
+
+    const spotlight = scenarios.length > 0 ? scenarios[0] : null;
+    let spotlightHTML = '';
+    if (spotlight) {
+      spotlightHTML = `
+        <div class="glass-panel" style="padding: 20px;">
+          <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em; margin-bottom: 12px;">Scenario Spotlight</div>
+          <h3 style="font-size: 14px; font-weight: 600; color: var(--color-navy); margin-bottom: 6px; margin-top:0;">${spotlight.title}</h3>
+          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">${spotlight.description}</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--color-slate-light); padding: 10px; border-radius: var(--radius-sm); font-size: 11px; margin-bottom: 12px;">
+            <div>
+              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:500;">Revenue Impact</span>
+              <strong style="color: var(--color-critical); font-size: 13px;">${spotlight.revenueImpact.expected}</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:500;">Cash Impact</span>
+              <strong style="color: var(--color-critical); font-size: 13px;">${spotlight.cashImpact.expected}</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:500;">EBITDA Drag</span>
+              <strong style="color: var(--color-critical); font-size: 13px;">${spotlight.ebitdaImpact.expected}</strong>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
+            <strong>Objective Exposure:</strong> ${spotlight.objectiveImpact}
+          </div>
+          <div style="text-align: right;">
+            <a href="/scenario" id="link-spotlight-decision" style="font-size: 12px; font-weight: 600; color: var(--color-indigo); text-decoration: none;">Stress-Test Response Options &rarr;</a>
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = `
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <span class="profile-role-badge">Executive Risk Control</span>
+          <h1>Enterprise Risk Dashboard</h1>
+          <p class="page-subtitle">Start here for board-level risk posture and urgent governance signals.</p>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px;">
+        
+        <!-- LEFT COLUMN: Posture, Alerts, Actions -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Posture Summary -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Enterprise Risk Posture</span>
+                <span class="status-badge" style="font-size: 11px; background: ${postureColor}22; color: ${postureColor}; border: 1px solid ${postureColor}; font-weight: 700; border-radius: var(--radius-sm); padding: 2px 8px; text-transform: uppercase;">
+                  ${postureValue}
+                </span>
+              </div>
+              <div class="posture-progress-band" style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                <div style="display: flex; height: 8px; background: #E5E7EB; border-radius: var(--radius-sm); overflow: hidden; width: 100%;">
+                  ${aboveCount > 0 ? `<div style="width: ${(aboveCount/totalCount)*100}%; background: var(--color-critical);"></div>` : ''}
+                  ${nearCount > 0 ? `<div style="width: ${(nearCount/totalCount)*100}%; background: var(--color-warning);"></div>` : ''}
+                  ${withinCount > 0 ? `<div style="width: ${(withinCount/totalCount)*100}%; background: var(--color-safe);"></div>` : ''}
+                </div>
+              </div>
+            </div>
+            
+            <div style="border-top: 1px dashed var(--border-color); padding-top: 12px;">
+              ${narrativeHTML}
+            </div>
+          </div>
+
+          <!-- Top Board Issues (Active Intel) -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Top Board Issues</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">Urgent operational risk items operating above appetite boundaries</span>
+            </div>
+            <div id="active-intel-list">
+              ${insightsHTML}
+            </div>
+          </div>
+
+          <!-- Governance Action Queue -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Governance Action Queue</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">Overdue core compliance or audit actions requiring management push</span>
+            </div>
+            <div id="board-overdue-actions-list">
+              ${actionsHTML}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Objectives, Spotlight, Ask Navis -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Objectives threatened -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Threatened Strategic Objectives</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">High-importance business targets currently impacted by risk exposure</span>
+            </div>
+            <div id="board-threatened-objectives-list">
+              ${objectivesHTML}
+            </div>
+          </div>
+
+          <!-- Scenario Spotlight -->
+          ${spotlightHTML}
+
+          <!-- Ask Navis Prompt -->
+          <div class="glass-panel" style="padding: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Ask Navis</span>
+              <span style="font-size: 12px; color: var(--color-navy-secondary);">Query the boardroom risk intelligence copilot directly</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" class="form-control" id="board-ask-prompt-input" style="flex-grow: 1; font-size:12px;" placeholder="Ask boardroom questions across risks, objectives, policies, and controls..." />
+              <button class="btn btn-primary" id="board-ask-prompt-submit" style="font-size:12px; padding: 6px 14px;">Ask &rarr;</button>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              <span style="font-size: 10px; color: var(--text-secondary); font-weight: 500;">Suggested:</span>
+              <button class="btn btn-secondary btn-small suggested-ask-btn" style="padding: 3px 8px; font-size: 10px; border-radius: 4px;" data-query="Which risks are above appetite?">Appetite Bounds</button>
+              <button class="btn btn-secondary btn-small suggested-ask-btn" style="padding: 3px 8px; font-size: 10px; border-radius: 4px;" data-query="What threatens our growth and revenue objectives?">Strategic Threats</button>
+              <button class="btn btn-secondary btn-small suggested-ask-btn" style="padding: 3px 8px; font-size: 10px; border-radius: 4px;" data-query="Which KRIs are breached and what actions are overdue?">Breaches &amp; Actions</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- RISK SLIDE-IN DRAWER -->
+      <div id="risk-detail-drawer" style="position: fixed; top: 0; right: -380px; width: 380px; height: 100%; border-left: 1px solid var(--border-color); transition: right 0.3s ease; z-index: 2000; padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div id="drawer-content-container">
+          <!-- Populated dynamically on node click -->
+        </div>
+      </div>
+    `;
+
+    this.bindBoardEvents(container);
+  }
+
+  bindBoardEvents(container) {
+    const risks = this.state.risks || [];
+
+    // Click on top issues
+    container.querySelectorAll('#active-intel-list .insight-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const rId = card.dataset.riskId;
+        const r = risks.find(item => item.id === rId);
+        if (r) this.openRiskDrawer(r);
+      });
+    });
+
+    // Click on overdue actions
+    container.querySelectorAll('#board-overdue-actions-list .insight-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const rId = card.dataset.riskId;
+        const r = risks.find(item => item.id === rId);
+        if (r) this.openRiskDrawer(r);
+      });
+    });
+
+    // Click on objectives
+    container.querySelectorAll('[data-tab-link="objectives"]').forEach(card => {
+      card.addEventListener('click', () => {
+        this.navigateToPage('/objectives', 'objectives');
+      });
+    });
+
+    // Spotlight link click
+    const spotlightLink = container.querySelector('#link-spotlight-decision');
+    if (spotlightLink) {
+      spotlightLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.navigateToPage('/scenario', 'scenario');
+      });
+    }
+
+    // Ask Navis handlers
+    const askInput = container.querySelector('#board-ask-prompt-input');
+    const askSubmit = container.querySelector('#board-ask-prompt-submit');
+    
+    const submitQuery = (query) => {
+      if (!query) return;
+      localStorage.setItem('navis_prefill_ask_query', query);
+      this.navigateToPage('/ai', 'boardQA');
+    };
+
+    if (askSubmit && askInput) {
+      askSubmit.addEventListener('click', () => {
+        submitQuery(askInput.value.trim());
+      });
+      askInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          submitQuery(askInput.value.trim());
+        }
+      });
+    }
+
+    container.querySelectorAll('.suggested-ask-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        submitQuery(btn.dataset.query);
+      });
+    });
   }
 
   initFragilityChart(container) {

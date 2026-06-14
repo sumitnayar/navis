@@ -103,8 +103,8 @@ export class PolicyStudioComponent {
       <div class="page-header">
         <div class="page-title-wrap">
           <span class="profile-role-badge">Governance Control Desk</span>
-          <h1>Policy Intelligence Studio</h1>
-          <p class="page-subtitle">Draft, compare, audit, and upgrade corporate policies against internal requirements and compliance frameworks.</p>
+          <h1>Policy Studio</h1>
+          <p class="page-subtitle">Generate, upgrade, and govern policy documents.</p>
         </div>
       </div>
 

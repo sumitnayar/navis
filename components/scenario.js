@@ -104,8 +104,8 @@ export class ScenarioComponent {
       <div class="page-header">
         <div class="page-title-wrap">
           <span class="profile-role-badge">Board Decision Room</span>
-          <h1>Board Scenario Lab</h1>
-          <p class="page-subtitle">Stress-test corporate resilience against major systemic shocks | Project Best, Expected, & Worst cases</p>
+          <h1>Board Decision Room</h1>
+          <p class="page-subtitle">Stress-test a threat scenario and compare management response options.</p>
         </div>
       </div>
 

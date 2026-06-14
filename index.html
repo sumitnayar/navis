@@ -43,20 +43,19 @@
 
       <!-- CENTER: Module navigation -->
       <nav class="top-nav-modules" id="top-nav-modules">
-        <div class="top-nav-item" id="nav-dashboard" data-tab="dashboard">Dashboard</div>
-        <div class="top-nav-item" id="nav-intelligencePolicy" data-tab="intelligencePolicy">Intelligence & Policy</div>
-        <div class="top-nav-item" id="nav-boardQA" data-tab="boardQA">Q&A Assistant</div>
-        <div class="top-nav-item" id="nav-objectives" data-tab="objectives">Objectives</div>
-        <div class="top-nav-item" id="nav-scenario" data-tab="scenario">Scenario Lab</div>
-        <div class="top-nav-item" id="nav-network" data-tab="network">Cascade Map</div>
-        <div class="top-nav-item" id="nav-portfolio" data-tab="portfolio">Portfolio Mapper</div>
-        <div class="top-nav-item" id="nav-boardPack" data-tab="boardPack">Board Pack</div>
+        <!-- Rendered dynamically by app.js based on active operating mode -->
       </nav>
 
       <!-- RIGHT: Context and account -->
       <div class="top-nav-right">
+        <div class="mode-switcher" id="mode-switcher" aria-label="Operating Mode Selector">
+          <button class="mode-btn" data-mode="board">Board</button>
+          <button class="mode-btn" data-mode="intelligence">Intelligence</button>
+          <button class="mode-btn" data-mode="builder">Builder</button>
+        </div>
+        <div class="top-nav-divider" id="mode-switcher-divider"></div>
         <span class="top-nav-company" id="top-nav-company"></span>
-        <div class="top-nav-divider"></div>
+        <div class="top-nav-divider" id="settings-divider"></div>
         <span class="top-nav-settings" id="top-nav-settings" title="Platform Settings">⚙</span>
         <div class="top-nav-divider"></div>
         <span class="top-nav-signout" id="top-nav-signout">Sign Out</span>

@@ -57,8 +57,8 @@ Please select one of the core board questions on the left, or type a custom quer
       <div class="page-header">
         <div class="page-title-wrap">
           <span class="profile-role-badge">AI Boardroom Assistant</span>
-          <h1>Board Questions Portal</h1>
-          <p class="page-subtitle">Obtain instant strategic risk assessments on appetite boundaries, trends, and cascades.</p>
+          <h1>Ask Navis</h1>
+          <p class="page-subtitle">Ask boardroom questions across risks, objectives, policies, and controls.</p>
         </div>
       </div>
 
@@ -167,6 +167,14 @@ Please select one of the core board questions on the left, or type a custom quer
     }
 
     this.bindEvents(container);
+
+    const prefillQuery = localStorage.getItem('navis_prefill_ask_query');
+    if (prefillQuery) {
+      localStorage.removeItem('navis_prefill_ask_query');
+      setTimeout(() => {
+        this.handleQuery(null, prefillQuery, container);
+      }, 50);
+    }
   }
 
   async handleQuery(questionId, customText, container) {
