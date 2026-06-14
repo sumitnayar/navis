@@ -8,6 +8,7 @@ export class NetworkComponent {
     this.selectedNodeId = null;
     this.hoveredNodeId = null;
     this.isExpanded = false;
+    this.trendChart = null;
 
     // Zoom/Pan/Drag coordinates
     this.zoomScale = 1.0;
@@ -169,7 +170,8 @@ export class NetworkComponent {
       const x = paddingLeft + (l - 1) * horizontalDistance;
       
       const occupiedHeight = (count - 1) * verticalDistance;
-      const yStart = paddingTop + (canvasHeight - paddingTop - paddingBottom - occupiedHeight) / 2;
+      const centeringOffset = (canvasHeight - paddingTop - paddingBottom - occupiedHeight) / 2;
+      const yStart = paddingTop + Math.max(0, Math.min(40, centeringOffset));
 
       group.forEach((node, index) => {
         positions[node.id] = {
@@ -281,15 +283,13 @@ export class NetworkComponent {
     });
 
     return centrality;
-  }
-
-  render(container) {
+  }  render(container) {
     const risks = this.state.risks;
     const dynamicData = this.calculateDynamicScores();
     const centrality = this.getNodeCentrality();
 
     const renderContainer = document.getElementById('page-render-container') || container;
-    const containerWidth = renderContainer.clientWidth || 1216;
+    const containerWidth = renderContainer.getBoundingClientRect().width || 1216;
     
     // Width of the left column (the SVG network container)
     let leftColumnWidth = this.isExpanded ? containerWidth : (containerWidth - 360 - 24);
@@ -325,6 +325,65 @@ export class NetworkComponent {
 
     // Find selected node detail object
     const selectedDetailNode = this.layerNodes.find(n => n.id === this.selectedNodeId);
+
+    // If layout already exists and selectedNode didn't change, do in-place update!
+    const existingLayout = container.querySelector('.register-layout');
+    if (existingLayout && this.lastSelectedNodeId === this.selectedNodeId) {
+      // 1. Update layout classes
+      existingLayout.className = `register-layout ${this.isExpanded ? 'map-expanded' : ''} ${this.isBoardMode ? 'board-mode' : ''}`;
+      
+      // 2. Update active class on playback buttons
+      container.querySelectorAll('.playback-btn').forEach(btn => {
+        if (btn.dataset.step === this.timeStep) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // 3. Update the SVG static network graph innerHTML
+      const staticGraph = container.querySelector('#static-network-graph');
+      if (staticGraph) {
+        staticGraph.innerHTML = this.getSVGGraphHTML(positions, dynamicData, activeChainIds, isOverlayActive, activeLinkIds, canvasWidth, canvasHeight);
+      }
+
+      // 4. Update details panel text metrics
+      if (selectedDetailNode) {
+        const score = dynamicData.scores[selectedDetailNode.id];
+        const status = dynamicData.statuses[selectedDetailNode.id];
+        const trend = dynamicData.trends[selectedDetailNode.id];
+
+        const scoreBadge = container.querySelector('#network-details-panel .status-badge');
+        if (scoreBadge) {
+          scoreBadge.textContent = selectedDetailNode.type === 'objective' ? `Exposure: ${score}` : `Score: ${score}`;
+          scoreBadge.className = `status-badge ${status.includes('Above') || status.includes('Critical') ? 'above' : status.includes('Near') || status.includes('At Risk') || status.includes('Warning') ? 'near' : 'within'}`;
+        }
+
+        const trendTag = container.querySelector('#network-details-panel .trend-tag');
+        if (trendTag) {
+          trendTag.textContent = trend === 'Deteriorating' ? '↑ Deteriorating' : trend === 'Improving' ? '↓ Improving' : '• Stable / Mapped';
+          trendTag.className = `trend-tag ${trend === 'Deteriorating' || status.includes('Critical') ? 'deteriorating' : trend === 'Improving' || status.includes('Track') ? 'improving' : 'stable'}`;
+        }
+
+        // Update the chart in place!
+        if (this.trendChart && selectedDetailNode.type === 'risk') {
+          const riskObj = risks.find(r => r.id === selectedDetailNode.id);
+          if (riskObj) {
+            const sliced = this.getSlicedHistory(riskObj.scoreHistory);
+            this.trendChart.data.labels = sliced.map(h => h.date);
+            this.trendChart.data.datasets[0].data = sliced.map(h => h.score);
+            this.trendChart.update();
+          }
+        }
+      }
+
+      // Re-bind node events
+      this.bindNodeEvents(container);
+      return;
+    }
+
+    // Otherwise, perform full render
+    this.lastSelectedNodeId = this.selectedNodeId;
 
     container.innerHTML = `
       <div class="page-header">
@@ -369,156 +428,10 @@ export class NetworkComponent {
             </div>
 
             <!-- SVG CANVAS -->
-            <svg class="network-svg" id="risk-cascade-svg" viewBox="0 0 ${canvasWidth} ${canvasHeight}" preserveAspectRatio="xMidYMid meet" style="cursor: grab; flex-grow: 1; height: auto; display: block; width: 100%; position: relative; z-index: 1;">
-              
-              <!-- GLOW DEFS AND CLONE BASE -->
+            <svg class="network-svg" id="risk-cascade-svg" width="100%" height="100%" viewBox="0 0 ${canvasWidth} ${canvasHeight}" preserveAspectRatio="xMidYMid meet" style="cursor: grab; flex-grow: 1; display: block; width: 100%; height: 100%; position: relative; z-index: 1;">
               <g id="network-viewport" transform="translate(${this.panX}, ${this.panY}) scale(${this.zoomScale})">
-                
-                <!-- GROUP HOLDS ALL NODES AND EDGES TO CLONE IN MINIMAP -->
                 <g id="static-network-graph">
-                  
-                  <!-- 1. DRAW CONNECTION LINES (CUBIC BEZIER S-CURVES) -->
-                  ${this.links.map((link, idx) => {
-                    const parentPos = positions[link.source];
-                    const childPos = positions[link.target];
-                    if (!parentPos || !childPos) return '';
-
-                    const isHighlighted = activeLinkIds.has(idx);
-                    const isFaded = isOverlayActive && !isHighlighted;
-                    
-                    const dx = childPos.x - parentPos.x;
-                    const pathData = `M ${parentPos.x} ${parentPos.y} C ${parentPos.x + dx * 0.4} ${parentPos.y}, ${childPos.x - dx * 0.4} ${childPos.y}, ${childPos.x} ${childPos.y}`;
-
-                    let edgeClass = 'strong';
-                    if (link.type === 'indirect') {
-                      edgeClass = 'indirect';
-                    } else {
-                      const parentScore = dynamicData.scores[link.source] || 0;
-                      if (parentScore >= 45) edgeClass = 'strong';
-                      else if (parentScore >= 25) edgeClass = 'moderate';
-                      else edgeClass = 'weak';
-                    }
-
-                    return `
-                      <path class="network-link ${edgeClass} ${isHighlighted ? 'active-chain cascade-active' : ''} ${isFaded ? 'cascade-faded' : ''}"
-                            id="edge-${idx}"
-                            d="${pathData}" />
-                      
-                      <!-- Moving flow particles along active paths -->
-                      ${isHighlighted ? `
-                        <circle r="2" fill="#00B5B5" opacity="0.8">
-                          <animateMotion dur="0.8s" repeatCount="indefinite" path="${pathData}" />
-                        </circle>
-                      ` : ''}
-                    `;
-                  }).join('')}
-
-                  ${[1, 2, 3, 4].map(l => {
-                    const horizontalDistance = (canvasWidth - 48 - 120) / 3;
-                    const x = 48 + (l - 1) * horizontalDistance;
-                    return `
-                      <text x="${x}" y="52" 
-                            text-anchor="middle"
-                            style="font-family: var(--font-header); font-size: 8px; font-weight: 700; fill: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">
-                        ${this.layers[l].name}
-                      </text>
-                    `;
-                  }).join('')}
-
-                  <!-- 3. DRAW GRAPH NODES -->
-                  ${this.layerNodes.map(node => {
-                    const pos = positions[node.id];
-                    if (!pos) return '';
-
-                    const isSelected = this.selectedNodeId === node.id;
-                    const isHovered = this.hoveredNodeId === node.id;
-                    const isInChain = activeChainIds.has(node.id) && !isSelected;
-                    const isFaded = isOverlayActive && !isSelected && !isInChain;
-
-                    const score = dynamicData.scores[node.id];
-                    const status = dynamicData.statuses[node.id];
-                    const trend = dynamicData.trends[node.id];
-
-                    // Determine Node Size dynamically based on centrality and criticality
-                    const nodeCentrality = centrality[node.id] || 0;
-                    let radius = 9; // default 18px diameter
-                    let sizeClass = '';
-                    if (status === 'Above Appetite' || status === 'Critical Gaps' || status === 'Critical') {
-                      radius = 13; // 26px diameter critical
-                      sizeClass = 'critical';
-                    } else if (nodeCentrality >= 3) {
-                      radius = 11; // 22px diameter high centrality
-                    }
-
-                    // Strict color mapping matching specifications
-                    let nodeColor = '#64748B'; // Default neutral
-                    if (isSelected) {
-                      nodeColor = '#00B5B5'; // Selected Active teal
-                    } else {
-                      if (status === 'Above Appetite' || status === 'Critical Gaps' || status === 'Critical') {
-                        nodeColor = '#C0392B'; // Critical Crimson
-                      } else if (status === 'Near Appetite' || status === 'At Risk' || status === 'Warning') {
-                        nodeColor = '#C2610E'; // Warning Burnt Orange
-                      } else if (status === 'Within Appetite' || status === 'On Track' || status === 'Safe') {
-                        nodeColor = '#1A7A4A'; // Safe forest green
-                      }
-                    }
-
-                    // Truncate name to 18 characters maximum with ellipsis
-                    const titleText = node.label;
-                    const truncatedTitle = titleText.length > 18 ? titleText.slice(0, 16) + '..' : titleText;
-
-                    // Direction arrow
-                    let arrowSymbol = '•';
-                    if (trend === 'Deteriorating') arrowSymbol = '↑';
-                    else if (trend === 'Improving') arrowSymbol = '↓';
-
-                    // Node metric subtitle string
-                    const scoreLabel = node.type === 'risk' ? `S:${score}` : node.type === 'objective' ? `Ex:${score}` : `Val:${score}`;
-                    const metricText = `${scoreLabel} ${arrowSymbol}`;
-
-                    return `
-                      <g class="network-node ${isSelected ? 'selected cascade-active' : ''} ${isInChain ? 'active-chain cascade-active' : ''} ${isFaded ? 'cascade-faded' : ''} ${sizeClass}"
-                         data-id="${node.id}"
-                         transform="translate(${pos.x}, ${pos.y})">
-                        
-                        <!-- Glow outline circle -->
-                        <circle r="${radius + 2}" 
-                                fill="transparent" 
-                                stroke="${nodeColor}" 
-                                stroke-width="1.5"
-                                opacity="${isHovered || isSelected ? 0.35 : 0.0}" />
-
-                        <!-- Core circle -->
-                        <circle r="${radius}" 
-                                fill="${this.isBoardMode ? '#1E293B' : '#FFFFFF'}" 
-                                stroke="${nodeColor}" 
-                                stroke-width="${isSelected ? 3 : 2}" />
-                        
-                        <!-- Core color dot -->
-                        <circle r="${radius - 5}" 
-                                fill="${nodeColor}" 
-                                opacity="${isSelected ? 1.0 : 0.85}" />
-
-                        <!-- Node Name Text label -->
-                        <text x="${radius + 8}" y="-2"
-                              class="node-label"
-                              text-anchor="start"
-                              style="fill: ${isSelected ? '#00B5B5' : this.isBoardMode ? '#FFFFFF' : '#374151'}; font-weight: ${isSelected ? '700' : '500'};">
-                          ${truncatedTitle}
-                        </text>
-
-                        <!-- Node Secondary Metrics text -->
-                        <text x="${radius + 8}" y="10"
-                              class="node-metric"
-                              text-anchor="start"
-                              style="fill: ${this.isBoardMode ? '#94A3B8' : '#6B7280'};">
-                          ${metricText}
-                        </text>
-                      </g>
-                    `;
-                  }).join('')}
-
+                  ${this.getSVGGraphHTML(positions, dynamicData, activeChainIds, isOverlayActive, activeLinkIds, canvasWidth, canvasHeight)}
                 </g>
               </g>
             </svg>
@@ -533,7 +446,7 @@ export class NetworkComponent {
         </div>
 
         <!-- RIGHT SCREEN: DYNAMIC CASCADE INTELLIGENCE PANEL -->
-        <div class="details-panel no-print" style="width: 360px; flex-shrink: 0;">
+        <div class="details-panel no-print" style="width: 360px; flex-shrink: 0;" id="network-details-panel">
           <div class="glass-panel" style="min-height:440px; display:flex; flex-direction:column; justify-content:space-between; padding:20px;">
             ${selectedDetailNode ? this.renderCascadeIntelPanel(selectedDetailNode, dynamicData, risks) : `
               <div style="text-align:center; color:#64748B; padding-top:140px; font-size:11px;">
@@ -555,6 +468,130 @@ export class NetworkComponent {
     }
 
     this.bindEvents(container);
+
+    setTimeout(() => {
+      const trendCanvas = container.querySelector('#node-trend-chart');
+      if (trendCanvas && selectedDetailNode && selectedDetailNode.type === 'risk') {
+        const riskObj = risks.find(r => r.id === selectedDetailNode.id);
+        if (riskObj) {
+          this.initNodeTrendChart(trendCanvas, riskObj);
+        }
+      }
+    }, 0);
+  }
+
+  getSVGGraphHTML(positions, dynamicData, activeChainIds, isOverlayActive, activeLinkIds, canvasWidth, canvasHeight) {
+    const centrality = this.getNodeCentrality();
+    
+    const linksHTML = this.links.map((link, idx) => {
+      const parentPos = positions[link.source];
+      const childPos = positions[link.target];
+      if (!parentPos || !childPos) return '';
+
+      const isHighlighted = activeLinkIds.has(idx);
+      const isFaded = isOverlayActive && !isHighlighted;
+      
+      const dx = childPos.x - parentPos.x;
+      const pathData = `M ${parentPos.x} ${parentPos.y} C ${parentPos.x + dx * 0.4} ${parentPos.y}, ${childPos.x - dx * 0.4} ${childPos.y}, ${childPos.x} ${childPos.y}`;
+
+      let edgeClass = 'strong';
+      if (link.type === 'indirect') {
+        edgeClass = 'indirect';
+      } else {
+        const parentScore = dynamicData.scores[link.source] || 0;
+        if (parentScore >= 45) edgeClass = 'strong';
+        else if (parentScore >= 25) edgeClass = 'moderate';
+        else edgeClass = 'weak';
+      }
+
+      return `
+        <path class="network-link ${edgeClass} ${isHighlighted ? 'active-chain cascade-active' : ''} ${isFaded ? 'cascade-faded' : ''}"
+              id="edge-${idx}"
+              d="${pathData}" />
+        ${isHighlighted ? `
+          <circle r="2" fill="#00B5B5" opacity="0.8">
+            <animateMotion dur="0.8s" repeatCount="indefinite" path="${pathData}" />
+          </circle>
+        ` : ''}
+      `;
+    }).join('');
+
+    const headersHTML = [1, 2, 3, 4].map(l => {
+      const horizontalDistance = (canvasWidth - 48 - 120) / 3;
+      const x = 48 + (l - 1) * horizontalDistance;
+      return `
+        <text x="${x}" y="52" 
+              text-anchor="middle"
+              style="font-family: var(--font-header); font-size: 8px; font-weight: 700; fill: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">
+          ${this.layers[l].name}
+        </text>
+      `;
+    }).join('');
+
+    const nodesHTML = this.layerNodes.map(node => {
+      const pos = positions[node.id];
+      if (!pos) return '';
+
+      const isSelected = this.selectedNodeId === node.id;
+      const isHovered = this.hoveredNodeId === node.id;
+      const isInChain = activeChainIds.has(node.id) && !isSelected;
+      const isFaded = isOverlayActive && !isSelected && !isInChain;
+
+      const score = dynamicData.scores[node.id];
+      const status = dynamicData.statuses[node.id];
+      const trend = dynamicData.trends[node.id];
+
+      const nodeCentrality = centrality[node.id] || 0;
+      let radius = 9;
+      let sizeClass = '';
+      if (status === 'Above Appetite' || status === 'Critical Gaps' || status === 'Critical') {
+        radius = 13;
+        sizeClass = 'critical';
+      } else if (nodeCentrality >= 3) {
+        radius = 11;
+      }
+
+      let nodeColor = '#64748B';
+      if (isSelected) {
+        nodeColor = '#00B5B5';
+      } else {
+        if (status === 'Above Appetite' || status === 'Critical Gaps' || status === 'Critical') {
+          nodeColor = '#C0392B';
+        } else if (status === 'Near Appetite' || status === 'At Risk' || status === 'Warning') {
+          nodeColor = '#C2610E';
+        } else if (status === 'Within Appetite' || status === 'On Track' || status === 'Safe') {
+          nodeColor = '#1A7A4A';
+        }
+      }
+
+      const titleText = node.label;
+      const truncatedTitle = titleText.length > 18 ? titleText.slice(0, 16) + '..' : titleText;
+
+      let arrowSymbol = '•';
+      if (trend === 'Deteriorating') arrowSymbol = '↑';
+      else if (trend === 'Improving') arrowSymbol = '↓';
+
+      const scoreLabel = node.type === 'risk' ? `S:${score}` : node.type === 'objective' ? `Ex:${score}` : `Val:${score}`;
+      const metricText = `${scoreLabel} ${arrowSymbol}`;
+
+      return `
+        <g class="network-node ${isSelected ? 'selected cascade-active' : ''} ${isInChain ? 'active-chain cascade-active' : ''} ${isFaded ? 'cascade-faded' : ''} ${sizeClass}"
+           data-id="${node.id}"
+           transform="translate(${pos.x}, ${pos.y})">
+          <circle r="${radius + 2}" fill="transparent" stroke="${nodeColor}" stroke-width="1.5" opacity="${isHovered || isSelected ? 0.35 : 0.0}" />
+          <circle r="${radius}" fill="${this.isBoardMode ? '#1E293B' : '#FFFFFF'}" stroke="${nodeColor}" stroke-width="${isSelected ? 3 : 2}" />
+          <circle r="${radius - 5}" fill="${nodeColor}" opacity="${isSelected ? 1.0 : 0.85}" />
+          <text x="${radius + 8}" y="-2" class="node-label" text-anchor="start" style="fill: ${isSelected ? '#00B5B5' : this.isBoardMode ? '#FFFFFF' : '#374151'}; font-weight: ${isSelected ? '700' : '500'};">
+            ${truncatedTitle}
+          </text>
+          <text x="${radius + 8}" y="10" class="node-metric" text-anchor="start" style="fill: ${this.isBoardMode ? '#94A3B8' : '#6B7280'};">
+            ${metricText}
+          </text>
+        </g>
+      `;
+    }).join('');
+
+    return linksHTML + headersHTML + nodesHTML;
   }
 
   // Render Cascade Intelligence Panel Widgets
@@ -562,6 +599,8 @@ export class NetworkComponent {
     const score = dynamicData.scores[node.id];
     const status = dynamicData.statuses[node.id];
     const trend = dynamicData.trends[node.id];
+    const riskObj = node.type === 'risk' ? risks.find(r => r.id === node.id) : null;
+    const hasTrend = riskObj && riskObj.scoreHistory && riskObj.scoreHistory.length >= 2;
 
     if (node.type === 'objective') {
       const objObj = this.state.objectives ? this.state.objectives.find(o => o.id === node.id) : null;
@@ -725,6 +764,21 @@ export class NetworkComponent {
             ${trend === 'Deteriorating' ? '↑ Deteriorating' : trend === 'Improving' ? '↓ Improving' : '• Stable / Mapped'}
           </span>
         </div>
+
+        <!-- Node Trend Chart -->
+        ${node.type === 'risk' ? `
+        <div class="node-trend-container" style="margin-bottom: 16px; width: 100%;">
+          ${hasTrend ? `
+            <div style="height: 80px; width: 100%; position: relative;">
+              <canvas id="node-trend-chart" style="width: 100%; height: 80px;"></canvas>
+            </div>
+          ` : `
+            <div style="font-size: 11px; color: var(--color-navy-secondary); font-style: italic; padding: 10px 0; text-align: center; border: 1px dashed var(--border-color); border-radius: 6px;">
+              Insufficient history for trend view
+            </div>
+          `}
+        </div>
+        ` : ''}
 
         <div style="display:flex; flex-direction:column; gap:12px; border-top:1px solid ${this.isBoardMode ? '#1E293B' : 'var(--border-color)'}; padding-top:12px;">
           
@@ -890,61 +944,7 @@ export class NetworkComponent {
     }
 
     // --- NODE HOVER / CLICK CASCADE ---
-    const nodes = container.querySelectorAll('.network-node');
-    nodes.forEach(nodeElement => {
-      const id = nodeElement.dataset.id;
-
-      // Click: Toggle selection
-      nodeElement.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.selectedNodeId = (this.selectedNodeId === id) ? null : id;
-        this.render(container);
-      });
-
-      // Hover In
-      nodeElement.addEventListener('mouseenter', () => {
-        this.hoveredNodeId = id;
-        
-        // Dynamic hover highlight CSS classing
-        const activeChain = new Set(this.getDownstreamChain(id));
-        const activeLinkIds = new Set();
-        this.links.forEach((link, idx) => {
-          if (activeChain.has(link.source) && activeChain.has(link.target)) {
-            const downstreamFromAnchor = new Set(this.getDownstreamChain(id));
-            if (downstreamFromAnchor.has(link.source) && downstreamFromAnchor.has(link.target)) {
-              activeLinkIds.add(idx);
-            }
-          }
-        });
-
-        // Fade non-related nodes/edges
-        nodes.forEach(n => {
-          const nid = n.dataset.id;
-          if (nid !== id && !activeChain.has(nid)) {
-            n.classList.add('cascade-faded');
-          } else {
-            n.classList.remove('cascade-faded');
-            n.classList.add('cascade-active');
-          }
-        });
-
-        container.querySelectorAll('.network-link').forEach((linkEl, idx) => {
-          if (activeLinkIds.has(idx)) {
-            linkEl.classList.add('active-chain', 'cascade-active');
-            linkEl.classList.remove('cascade-faded');
-          } else {
-            linkEl.classList.add('cascade-faded');
-            linkEl.classList.remove('active-chain', 'cascade-active');
-          }
-        });
-      });
-
-      // Hover Out
-      nodeElement.addEventListener('mouseleave', () => {
-        this.hoveredNodeId = null;
-        this.render(container); // Reset opacity and overlays
-      });
-    });
+    this.bindNodeEvents(container);
 
     // --- TIME PLAYBACK SELECTOR ---
     container.querySelectorAll('.playback-btn').forEach(btn => {
@@ -1004,6 +1004,135 @@ export class NetworkComponent {
           AIInsightService.showExplanationModal(type, item, this.state);
         }
       });
+    });
+  }
+
+  bindNodeEvents(container) {
+    const nodes = container.querySelectorAll('.network-node');
+    nodes.forEach(nodeElement => {
+      const id = nodeElement.dataset.id;
+
+      // Click: Toggle selection
+      nodeElement.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectedNodeId = (this.selectedNodeId === id) ? null : id;
+        this.render(container);
+      });
+
+      // Hover In
+      nodeElement.addEventListener('mouseenter', () => {
+        this.hoveredNodeId = id;
+        
+        // Dynamic hover highlight CSS classing
+        const activeChain = new Set(this.getDownstreamChain(id));
+        const activeLinkIds = new Set();
+        this.links.forEach((link, idx) => {
+          if (activeChain.has(link.source) && activeChain.has(link.target)) {
+            const downstreamFromAnchor = new Set(this.getDownstreamChain(id));
+            if (downstreamFromAnchor.has(link.source) && downstreamFromAnchor.has(link.target)) {
+              activeLinkIds.add(idx);
+            }
+          }
+        });
+
+        // Fade non-related nodes/edges
+        nodes.forEach(n => {
+          const nid = n.dataset.id;
+          if (nid !== id && !activeChain.has(nid)) {
+            n.classList.add('cascade-faded');
+          } else {
+            n.classList.remove('cascade-faded');
+            n.classList.add('cascade-active');
+          }
+        });
+
+        container.querySelectorAll('.network-link').forEach((linkEl, idx) => {
+          if (activeLinkIds.has(idx)) {
+            linkEl.classList.add('active-chain', 'cascade-active');
+            linkEl.classList.remove('cascade-faded');
+          } else {
+            linkEl.classList.add('cascade-faded');
+            linkEl.classList.remove('active-chain', 'cascade-active');
+          }
+        });
+      });
+
+      // Hover Out
+      nodeElement.addEventListener('mouseleave', () => {
+        this.hoveredNodeId = null;
+        this.render(container); // Reset opacity and overlays
+      });
+    });
+  }
+
+  getSlicedHistory(scoreHistory) {
+    if (!scoreHistory) return [];
+    let sliceCount = 7;
+    if (this.timeStep === '30') sliceCount = 30;
+    else if (this.timeStep === '90') sliceCount = 90;
+    else if (this.timeStep === '180') sliceCount = 180;
+    return scoreHistory.slice(-sliceCount);
+  }
+
+  initNodeTrendChart(canvas, riskObj) {
+    if (!canvas || !riskObj || !riskObj.scoreHistory) return;
+
+    // Destroy existing instance first (Flag 2 destroy pattern)
+    const existing = window.Chart.getChart(canvas);
+    if (existing) existing.destroy();
+
+    const sliced = this.getSlicedHistory(riskObj.scoreHistory);
+
+    this.trendChart = new window.Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: sliced.map(h => h.date),
+        datasets: [{
+          label: 'Score',
+          data: sliced.map(h => h.score),
+          borderColor: '#00B89C',
+          backgroundColor: 'rgba(0, 184, 156, 0.08)',
+          fill: true,
+          borderWidth: 1.5,
+          tension: 0.3,
+          pointRadius: 1,
+          pointHoverRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0D1B2A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#FFFFFF',
+            callbacks: {
+              label: (context) => ` Score: ${context.raw}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            display: false,
+            grid: { display: false }
+          },
+          y: {
+            position: 'right',
+            min: 0,
+            max: 25,
+            border: { display: false },
+            grid: {
+              color: 'rgba(13,27,42,0.06)'
+            },
+            ticks: {
+              maxTicksLimit: 3,
+              stepSize: 10
+            }
+          }
+        }
+      }
     });
   }
 }

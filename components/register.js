@@ -53,6 +53,14 @@ export class RegisterComponent {
     }
     const _riskId = _rParams.get('riskId');
     this._deepLinkRiskId = _riskId || null;
+
+    const _dimension = _rParams.get('dimension');
+    if (_dimension) {
+      this.activeFilterDimension = _dimension;
+      this._fromDashboard = true;
+    } else {
+      this.activeFilterDimension = null;
+    }
   }
 
   clearFilters() {
@@ -61,6 +69,7 @@ export class RegisterComponent {
     this.filterStale = false;
     this._fromDashboard = false;
     this._deepLinkRiskId = null;
+    this.activeFilterDimension = null;
   }
 
   exportToCSV() {
@@ -112,6 +121,9 @@ export class RegisterComponent {
     }
     if (this.activeFilterAppetite !== 'All') {
       filteredRisks = filteredRisks.filter(r => r.appetiteStatus === this.activeFilterAppetite);
+    }
+    if (this.activeFilterDimension) {
+      filteredRisks = filteredRisks.filter(r => r.fragility && r.fragility[this.activeFilterDimension] > 0);
     }
 
     if (this.filterStale) {
@@ -252,6 +264,8 @@ export class RegisterComponent {
         ? 'Filtered: Stale governance risks'
         : this.activeFilterAppetite !== 'All'
         ? `Filtered: ${this.activeFilterAppetite} risks`
+        : this.activeFilterDimension
+        ? `Filtered: ${this.activeFilterDimension.charAt(0).toUpperCase() + this.activeFilterDimension.slice(1)} Fragility risks`
         : 'Risk Register';
       // Dynamic import to avoid adding a static import for AIInsightService
       import('../services/aiInsightService.js').then(({ AIInsightService }) => {

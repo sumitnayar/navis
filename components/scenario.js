@@ -250,6 +250,22 @@ export class ScenarioComponent {
 
           </div>
 
+          <!-- Chart 4: Scenario Impact Chart -->
+          <div class="glass-panel" style="padding: 20px; margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">FINANCIAL IMPACT COMPARISON</span>
+              <!-- Custom Legend -->
+              <div style="display: flex; gap: 16px; font-size: 11px; font-family: Calibri, sans-serif; font-weight: 500;">
+                <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background-color: #4A6FA5; border-radius: 50%; display: inline-block;"></span>Revenue</span>
+                <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background-color: #EF9F27; border-radius: 50%; display: inline-block;"></span>EBITDA Margin</span>
+                <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background-color: #E24B4A; border-radius: 50%; display: inline-block;"></span>Cash Impact</span>
+              </div>
+            </div>
+            <div class="scenario-chart-container">
+              <canvas id="scenario-impact-chart" height="180"></canvas>
+            </div>
+          </div>
+
           <!-- STRATEGIC OBJECTIVE DESTRUCTIVE TRAJECTORY -->
           <div class="glass-panel" style="padding: 20px; margin-top: 16px;">
             <h3 class="dashboard-card-title">Threatened Objective Cascade Path</h3>
@@ -288,6 +304,9 @@ export class ScenarioComponent {
     }
 
     this.bindEvents(container);
+    setTimeout(() => {
+      this.initScenarioChart(container);
+    }, 0);
   }
 
   bindEvents(container) {
@@ -360,6 +379,9 @@ export class ScenarioComponent {
         if (advisoryEbiEl) advisoryEbiEl.textContent = expectedEbitdaText;
         const advisoryCashEl = container.querySelector('.advisory-cash');
         if (advisoryCashEl) advisoryCashEl.textContent = expectedCashText;
+
+        // Update the scenario chart
+        this.updateScenarioChart();
       });
     }
 
@@ -384,5 +406,144 @@ export class ScenarioComponent {
         }
       });
     });
+  }
+
+  initScenarioChart(container) {
+    const canvasId = 'scenario-impact-chart';
+    const canvas = container.querySelector(`#${canvasId}`);
+    if (!canvas) return;
+
+    // Destroy existing instance first (Flag 2 destroy pattern)
+    const existing = window.Chart.getChart(canvas);
+    if (existing) existing.destroy();
+
+    const scenarios = this.state.scenarios || [];
+    const currentScenario = scenarios.find(s => s.id === this.selectedScenarioId);
+    if (!currentScenario) return;
+
+    const factor = this.simulatedSeverity / 100;
+    const rev = currentScenario.revenueImpact;
+    const ebi = currentScenario.ebitdaImpact;
+    const cash = currentScenario.cashImpact;
+
+    const revData = [
+      this.parseValue(rev.best) * factor,
+      this.parseValue(rev.expected) * factor,
+      this.parseValue(rev.worst) * factor
+    ];
+
+    const ebiData = [
+      parseFloat(this.scalePercent(ebi.best, factor)),
+      parseFloat(this.scalePercent(ebi.expected, factor)),
+      parseFloat(this.scalePercent(ebi.worst, factor))
+    ];
+
+    const cashData = [
+      this.parseValue(cash.best) * factor,
+      this.parseValue(cash.expected) * factor,
+      this.parseValue(cash.worst) * factor
+    ];
+
+    this.scenarioChart = new window.Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: ['Best Case', 'Expected Case', 'Worst Case'],
+        datasets: [
+          {
+            label: 'Revenue',
+            data: revData,
+            backgroundColor: '#4A6FA5',
+            borderRadius: 4
+          },
+          {
+            label: 'EBITDA Margin',
+            data: ebiData,
+            backgroundColor: '#EF9F27',
+            borderRadius: 4
+          },
+          {
+            label: 'Cash Impact',
+            data: cashData,
+            backgroundColor: '#E24B4A',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 300,
+          easing: 'easeOutQuad'
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0D1B2A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#FFFFFF',
+            callbacks: {
+              label: (context) => {
+                const val = context.raw;
+                const datasetIdx = context.datasetIndex;
+                if (datasetIdx === 0) {
+                  return ` Revenue Impact: ${this.formatValue(val)}`;
+                } else if (datasetIdx === 1) {
+                  return ` EBITDA Margin Impact: ${val.toFixed(1)}%`;
+                } else {
+                  return ` Cash Impact: ${this.formatValue(val)}`;
+                }
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false }
+          },
+          y: {
+            border: { display: false },
+            grid: {
+              color: 'rgba(13,27,42,0.06)'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  updateScenarioChart() {
+    if (!this.scenarioChart) return;
+    const scenarios = this.state.scenarios || [];
+    const currentScenario = scenarios.find(s => s.id === this.selectedScenarioId);
+    if (!currentScenario) return;
+
+    const factor = this.simulatedSeverity / 100;
+    const rev = currentScenario.revenueImpact;
+    const ebi = currentScenario.ebitdaImpact;
+    const cash = currentScenario.cashImpact;
+
+    const revData = [
+      this.parseValue(rev.best) * factor,
+      this.parseValue(rev.expected) * factor,
+      this.parseValue(rev.worst) * factor
+    ];
+
+    const ebiData = [
+      parseFloat(this.scalePercent(ebi.best, factor)),
+      parseFloat(this.scalePercent(ebi.expected, factor)),
+      parseFloat(this.scalePercent(ebi.worst, factor))
+    ];
+
+    const cashData = [
+      this.parseValue(cash.best) * factor,
+      this.parseValue(cash.expected) * factor,
+      this.parseValue(cash.worst) * factor
+    ];
+
+    this.scenarioChart.data.datasets[0].data = revData;
+    this.scenarioChart.data.datasets[1].data = ebiData;
+    this.scenarioChart.data.datasets[2].data = cashData;
+    this.scenarioChart.update();
   }
 }

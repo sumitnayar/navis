@@ -133,6 +133,15 @@ export class ObjectivesComponent {
       </div>
     `;
 
+    if (selectedObj) {
+      const linked = risks.filter(r => r.objectiveIds && r.objectiveIds.includes(selectedObj.id));
+      const aggregateScore = Math.min(30, linked.reduce((sum, r) => sum + (r.residualScore || 0), 0));
+      setTimeout(() => {
+        const fillEl = container.querySelector('.exposure-progress-fill');
+        if (fillEl) fillEl.style.width = `${(aggregateScore / 30) * 100}%`;
+      }, 50);
+    }
+
     this.bindEvents(container);
     // Render Back to Dashboard banner if filtered
     if (this.deepLinked) {
@@ -156,6 +165,13 @@ export class ObjectivesComponent {
     const unlinked = risks.filter(r => !r.objectiveIds || !r.objectiveIds.includes(obj.id));
     const exposure = this.calculateAggregateExposure(linked);
 
+    const aggregateScore = Math.min(30, linked.reduce((sum, r) => sum + (r.residualScore || 0), 0));
+    const appetiteLimit = 15;
+    const appetiteLimitPct = (appetiteLimit / 30) * 100;
+    let barColor = '#1D9E75';
+    if (aggregateScore > 20) barColor = '#E24B4A';
+    else if (aggregateScore > 10) barColor = '#EF9F27';
+
     return `
       <div>
         <span class="profile-role-badge" style="margin-bottom:4px;">${obj.importance} Strategic Alignment</span>
@@ -175,6 +191,23 @@ export class ObjectivesComponent {
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:10px;">
             <span>Target Date: <strong>${obj.targetDate}</strong></span>
             <span>Owner: <strong>${obj.owner}</strong></span>
+          </div>
+        </div>
+
+        <!-- Exposure Bar -->
+        <div style="margin-bottom: 24px; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Aggregate Exposure</span>
+            <span style="font-size: 12px; font-weight: 700; color: ${aggregateScore > appetiteLimit ? '#E24B4A' : '#0D1B2A'};">${aggregateScore} / 30</span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(13,27,42,0.08); border-radius: 4px; position: relative; margin-top: 18px; margin-bottom: 12px;">
+            <!-- Appetite Limit Marker -->
+            <div style="position: absolute; left: ${appetiteLimitPct}%; top: -14px; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); z-index: 5;">
+              <span style="font-size: 9px; color: rgba(13,27,42,0.6); white-space: nowrap; font-weight: 500;">Appetite limit</span>
+              <div style="width: 1px; height: 16px; background-color: rgba(13,27,42,0.3); margin-top: 1px;"></div>
+            </div>
+            <!-- Progress Fill -->
+            <div class="exposure-progress-fill" style="height: 100%; width: 0%; border-radius: 4px; background-color: ${barColor}; transition: width 400ms ease-out;"></div>
           </div>
         </div>
 

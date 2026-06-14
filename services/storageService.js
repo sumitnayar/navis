@@ -48,6 +48,25 @@ function normalizeAction(action) {
 }
 
 export class StorageService {
+  static generateScoreHistory(lr, ir, trend) {
+    const history = [];
+    let tempScore = lr * ir;
+    const today = new Date();
+    for (let i = 0; i < 180; i++) {
+      const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      history.push({
+        date: dateLabel,
+        score: Math.max(1, Math.min(25, Math.round(tempScore)))
+      });
+      let change = (Math.random() - 0.5) * 1.2;
+      if (trend === 'Deteriorating') change -= 0.06;
+      else if (trend === 'Improving') change += 0.06;
+      tempScore += change;
+    }
+    return history.reverse();
+  }
+
   static async getActiveOrgId() {
     if (!isCloudMode) return '00000000-0000-0000-0000-000000000000';
     try {
@@ -139,6 +158,11 @@ export class StorageService {
           residualScore: r.residual_score,
           appetiteStatus: r.appetite_status,
           trend: r.trend,
+          scoreHistory: StorageService.generateScoreHistory(
+            r.likelihood_residual || r.likelihood || 3,
+            r.impact_residual || r.impact || 3,
+            r.trend || 'Stable'
+          ),
           timeToImpact: r.time_to_impact,
           timeToDetection: r.time_to_detection,
           timeToRecovery: r.time_to_recovery,
@@ -226,7 +250,12 @@ export class StorageService {
       }
       return {
         ...r,
-        title
+        title,
+        scoreHistory: r.scoreHistory || StorageService.generateScoreHistory(
+          r.likelihoodResidual || r.likelihood || 3,
+          r.impactResidual || r.impact || 3,
+          r.trend || 'Stable'
+        )
       };
     });
 

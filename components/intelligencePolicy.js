@@ -274,7 +274,7 @@ export class IntelligencePolicyComponent {
       </div>
 
       <!-- HORIZONTAL SUB-TAB NAVIGATION -->
-      <div class="subtab-strip no-print" style="display:flex;gap:4px;border-bottom:1px solid var(--border-color);margin-bottom:20px;padding-bottom:1px;flex-wrap:wrap;">
+      <div class="subtab-strip no-print" style="display:flex;gap:4px;border-bottom:1px solid var(--border-color);margin-bottom:20px;padding-bottom:1px;flex-wrap:nowrap;overflow-x:auto;">
         <button class="subtab-btn ${this.activeSubTab === 'upload' ? 'active' : ''}" data-subtab="upload" style="background:none;border:none;padding:10px 16px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'upload' ? 'var(--color-indigo)' : 'var(--color-navy-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'upload' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
           Upload &amp; Extract
         </button>

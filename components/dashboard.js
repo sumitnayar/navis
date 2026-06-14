@@ -155,9 +155,13 @@ export class DashboardComponent {
 
     const worseningHTML = worseningRisks.length ? worseningRisks.map(r => {
       const cleanRTitle = cleanTitle(r.title);
+      const hasHistory = r.scoreHistory && r.scoreHistory.length >= 2;
       return `
         <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;" title="${cleanRTitle}">
           <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; min-width: 0;">${cleanRTitle}</span>
+          ${hasHistory ? `
+            <canvas class="sparkline-canvas" data-risk-id="${r.id}" data-type="worsening" width="48" height="24" style="width: 48px; height: 24px; flex-shrink: 0;"></canvas>
+          ` : ''}
           <span style="background: var(--color-critical-bg); color: var(--color-critical); padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">${r.residualScore} ↑</span>
         </div>
       `;
@@ -165,9 +169,13 @@ export class DashboardComponent {
 
     const improvingHTML = improvingRisks.length ? improvingRisks.map(r => {
       const cleanRTitle = cleanTitle(r.title);
+      const hasHistory = r.scoreHistory && r.scoreHistory.length >= 2;
       return `
         <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;" title="${cleanRTitle}">
           <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; min-width: 0;">${cleanRTitle}</span>
+          ${hasHistory ? `
+            <canvas class="sparkline-canvas" data-risk-id="${r.id}" data-type="improving" width="48" height="24" style="width: 48px; height: 24px; flex-shrink: 0;"></canvas>
+          ` : ''}
           <span style="background: var(--color-safe-bg); color: var(--color-safe); padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0;">${r.residualScore} ↓</span>
         </div>
       `;
@@ -182,9 +190,14 @@ export class DashboardComponent {
           
           <!-- Panel 1: Active Intelligence -->
           <div class="glass-panel" style="padding: 20px;">
-            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
-              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">ACTIVE INTELLIGENCE</span>
-              <span style="font-size: 12px; color: var(--color-navy-secondary);">Ranked signals requiring board attention</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">ACTIVE INTELLIGENCE</span>
+                <span style="font-size: 12px; color: var(--color-navy-secondary);">Ranked signals requiring board attention</span>
+              </div>
+              <div class="posture-donut-wrapper" style="margin-top: -10px; margin-bottom: -10px;">
+                <canvas id="posture-donut-chart" width="120" height="120"></canvas>
+              </div>
             </div>
             <div id="active-intel-list">
               ${insightsHTML}
@@ -193,24 +206,17 @@ export class DashboardComponent {
           </div>
 
           <!-- Panel 2: Strategic Fragility -->
-          <div class="glass-panel" style="padding: 20px;">
+          <div class="glass-panel strategic-fragility" style="padding: 20px;">
             <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
               <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">STRATEGIC FRAGILITY</span>
               <span style="font-size: 12px; color: var(--color-navy-secondary);">Structural vulnerability and objectives exposure</span>
             </div>
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
-                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Dimension</th>
-                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Fragility %</th>
-                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Trend</th>
-                  <th style="padding: 8px 0; font-size: 11px; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">Objectives at Risk</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${strategicFragilityRows}
-              </tbody>
-            </table>
+            <div class="fragility-chart-container">
+              <canvas id="fragility-bar-chart" height="220"></canvas>
+            </div>
+            <div id="fragility-drilldown-link" style="font-size: 11px; color: #8FA3B1; margin-top: 10px; text-align: center; cursor: pointer; font-weight: 500;">
+              Click any bar to drill into dimension risks &rarr;
+            </div>
           </div>
 
         </div>
@@ -269,8 +275,254 @@ export class DashboardComponent {
       </div>
     `;
 
-    this.initHeatmap(container);
     this.bindEvents(container);
+    setTimeout(() => {
+      this.initFragilityChart(container);
+      this.initPostureDonut(container);
+      this.initSparklines(container);
+      this.initHeatmap(container);
+    }, 0);
+  }
+
+  initFragilityChart(container) {
+    const canvasId = 'fragility-bar-chart';
+    const canvas = container.querySelector(`#${canvasId}`);
+    if (!canvas) return;
+
+    // Destroy existing instance first (Flag 2 destroy pattern)
+    const existing = window.Chart.getChart(canvas);
+    if (existing) existing.destroy();
+
+    const risks = this.state.risks || [];
+    const count = risks.length || 1;
+
+    const dimensions = [
+      { key: 'revenue', label: 'Revenue' },
+      { key: 'growth', label: 'Growth' },
+      { key: 'customerTrust', label: 'Customer Trust' },
+      { key: 'technology', label: 'Technology' },
+      { key: 'people', label: 'People' },
+      { key: 'operations', label: 'Operations' },
+      { key: 'reputation', label: 'Reputation' },
+      { key: 'valuation', label: 'Valuation' }
+    ];
+
+    const fragilitySums = { revenue: 0, growth: 0, customerTrust: 0, technology: 0, people: 0, operations: 0, reputation: 0, valuation: 0 };
+    risks.forEach(r => {
+      if (r.fragility) {
+        Object.keys(fragilitySums).forEach(k => {
+          fragilitySums[k] += (r.fragility[k] || 0);
+        });
+      }
+    });
+
+    const dataPercents = dimensions.map(dim => Math.round((fragilitySums[dim.key] / count) * 20));
+
+    const trendArrows = dimensions.map(dim => {
+      const dimRisks = risks.filter(r => r.fragility && r.fragility[dim.key] > 0);
+      let trendSum = 0;
+      dimRisks.forEach(r => {
+        if (r.trend === 'Deteriorating') trendSum += 1;
+        else if (r.trend === 'Improving') trendSum -= 1;
+      });
+      if (trendSum > 0) return '↑';
+      if (trendSum < 0) return '↓';
+      return '→';
+    });
+
+    const barColors = dataPercents.map(pct => {
+      if (pct >= 80) return '#E24B4A';
+      if (pct >= 60) return '#EF9F27';
+      return '#1D9E75';
+    });
+
+    new window.Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: dimensions.map(d => d.label),
+        datasets: [{
+          data: dataPercents,
+          backgroundColor: barColors,
+          borderRadius: 4,
+          borderSkipped: false,
+          barThickness: 12
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 400
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0D1B2A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#FFFFFF',
+            callbacks: {
+              label: (context) => {
+                const idx = context.dataIndex;
+                const pct = context.raw;
+                const arrow = trendArrows[idx];
+                return ` Fragility: ${pct}% ${arrow}`;
+              }
+            }
+          }
+        },
+        onClick: (event, elements) => {
+          if (elements && elements.length > 0) {
+            const idx = elements[0].index;
+            const dimKey = dimensions[idx].key;
+            this.navigateToPage(`/risks?dimension=${dimKey}`, 'register');
+          }
+        },
+        scales: {
+          x: {
+            min: 0,
+            max: 100,
+            ticks: {
+              stepSize: 20,
+              callback: (value) => value + '%'
+            },
+            grid: {
+              color: 'rgba(13,27,42,0.06)'
+            },
+            border: { display: false }
+          },
+          y: {
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+
+    container.querySelector('#fragility-drilldown-link')?.addEventListener('click', () => {
+      this.navigateToPage('/risks', 'register');
+    });
+  }
+
+  initPostureDonut(container) {
+    const canvasId = 'posture-donut-chart';
+    const canvas = container.querySelector(`#${canvasId}`);
+    if (!canvas) return;
+
+    const existing = window.Chart.getChart(canvas);
+    if (existing) existing.destroy();
+
+    const risks = this.state.risks || [];
+    const aboveCount = risks.filter(r => r.appetiteStatus === 'Above Appetite').length;
+    const nearCount = risks.filter(r => r.appetiteStatus === 'Near Appetite').length;
+    const withinCount = risks.filter(r => r.appetiteStatus === 'Within Appetite').length;
+    const totalCount = aboveCount + nearCount + withinCount;
+
+    const centerTextPlugin = {
+      id: 'centerText',
+      afterDraw: (chart) => {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data || meta.data.length === 0) return;
+        const x = meta.data[0].x;
+        const y = meta.data[0].y;
+        
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.font = '600 18px Calibri, "Segoe UI", sans-serif';
+        ctx.fillStyle = '#0D1B2A';
+        ctx.fillText(totalCount.toString(), x, y - 6);
+        
+        ctx.font = '400 11px Calibri, "Segoe UI", sans-serif';
+        ctx.fillStyle = '#8FA3B1';
+        ctx.fillText('risks', x, y + 10);
+        
+        ctx.restore();
+      }
+    };
+
+    new window.Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Above Appetite', 'Near Appetite', 'Within Appetite'],
+        datasets: [{
+          data: [aboveCount, nearCount, withinCount],
+          backgroundColor: ['#E24B4A', '#EF9F27', '#1D9E75'],
+          borderWidth: 0
+        }]
+      },
+      plugins: [centerTextPlugin],
+      options: {
+        cutout: '72%',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 0
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0D1B2A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#FFFFFF',
+            callbacks: {
+              label: (context) => {
+                const label = context.label || '';
+                const val = context.raw;
+                const pct = totalCount > 0 ? Math.round((val / totalCount) * 100) : 0;
+                return ` ${label}: ${val} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  initSparklines(container) {
+    const canvases = container.querySelectorAll('.sparkline-canvas');
+    const risks = this.state.risks || [];
+
+    canvases.forEach(canvas => {
+      const existing = window.Chart.getChart(canvas);
+      if (existing) existing.destroy();
+
+      const rId = canvas.dataset.riskId;
+      const type = canvas.dataset.type;
+      const risk = risks.find(r => r.id === rId);
+      if (!risk || !risk.scoreHistory || risk.scoreHistory.length < 2) return;
+
+      const last6Scores = risk.scoreHistory.slice(-6).map(h => h.score);
+      const lineColor = type === 'worsening' ? '#E24B4A' : '#1D9E75';
+
+      new window.Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: ['', '', '', '', '', ''],
+          datasets: [{
+            data: last6Scores,
+            borderColor: lineColor,
+            borderWidth: 1.5,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          }
+        }
+      });
+    });
   }
 
   // Heatmap Chart Initializer
@@ -278,6 +530,9 @@ export class DashboardComponent {
     const risks = this.state.risks || [];
     const canvas = container.querySelector('#heatmap-chart-canvas');
     if (!canvas || risks.length === 0) return;
+
+    const existing = window.Chart.getChart(canvas);
+    if (existing) existing.destroy();
 
     const bubbleData = risks.map((r, index) => ({
       x: r.likelihoodResidual || r.likelihood || 1,

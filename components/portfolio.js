@@ -17,6 +17,7 @@ export class PortfolioComponent {
     this.onStateChange = onStateChange;
     this.selectedPortfolioKey = 'cyber'; // cyber, strategic, financial, regulatory
     this.selectedRiskId = null;
+    this.donutCharts = new Map();
 
     // Parse deep-link params
     const _pParams = new URLSearchParams(window.location.search);
@@ -179,14 +180,21 @@ export class PortfolioComponent {
           return `
             <div class="ticker-card clickable-portfolio ${isSelected ? 'selected-port-card' : ''}" 
                  data-key="${key}"
-                 style="cursor: pointer; border-left: 4px solid var(--border-color); ${isSelected ? 'border-color: var(--color-indigo); background: rgba(0, 181, 181, 0.04);' : ''}">
+                 style="cursor: pointer; border-left: 4px solid var(--border-color); ${isSelected ? 'border-color: var(--color-indigo); background: rgba(0, 181, 181, 0.04);' : ''}; display: flex; flex-direction: column; gap: 8px;">
               <span class="ticker-label" style="font-weight: 700; color: var(--text-primary); font-size:12px;">${key.toUpperCase()} Portfolio</span>
-              <span class="ticker-value" style="font-size: 20px; font-family: var(--font-header); margin: 6px 0;">
-                Avg: ${stats.score}
-              </span>
-              <span style="font-size: 10px; color: var(--text-secondary); display:flex; justify-content:space-between; width:100%;">
+              
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 56px; height: 56px; flex-shrink: 0; position: relative;">
+                  <canvas id="portfolio-donut-${key}" width="56" height="56"></canvas>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="font-size: 20px; font-weight: 600; color: var(--text-primary); line-height: 1;">${stats.score}</span>
+                  <span class="status-badge ${stats.class}" style="font-size: 8px; padding: 1px 5px; width: fit-content;">${stats.status}</span>
+                </div>
+              </div>
+              
+              <span style="font-size: 10px; color: var(--text-secondary); display: flex; justify-content: space-between; width: 100%;">
                 <span>Risks: <strong>${port.risks.length}</strong></span>
-                <span class="status-badge ${stats.class}" style="font-size: 8px; padding:1px 5px;">${stats.status}</span>
               </span>
             </div>
           `;
@@ -310,6 +318,52 @@ export class PortfolioComponent {
     }
 
     this.bindEvents(container, portfolios);
+    setTimeout(() => {
+      this.initPortfolioDonuts(container, portfolios);
+    }, 0);
+  }
+
+  initPortfolioDonuts(container, portfolios) {
+    // Destroy previous instances
+    this.donutCharts.forEach(chart => {
+      try { chart.destroy(); } catch (e) {}
+    });
+    this.donutCharts.clear();
+
+    Object.keys(portfolios).forEach(key => {
+      const port = portfolios[key];
+      const canvas = container.querySelector(`#portfolio-donut-${key}`);
+      if (!canvas) return;
+
+      const aboveCount = port.risks.filter(r => r.appetiteStatus === 'Above Appetite').length;
+      const nearCount = port.risks.filter(r => r.appetiteStatus === 'Near Appetite').length;
+      const withinCount = port.risks.filter(r => r.appetiteStatus === 'Within Appetite').length;
+
+      const hasData = (aboveCount + nearCount + withinCount) > 0;
+      const dataVals = hasData ? [aboveCount, nearCount, withinCount] : [0, 0, 1];
+      const bgColors = hasData ? ['#E24B4A', '#EF9F27', '#1D9E75'] : ['#E2E8F0', '#E2E8F0', '#E2E8F0'];
+
+      const chart = new window.Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: dataVals,
+            backgroundColor: bgColors,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          cutout: '68%',
+          responsive: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          animation: false
+        }
+      });
+      this.donutCharts.set(key, chart);
+    });
   }
 
   bindEvents(container, portfolios) {
