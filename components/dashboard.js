@@ -609,8 +609,8 @@ export class DashboardComponent {
               const status = dataPoint.riskObj.appetiteStatus;
               return status === 'Above Appetite' ? '#A32D2D' : status === 'Near Appetite' ? '#854F0B' : '#0F6E56';
             },
-            borderWidth: 2,
-            hoverBorderWidth: 2
+            borderWidth: 0,
+            hoverBorderWidth: 0
           }]
         },
         plugins: [quadrantPlugin],
