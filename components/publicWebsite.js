@@ -197,6 +197,78 @@ function renderHeroVisual() {
   `;
 }
 
+function renderHeroScreenshot() {
+  return `
+    <figure class="nw-screenshot-frame nw-hero-screenshot">
+      <div class="nw-screenshot-bar">
+        <span></span><span></span><span></span>
+        <strong>Strategic Cascade Visualizer</strong>
+        <b>Live board view</b>
+      </div>
+      <img src="/assets/screenshots/navis-cascade-map.png" alt="Navis Strategic Cascade Visualizer showing connected enterprise risks and objectives" fetchpriority="high">
+    </figure>
+  `;
+}
+
+function renderProductEvidence() {
+  return `
+    <section class="nw-band nw-evidence-band">
+      <div class="nw-container">
+        <div class="nw-section-heading">
+          <span class="nw-eyebrow">Inside Navis</span>
+          <h2>Real intelligence, built for the moments that matter.</h2>
+          <p>Move from enterprise posture to root-cause exposure and board-level answers without losing the evidence behind the decision.</p>
+        </div>
+        <div class="nw-evidence-grid">
+          <article class="nw-evidence-feature">
+            <div class="nw-evidence-copy">
+              <span>Strategic fragility</span>
+              <h3>See where enterprise value is most exposed.</h3>
+              <p>Understand structural vulnerability across revenue, growth, customer trust, technology, people and valuation.</p>
+            </div>
+            <figure class="nw-screenshot-frame">
+              <div class="nw-screenshot-bar"><span></span><span></span><span></span><strong>Board Risk Intelligence</strong></div>
+              <img src="/assets/screenshots/navis-strategic-fragility.png" alt="Navis strategic fragility dashboard chart" loading="lazy">
+            </figure>
+          </article>
+          <article class="nw-evidence-feature nw-evidence-feature-reverse">
+            <figure class="nw-screenshot-frame">
+              <div class="nw-screenshot-bar"><span></span><span></span><span></span><strong>Ask Navis</strong></div>
+              <img src="/assets/screenshots/navis-ask.png" alt="Ask Navis boardroom intelligence interface" loading="lazy">
+            </figure>
+            <div class="nw-evidence-copy">
+              <span>Ask Navis</span>
+              <h3>Interrogate the live governance environment.</h3>
+              <p>Ask boardroom questions, assemble connected risk profiles and move directly from signal to decision context.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderExperiencePreview() {
+  return `
+    <section class="nw-band nw-experience-band">
+      <div class="nw-container">
+        <div class="nw-section-heading">
+          <span class="nw-eyebrow">Designed as one system</span>
+          <h2>A coherent public and private Navis experience.</h2>
+          <p>Clear enough for first-time visitors. Deep enough for leadership teams managing consequential decisions.</p>
+        </div>
+        <figure class="nw-screenshot-frame nw-site-preview">
+          <div class="nw-screenshot-bar">
+            <span></span><span></span><span></span>
+            <strong>navisrisk.com</strong>
+          </div>
+          <img src="/assets/screenshots/navis-public-website.png" alt="Full Navis public corporate website" loading="lazy">
+        </figure>
+      </div>
+    </section>
+  `;
+}
+
 function renderHome(session) {
   const dashboardPath = session ? '/dashboard' : '/login';
   const dashboardLabel = session ? 'Open Dashboard' : 'Login';
@@ -214,10 +286,11 @@ function renderHome(session) {
             </div>
             <div class="nw-trust-line"><span>Built for consequential decisions</span><span>Human approval by design</span><span>Private preview</span></div>
           </div>
-          ${renderHeroVisual()}
+          ${renderHeroScreenshot()}
         </div>
       </section>
       ${renderPillars()}
+      ${renderProductEvidence()}
       <section class="nw-band nw-problem-band">
         <div class="nw-container nw-problem-grid">
           <div class="nw-section-heading">
@@ -254,6 +327,7 @@ function renderHome(session) {
           </div>
         </div>
       </section>
+      ${renderExperiencePreview()}
       ${renderPrivatePreview()}
     </main>
   `;

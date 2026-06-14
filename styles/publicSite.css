@@ -273,6 +273,63 @@ body.public-page * {
   transform: perspective(1200px) rotateY(-3deg) rotateX(1deg);
 }
 
+.nw-screenshot-frame {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(11, 20, 38, 0.12);
+  border-radius: 8px;
+  background: var(--nw-white);
+  box-shadow: 0 24px 60px rgba(11, 20, 38, 0.12);
+}
+
+.nw-screenshot-bar {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--nw-line);
+  color: var(--nw-muted);
+  background: #f8fafb;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.nw-screenshot-bar > span {
+  width: 6px;
+  height: 6px;
+  display: block;
+  border-radius: 50%;
+  background: #cbd4de;
+}
+
+.nw-screenshot-bar strong {
+  margin-left: 6px;
+  color: var(--nw-copy);
+  font-size: 9px;
+}
+
+.nw-screenshot-bar b {
+  margin-left: auto;
+  color: var(--nw-teal-dark);
+}
+
+.nw-screenshot-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.nw-hero-screenshot {
+  transform: perspective(1200px) rotateY(-3deg) rotateX(1deg);
+}
+
+.nw-hero-screenshot img {
+  aspect-ratio: 1.78 / 1;
+  object-fit: cover;
+  object-position: top left;
+}
+
 .nw-console-nav,
 .nw-visual-topline {
   min-height: 54px;
@@ -555,6 +612,71 @@ body.public-page * {
 
 .nw-problem-band {
   background: #ffffff;
+}
+
+.nw-evidence-band {
+  background: #f7f9fb;
+}
+
+.nw-evidence-grid {
+  display: grid;
+  gap: 72px;
+  margin-top: 54px;
+}
+
+.nw-evidence-feature {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.52fr) minmax(0, 1.25fr);
+  align-items: center;
+  gap: 54px;
+}
+
+.nw-evidence-feature-reverse {
+  grid-template-columns: minmax(0, 1.25fr) minmax(250px, 0.52fr);
+}
+
+.nw-evidence-copy > span {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--nw-teal-dark);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.nw-evidence-copy h3 {
+  margin: 0;
+  color: var(--nw-ink);
+  font-size: 27px;
+  line-height: 1.16;
+}
+
+.nw-evidence-copy p {
+  margin: 16px 0 0;
+  color: var(--nw-copy);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.nw-evidence-feature .nw-screenshot-frame img {
+  aspect-ratio: 1.88 / 1;
+  object-fit: cover;
+  object-position: top left;
+}
+
+.nw-experience-band {
+  overflow: hidden;
+  background: #f7f9fb;
+}
+
+.nw-site-preview {
+  max-height: 640px;
+  margin-top: 48px;
+}
+
+.nw-site-preview img {
+  object-fit: cover;
+  object-position: top;
 }
 
 .nw-problem-grid,
@@ -1405,6 +1527,7 @@ body.public-page * {
   }
 
   .nw-hero-console,
+  .nw-hero-screenshot,
   .nw-policy-workbench,
   .nw-scenario-matrix {
     max-width: 720px;
@@ -1423,6 +1546,20 @@ body.public-page * {
   .nw-demo-grid {
     grid-template-columns: 1fr;
     gap: 48px;
+  }
+
+  .nw-evidence-feature,
+  .nw-evidence-feature-reverse {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .nw-evidence-feature-reverse .nw-screenshot-frame {
+    order: 2;
+  }
+
+  .nw-evidence-feature-reverse .nw-evidence-copy {
+    order: 1;
   }
 
   .nw-feature-reverse .nw-section-heading {
@@ -1543,6 +1680,21 @@ body.public-page * {
     display: none;
   }
 
+  .nw-hero-screenshot {
+    width: 100%;
+    max-height: 130px;
+    transform: none;
+  }
+
+  .nw-hero-screenshot .nw-screenshot-bar {
+    min-height: 30px;
+  }
+
+  .nw-hero-screenshot img {
+    min-height: 108px;
+    object-position: 18% 12%;
+  }
+
   .nw-band {
     padding: 68px 0;
   }
@@ -1576,6 +1728,20 @@ body.public-page * {
 
   .nw-connection-map {
     min-height: 360px;
+  }
+
+  .nw-evidence-grid {
+    gap: 48px;
+    margin-top: 36px;
+  }
+
+  .nw-evidence-copy h3 {
+    font-size: 24px;
+  }
+
+  .nw-site-preview {
+    max-height: 460px;
+    margin-top: 34px;
   }
 
   .nw-map-orbit-one {
