@@ -876,6 +876,7 @@ class RiskOSApplication {
   }
 
   renderPostureBar() {
+    if (!this.state.risks || this.state.risks.length === 0) return;
     const risks = this.state.risks || [];
     const today = new Date();
     
