@@ -3,6 +3,7 @@
 import { AIService } from '../services/aiService.js';
 import { AIInsightService } from '../services/aiInsightService.js';
 import { RiskIntelligenceService } from '../services/riskIntelligenceService.js';
+import { scenarioTemplates } from './scenarioTemplates.js';
 
 const cleanTitle = (title) => {
   if (!title) return '';
@@ -32,6 +33,16 @@ export class DashboardComponent {
     } else {
       this.renderStandardMode(container);
     }
+
+    // Bind common segmented switcher events
+    container.querySelectorAll('.dash-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const selectedMode = btn.dataset.mode;
+        this.state.operatingMode = selectedMode;
+        localStorage.setItem('navis_operating_mode', selectedMode);
+        this.render(container); // Re-render just the dashboard
+      });
+    });
   }
 
   renderStandardMode(container) {
@@ -195,8 +206,25 @@ export class DashboardComponent {
       `;
     }).join('') : `<div style="font-size: 11px; color: var(--color-navy-secondary); text-align: center; padding: 20px 0;">No improving risks.</div>`;
 
+    const mode = this.state.operatingMode || 'board';
     // Render primary HTML layout
     container.innerHTML = `
+      <div style="margin-bottom: 12px; display: flex; justify-content: flex-start;">
+        <!-- Segmented Mode Switcher -->
+        <div class="mode-switcher-dashboard" style="display: flex; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 3px; gap: 4px; flex-shrink: 0;">
+          <button class="dash-mode-btn" data-mode="board" style="border:none; background:${mode === 'board' ? '#FFFFFF' : 'transparent'}; font-size:11px; font-weight:700; padding:6px 12px; border-radius:4px; cursor:pointer; color: ${mode === 'board' ? 'var(--color-navy)' : 'var(--text-secondary)'}; box-shadow: ${mode === 'board' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'}; transition: all 0.15s ease;">Board</button>
+          <button class="dash-mode-btn" data-mode="intelligence" style="border:none; background:${mode === 'intelligence' ? '#FFFFFF' : 'transparent'}; font-size:11px; font-weight:700; padding:6px 12px; border-radius:4px; cursor:pointer; color: ${mode === 'intelligence' ? 'var(--color-navy)' : 'var(--text-secondary)'}; box-shadow: ${mode === 'intelligence' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'}; transition: all 0.15s ease;">Intelligence</button>
+          <button class="dash-mode-btn" data-mode="builder" style="border:none; background:${mode === 'builder' ? '#FFFFFF' : 'transparent'}; font-size:11px; font-weight:700; padding:6px 12px; border-radius:4px; cursor:pointer; color: ${mode === 'builder' ? 'var(--color-navy)' : 'var(--text-secondary)'}; box-shadow: ${mode === 'builder' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'}; transition: all 0.15s ease;">Builder</button>
+        </div>
+      </div>
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;">
+        <div class="page-title-wrap" style="margin-bottom: 0;">
+          <span class="profile-role-badge">Enterprise Risk Posture</span>
+          <h1>Risk Intelligence Center</h1>
+          <p class="page-subtitle">Deep-dive risk portfolio metrics and analytical indicators.</p>
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: 58% 42%; gap: 20px;">
         
         <!-- LEFT COLUMN -->
@@ -267,7 +295,7 @@ export class DashboardComponent {
               <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">RISK MOVEMENT</span>
               <span style="font-size: 12px; color: var(--color-navy-secondary);">Leading indicators of risk vector updates</span>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 20px;">
               
               <!-- Column: Worsening -->
               <div>
@@ -426,41 +454,53 @@ export class DashboardComponent {
       </div>
     `;
 
-    const spotlight = scenarios.length > 0 ? scenarios[0] : null;
+    const spotlightId = localStorage.getItem('spotlight_scenario_id') || 'scen-cyber';
+    const spotlightTemplate = scenarioTemplates.find(t => t.id === spotlightId) || scenarioTemplates[0];
+
     let spotlightHTML = '';
-    if (spotlight) {
+    if (spotlightTemplate) {
+      const ebitdaImpact = spotlightTemplate.responses.noIntervention.ebitda;
+      const objectivesCount = spotlightTemplate.affectedObjectives.length;
+      const boardActionRequired = spotlightTemplate.boardActions.decisions.length > 0 ? 'Yes' : 'No';
+
       spotlightHTML = `
         <div class="glass-panel" style="padding: 20px;">
-          <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em; margin-bottom: 12px;">Scenario Spotlight</div>
-          <h3 style="font-size: 14px; font-weight: 600; color: var(--color-navy); margin-bottom: 6px; margin-top:0;">${spotlight.title}</h3>
-          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">${spotlight.description}</p>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--color-slate-light); padding: 10px; border-radius: var(--radius-sm); font-size: 11px; margin-bottom: 12px;">
+          <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em; margin-bottom: 12px;">★ Scenario Spotlight</div>
+          <h3 style="font-size: 14px; font-weight: 600; color: var(--color-navy); margin-bottom: 6px; margin-top:0;">${spotlightTemplate.title}</h3>
+          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">${spotlightTemplate.trigger}</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; font-size: 11px; margin-bottom: 12px;">
             <div>
-              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:500;">Revenue Impact</span>
-              <strong style="color: var(--color-critical); font-size: 13px;">${spotlight.revenueImpact.expected}</strong>
+              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:700;">EBITDA Impact</span>
+              <strong style="color: var(--color-critical); font-size: 13px;">${ebitdaImpact}</strong>
             </div>
             <div>
-              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:500;">Cash Impact</span>
-              <strong style="color: var(--color-critical); font-size: 13px;">${spotlight.cashImpact.expected}</strong>
+              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:700;">Affected Goals</span>
+              <strong style="color: var(--color-near-appetite); font-size: 13px;">${objectivesCount}</strong>
             </div>
             <div>
-              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:500;">EBITDA Drag</span>
-              <strong style="color: var(--color-critical); font-size: 13px;">${spotlight.ebitdaImpact.expected}</strong>
+              <span style="color: var(--text-secondary); display: block; font-size: 9px; text-transform:uppercase; font-weight:700;">Board Action Required</span>
+              <strong style="color: var(--color-critical); font-size: 13px;">${boardActionRequired}</strong>
             </div>
-          </div>
-          <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
-            <strong>Objective Exposure:</strong> ${spotlight.objectiveImpact}
           </div>
           <div style="text-align: right;">
-            <a href="/scenario" id="link-spotlight-decision" style="font-size: 12px; font-weight: 600; color: var(--color-indigo); text-decoration: none;">Stress-Test Response Options &rarr;</a>
+            <a href="/scenario?template=${spotlightTemplate.id}" id="link-spotlight-decision" style="font-size: 12px; font-weight: 600; color: var(--color-indigo); text-decoration: none;">Stress-Test Response Options &rarr;</a>
           </div>
         </div>
       `;
     }
 
+    const mode = this.state.operatingMode || 'board';
     container.innerHTML = `
-      <div class="page-header">
-        <div class="page-title-wrap">
+      <div style="margin-bottom: 12px; display: flex; justify-content: flex-start;">
+        <!-- Segmented Mode Switcher -->
+        <div class="mode-switcher-dashboard" style="display: flex; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 3px; gap: 4px; flex-shrink: 0;">
+          <button class="dash-mode-btn" data-mode="board" style="border:none; background:${mode === 'board' ? '#FFFFFF' : 'transparent'}; font-size:11px; font-weight:700; padding:6px 12px; border-radius:4px; cursor:pointer; color: ${mode === 'board' ? 'var(--color-navy)' : 'var(--text-secondary)'}; box-shadow: ${mode === 'board' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'}; transition: all 0.15s ease;">Board</button>
+          <button class="dash-mode-btn" data-mode="intelligence" style="border:none; background:${mode === 'intelligence' ? '#FFFFFF' : 'transparent'}; font-size:11px; font-weight:700; padding:6px 12px; border-radius:4px; cursor:pointer; color: ${mode === 'intelligence' ? 'var(--color-navy)' : 'var(--text-secondary)'}; box-shadow: ${mode === 'intelligence' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'}; transition: all 0.15s ease;">Intelligence</button>
+          <button class="dash-mode-btn" data-mode="builder" style="border:none; background:${mode === 'builder' ? '#FFFFFF' : 'transparent'}; font-size:11px; font-weight:700; padding:6px 12px; border-radius:4px; cursor:pointer; color: ${mode === 'builder' ? 'var(--color-navy)' : 'var(--text-secondary)'}; box-shadow: ${mode === 'builder' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'}; transition: all 0.15s ease;">Builder</button>
+        </div>
+      </div>
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;">
+        <div class="page-title-wrap" style="margin-bottom: 0;">
           <span class="profile-role-badge">Executive Risk Control</span>
           <h1>Enterprise Risk Dashboard</h1>
           <p class="page-subtitle">Start here for board-level risk posture and urgent governance signals.</p>
@@ -602,7 +642,8 @@ export class DashboardComponent {
     if (spotlightLink) {
       spotlightLink.addEventListener('click', (e) => {
         e.preventDefault();
-        this.navigateToPage('/scenario', 'scenario');
+        const spotlightId = localStorage.getItem('spotlight_scenario_id') || 'scen-cyber';
+        this.navigateToPage(`/scenario?template=${spotlightId}`, 'scenario');
       });
     }
 

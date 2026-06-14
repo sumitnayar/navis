@@ -66,8 +66,7 @@ export class BoardPackComponent {
         </div>
       </div>
 
-      <!-- BOARD RISK BRIEF PRINT CONTAINER -->
-      <div class="board-brief-print-container" style="background:#FFFFFF; border:1px solid var(--border-color); border-radius:8px; padding:40px; font-family:'Calibri', 'Inter', sans-serif; max-width:960px; margin: 0 auto; color:#0D1B2A; box-shadow: 0 4px 12px rgba(13,27,42,0.04);">
+      <div class="board-brief-print-container" style="background:#FFFFFF; border:1px solid var(--border-color); border-radius:8px; padding:40px; font-family:'Inter', system-ui, -apple-system, sans-serif; max-width:960px; margin: 0 auto; color:#0D1B2A; box-shadow: 0 4px 12px rgba(13,27,42,0.04);">
         
         <!-- HEADER BLOCK -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0D1B2A; padding-bottom:20px; margin-bottom:30px;">

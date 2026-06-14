@@ -168,8 +168,8 @@ export class AIInsightService {
         };
       case 'scenario':
         return {
-          name: 'Scenario Planner Lab',
-          description: 'Simulates stress tests and evaluates financial/operational impact under macro scenarios.',
+          name: 'Board Decision Room',
+          description: 'Simulates strategic situations, timelines, and management response choices.',
           data: state?.scenarios || []
         };
       case 'portfolio':
@@ -232,12 +232,10 @@ export class AIInsightService {
 *   **Next Steps**: Assign priority mitigation budgets to controls linked with the exposed revenue objectives.`;
 
       case 'scenario':
-        const scenarios = state?.scenarios || [];
-        const worst = scenarios.reduce((max, s) => s.impactCr > max ? s.impactCr : max, 0);
-        return `*   **Overview**: Simulates stress tests evaluating capital and operational resilience under macro distress scenarios.
-*   **Key Insight**: The worst-case simulated impact is projected at **₹${worst} Cr** under extreme vendor/platform failures.
-*   **Leadership Attention**: Platform dependencies have the highest likelihood of triggering severe cascading down-time.
-*   **Next Steps**: Establish SLA-backed recovery policies with critical infrastructure hosts.`;
+        return `*   **Overview**: Simulates strategic situations, timelines, and management response choices in the Board Decision Room.
+*   **Key Insight**: Strategic threat models show up to **₹15 Cr** worst-case revenue exposure if no interventions are activated.
+*   **Leadership Attention**: Cyber security and customer churn are the highest impact vectors requiring immediate board response.
+*   **Next Steps**: Approve contingency budgets for Strong/Aggressive management responses and assign committees.`;
 
       case 'portfolio':
         return `*   **Overview**: Maps risk capital concentration across corporate business units and product pillars.

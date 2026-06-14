@@ -68,7 +68,7 @@ const PROTECTED_ROUTES = {
 const PUBLIC_ROUTES = new Set(['/', '/login', '/contact']);
 
 const MODE_TABS = {
-  board: ['dashboard', 'objectives', 'scenario', 'boardQA', 'boardPack'],
+  board: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
   intelligence: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
   builder: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack']
 };
@@ -739,6 +739,10 @@ class RiskOSApplication {
   }
 
   renderTopNav() {
+    // Clean up old mode switcher from index.html if it's cached in browser DOM
+    document.getElementById('mode-switcher')?.remove();
+    document.getElementById('mode-switcher-divider')?.remove();
+
     const mode = this.state.operatingMode || 'board';
     const allowedTabs = MODE_TABS[mode];
     const navContainer = document.getElementById('top-nav-modules');
@@ -759,17 +763,12 @@ class RiskOSApplication {
       companyEl.textContent = this.state.settings.companyName;
     }
 
-    // Toggle settings gear visibility based on mode
+    // Settings gear is always visible in the top-nav
     const settingsGear = document.getElementById('top-nav-settings');
     const settingsDivider = document.getElementById('settings-divider');
     if (settingsGear && settingsDivider) {
-      if (mode === 'builder') {
-        settingsGear.style.display = 'inline-block';
-        settingsDivider.style.display = 'inline-block';
-      } else {
-        settingsGear.style.display = 'none';
-        settingsDivider.style.display = 'none';
-      }
+      settingsGear.style.display = 'inline-block';
+      settingsDivider.style.display = 'inline-block';
     }
 
     this.updateTopNavActive(this.currentTab || this.state.activeTab);
@@ -813,6 +812,10 @@ class RiskOSApplication {
     const ComponentClass = this.components[tabId];
     this.activeComponentInstance = new ComponentClass(this.state, (stateUpdates) => {
       if (stateUpdates) {
+        if (stateUpdates.operatingMode) {
+          this.setOperatingMode(stateUpdates.operatingMode);
+          return;
+        }
         Object.assign(this.state, stateUpdates);
         this.updateBrandVisuals();
         
@@ -835,30 +838,12 @@ class RiskOSApplication {
     // Sign out
     document.getElementById('top-nav-signout')?.addEventListener('click',
       () => this.handleSignOut());
-
-    // Mode Switcher
-    this.bindModeSwitcher();
-  }
-
-  bindModeSwitcher() {
-    const switcher = document.getElementById('mode-switcher');
-    if (!switcher) return;
-
-    switcher.querySelectorAll('.mode-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const newMode = btn.dataset.mode;
-        this.setOperatingMode(newMode);
-      });
-    });
-
-    this.updateModeSwitcherActive();
   }
 
   setOperatingMode(mode) {
     this.state.operatingMode = mode;
     localStorage.setItem('navis_operating_mode', mode);
     
-    this.updateModeSwitcherActive();
     this.renderTopNav();
 
     // Intercept active tab if not allowed in new mode
@@ -868,20 +853,6 @@ class RiskOSApplication {
     } else {
       this.routeTo(this.state.activeTab);
     }
-  }
-
-  updateModeSwitcherActive() {
-    const switcher = document.getElementById('mode-switcher');
-    if (!switcher) return;
-
-    const mode = this.state.operatingMode || 'board';
-    switcher.querySelectorAll('.mode-btn').forEach(btn => {
-      if (btn.dataset.mode === mode) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    });
   }
 
   async handleSignOut() {

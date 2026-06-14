@@ -357,34 +357,124 @@ export const seededScenarios = [
   {
     id: "scen-cyber",
     title: "Multitenant Datastore Cyber Attack",
-    description: "Simulation of a severe SQL injection or database credential leakage leading to customer financial transactional data leak.",
+    description: "External threat actor exfiltrates transaction records containing customer PII, forcing endpoint shutdowns and SEBI/DPDPA regulatory notices.",
     objectiveId: "obj-cyber",
-    revenueImpact: { best: "-₹15L", expected: "-₹60L", worst: "-₹2.8Cr" },
-    ebitdaImpact: { best: "-1%", expected: "-5%", worst: "-18%" },
-    cashImpact: { best: "-₹20L", expected: "-₹80L", worst: "-₹3.2Cr" },
-    objectiveImpact: "Worst case results in immediate loss of SOC 2 Trust compliance and forces a delay in our IPO sequence."
+    revenueImpact: { best: "-₹60L", expected: "-₹1.5Cr", worst: "-₹5.5Cr" },
+    ebitdaImpact: { best: "-2%", expected: "-5%", worst: "-18%" },
+    cashImpact: { best: "-₹80L", expected: "-₹1.8Cr", worst: "-₹6.2Cr" },
+    objectiveImpact: "Directly threatens InfoSec trust assurance goals and triggers compliance audits blocking SEBI IPO clearance."
   },
   {
     id: "scen-churn",
-    title: "Churn of Top 3 Enterprise Customers",
-    description: "Simulation of our three largest contract tenants churn due to product delivery delay or pricing undercuts.",
+    title: "Major Customer Churn",
+    description: "Top 3 enterprise customers decline contract renewal due to product delivery delays, dropping ARR and compressing runway.",
     objectiveId: "obj-retention",
-    revenueImpact: { best: "-₹40L", expected: "-₹1.8Cr", worst: "-₹4.2Cr" },
-    ebitdaImpact: { best: "-3%", expected: "-12%", worst: "-28%" },
-    cashImpact: { best: "-₹35L", expected: "-₹1.5Cr", worst: "-₹3.9Cr" },
-    objectiveImpact: "Slashes revenue goals, compressing valuation multiples by 40% in preliminary VC discussions."
+    revenueImpact: { best: "-₹70L", expected: "-₹1.8Cr", worst: "-₹8.0Cr" },
+    ebitdaImpact: { best: "-2.5%", expected: "-6%", worst: "-25%" },
+    cashImpact: { best: "-₹90L", expected: "-₹2.2Cr", worst: "-₹9.2Cr" },
+    objectiveImpact: "Threatens our 500 Cr ARR growth goals and reduces valuation multiples by 40% in VC discussions."
   },
   {
-    id: "scen-audit",
-    title: "Severe Independent Director Vacancy Delay",
-    description: "Simulation of regulatory SEBI prospectus block due to failure to fill our required independent director board seats.",
+    id: "scen-exec",
+    title: "Key Executive Resignation",
+    description: "Sudden joint resignation of CRO and VP of Engineering to join a competitor, 4 months prior to planned IPO filing.",
     objectiveId: "obj-ipo",
-    revenueImpact: { best: "-₹0", expected: "-₹20L", worst: "-₹90L" },
-    ebitdaImpact: { best: "-0.5%", expected: "-2%", worst: "-7%" },
-    cashImpact: { best: "-₹10L", expected: "-₹45L", worst: "-₹1.5Cr" },
-    objectiveImpact: "Causes a structural delay of 12 months in NSE/BSE filing, derailing liquidity schedules for VC backers."
+    revenueImpact: { best: "-₹30L", expected: "-₹90L", worst: "-₹3.5Cr" },
+    ebitdaImpact: { best: "-1%", expected: "-3%", worst: "-10%" },
+    cashImpact: { best: "-₹40L", expected: "-₹1.2Cr", worst: "-₹4.2Cr" },
+    objectiveImpact: "Delays IPO filing schedules by 3-6 months and disrupts global enterprise pipeline momentum."
+  },
+  {
+    id: "scen-cloud",
+    title: "Cloud Provider Outage",
+    description: "Catastrophic DNS routing failure at primary cloud provider, rendering SaaS database clusters offline for 36 contiguous hours.",
+    objectiveId: "obj-cyber",
+    revenueImpact: { best: "-₹20L", expected: "-₹1.2Cr", worst: "-₹6.0Cr" },
+    ebitdaImpact: { best: "-0.8%", expected: "-4%", worst: "-20%" },
+    cashImpact: { best: "-₹30L", expected: "-₹1.5Cr", worst: "-₹7.5Cr" },
+    objectiveImpact: "Breaches zero-downtime customer SLA targets, triggering mandatory refund payouts and trust loss."
+  },
+  {
+    id: "scen-dpdp",
+    title: "DPDP Consent Penalty",
+    description: "Data Protection Board of India audit issues show-cause notice regarding non-compliant pre-checked user consent flows.",
+    objectiveId: "obj-ipo",
+    revenueImpact: { best: "-₹80L", expected: "-₹2.2Cr", worst: "-₹15.0Cr" },
+    ebitdaImpact: { best: "-2.5%", expected: "-6%", worst: "-35%" },
+    cashImpact: { best: "-₹1.1Cr", expected: "-₹2.8Cr", worst: "-₹18.0Cr" },
+    objectiveImpact: "Threatens listing readiness; requires mandatory Prospectus amendments and regulatory penalty disclosure."
+  },
+  {
+    id: "scen-fund",
+    title: "Fundraising Failure",
+    description: "Lead investor pulls out of ₹120 Crore Series C funding round at final closure stage, compressing corporate runway to 4 months.",
+    objectiveId: "obj-ipo",
+    revenueImpact: { best: "-₹1.1Cr", expected: "-₹2.8Cr", worst: "-₹12.0Cr" },
+    ebitdaImpact: { best: "-3%", expected: "-7%", worst: "-30%" },
+    cashImpact: { best: "-₹1.5Cr", expected: "-₹3.5Cr", worst: "-₹14.5Cr" },
+    objectiveImpact: "Forces severe operational budget restructuring and puts IPO readiness funding on hold."
+  },
+  {
+    id: "scen-competitor-capital",
+    title: "Competitor Raises Large Capital",
+    description: "Direct competitor closes a ₹650 Crore ($80M) Series D round, initiating a price-war and poaching key sales leads.",
+    objectiveId: "obj-retention",
+    revenueImpact: { best: "-₹50L", expected: "-₹1.5Cr", worst: "-₹7.0Cr" },
+    ebitdaImpact: { best: "-1.5%", expected: "-5%", worst: "-20%" },
+    cashImpact: { best: "-₹70L", expected: "-₹1.8Cr", worst: "-₹8.5Cr" },
+    objectiveImpact: "Disrupts net renewal rates and compresses enterprise contract values due to discount matching."
+  },
+  {
+    id: "scen-partner-loss",
+    title: "Loss of Key Strategic Partner",
+    description: "Primary channel systems integrator partner terminates distribution deal to launch their own competing SaaS platform.",
+    objectiveId: "obj-retention",
+    revenueImpact: { best: "-₹50L", expected: "-₹1.5Cr", worst: "-₹6.5Cr" },
+    ebitdaImpact: { best: "-1.5%", expected: "-4.5%", worst: "-18%" },
+    cashImpact: { best: "-₹70L", expected: "-₹1.8Cr", worst: "-₹8.2Cr" },
+    objectiveImpact: "Closes 35% of shared sales pipelines, requiring rapid direct-to-market transition."
+  },
+  {
+    id: "scen-regulator-investigation",
+    title: "Regulatory Investigation by SEBI",
+    description: "SEBI audit division opens an inquiry into historical disclosures, placing listing prospectus approvals on hold.",
+    objectiveId: "obj-ipo",
+    revenueImpact: { best: "-₹40L", expected: "-₹1.8Cr", worst: "-₹10.0Cr" },
+    ebitdaImpact: { best: "-1.5%", expected: "-5%", worst: "-25%" },
+    cashImpact: { best: "-₹60L", expected: "-₹2.2Cr", worst: "-₹12.5Cr" },
+    objectiveImpact: "Causes mandatory Listing deferral, derailing capital schedules for backing funds."
+  },
+  {
+    id: "scen-bankruptcy-client",
+    title: "Large Enterprise Client Bankruptcy",
+    description: "Our largest customer representing 20% of revenue files for insolvency, default-writing off ₹8 Crores of receivables.",
+    objectiveId: "obj-retention",
+    revenueImpact: { best: "-₹80L", expected: "-₹2.5Cr", worst: "-₹8.0Cr" },
+    ebitdaImpact: { best: "-2.5%", expected: "-6.5%", worst: "-25%" },
+    cashImpact: { best: "-₹1.1Cr", expected: "-₹3.2Cr", worst: "-₹10.5Cr" },
+    objectiveImpact: "Directly drops EBITDA margins, compressing runway buffers and forcing debt covenant reviews."
+  },
+  {
+    id: "scen-founder-conflict",
+    title: "Founder Alignment Conflict",
+    description: "CEO and CTO reach impasse over pivot strategies; CTO blocks codebase write-access and threatens immediate exit.",
+    objectiveId: "obj-ipo",
+    revenueImpact: { best: "-₹50L", expected: "-₹1.8Cr", worst: "-₹8.5Cr" },
+    ebitdaImpact: { best: "-1.8%", expected: "-5%", worst: "-24%" },
+    cashImpact: { best: "-₹70L", expected: "-₹2.2Cr", worst: "-₹11.2Cr" },
+    objectiveImpact: "Derails product delivery sprints and triggers key governance warning signals to IPO backers."
+  },
+  {
+    id: "scen-supply-disruption",
+    title: "Supply Chain Disruption",
+    description: "Hardware security token supplier goes bankrupt, freezing logistics and delaying 24 BFSI client onboarding pipelines.",
+    objectiveId: "obj-retention",
+    revenueImpact: { best: "-₹30L", expected: "-₹1.2Cr", worst: "-₹5.5Cr" },
+    ebitdaImpact: { best: "-1%", expected: "-3.5%", worst: "-15%" },
+    cashImpact: { best: "-₹45L", expected: "-₹1.5Cr", worst: "-₹6.8Cr" },
+    objectiveImpact: "Triggers SLA breach penalties and blocks core financial account onboarding pipelines."
   }
-];
+]_;
 
 // 3. RISK CULTURE SCORECARD INDEX DATA (F9 Mappings)
 export const seededCultureMetrics = {

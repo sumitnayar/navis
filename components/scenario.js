@@ -1,17 +1,18 @@
-// Board Scenario Planner Lab - Interactive simulations of major enterprise threats (F4)
-
+// Board Decision Room - Interactive strategic threat simulations (Phase 3)
 import { StorageService } from '../services/storageService.js';
 import { AIInsightService } from '../services/aiInsightService.js';
-
+import { scenarioTemplates } from './scenarioTemplates.js';
 
 export class ScenarioComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
     this.onStateChange = onStateChange;
-    this.selectedScenarioId = null;
-    this.simulatedSeverity = 100; // severity slider: 50% to 200%
 
-    // Parse deep-link param
+    // Retrieve pinned spotlight scenario or default to 'scen-cyber'
+    const pinnedId = localStorage.getItem('spotlight_scenario_id') || 'scen-cyber';
+    this.selectedScenarioId = pinnedId;
+
+    // Parse deep-link param if redirected from dashboard spotlight
     const _sParams = new URLSearchParams(window.location.search);
     const _template = _sParams.get('template');
     if (_template) {
@@ -20,278 +21,752 @@ export class ScenarioComponent {
     } else {
       this._fromDashboard = false;
     }
+
+    this.activeTimelineTab = 'day1';
+    this.selectedResponse = 'strong'; // Default selected management response
+    this.enginesExpanded = false;
   }
 
   clearFilters() {
     this._fromDashboard = false;
   }
 
-  // Parse cash/revenue strings (e.g., "-₹1.8Cr" or "-₹60L") to numeric values for scaling
-  parseValue(valStr) {
-    const isNegative = valStr.includes('-');
-    let clean = valStr.replace(/[-₹L]/g, '').trim();
-    let num = parseFloat(clean);
-    
-    if (valStr.includes('Cr')) {
-      num = num * 100; // Normalize everything to Lakhs
-    }
-    return isNegative ? -num : num;
+  // Helper: check if this scenario is the current dashboard spotlight
+  isPinned() {
+    const pinnedId = localStorage.getItem('spotlight_scenario_id') || 'scen-cyber';
+    return this.selectedScenarioId === pinnedId;
   }
 
-  // Format normalized Lakhs back to pretty INR formatting
-  formatValue(lakhs) {
-    const abs = Math.abs(lakhs);
-    let str = "";
-    if (abs >= 100) {
-      str = `₹${(abs / 100).toFixed(1)}Cr`;
-    } else {
-      str = `₹${abs.toFixed(0)}L`;
+  // Helpers for visual progress bands
+  getPercentageWidth(valueStr) {
+    if (!valueStr) return '0%';
+    const val = valueStr.replace(/[ -₹L]/g, '').trim();
+    let num = parseFloat(val);
+    if (isNaN(num)) return '50%';
+    if (valueStr.includes('Cr')) {
+      num = num * 10; // scale Cr up to match visual proportions
     }
-    return lakhs < 0 ? `-${str}` : str;
+    // Max scale is 10 Cr (100%)
+    const pct = Math.min(100, Math.max(8, num * 10));
+    return `${pct}%`;
   }
 
-  // Scale percent strings (e.g. "-12%") by severity factor
-  scalePercent(percentStr, factor) {
-    const val = parseFloat(percentStr.replace(/[-%]/g, ''));
-    const scaled = val * factor;
-    return `-${scaled.toFixed(1)}%`;
+  getColorForImpact(valueStr) {
+    if (!valueStr) return 'var(--color-within-appetite)';
+    if (valueStr.includes('Cr')) {
+      const val = parseFloat(valueStr.replace(/[ -₹]/g, ''));
+      if (val > 3) return 'var(--color-above-appetite)'; // Red
+      return 'var(--color-near-appetite)'; // Yellow/Orange
+    }
+    return 'var(--color-within-appetite)'; // Green/Blue
+  }
+
+  getEbitdaPercentageWidth(ebitdaStr) {
+    if (!ebitdaStr) return '0%';
+    const val = parseFloat(ebitdaStr.replace(/[-%]/g, ''));
+    if (isNaN(val)) return '0%';
+    // Max ebitda drag is 35%
+    const pct = Math.min(100, Math.max(8, (val / 35) * 100));
+    return `${pct}%`;
+  }
+
+  getEbitdaColor(ebitdaStr) {
+    if (!ebitdaStr) return 'var(--color-within-appetite)';
+    const val = parseFloat(ebitdaStr.replace(/[-%]/g, ''));
+    if (val > 15) return 'var(--color-above-appetite)';
+    if (val > 5) return 'var(--color-near-appetite)';
+    return 'var(--color-within-appetite)';
+  }
+
+  getBadgeClass(statusText) {
+    if (!statusText) return 'within';
+    const text = statusText.toLowerCase();
+    if (text.includes('critical') || text.includes('severe') || text.includes('out of') || text.includes('level 4') || text.includes('damage') || text.includes('breach')) {
+      return 'status-badge above';
+    }
+    if (text.includes('elevated') || text.includes('moderate') || text.includes('near') || text.includes('level 3') || text.includes('managed')) {
+      return 'status-badge near';
+    }
+    return 'status-badge within';
   }
 
   render(container) {
-    // Get scenarios from app state or database
-    const scenarios = this.state.scenarios || [];
-    const objectives = this.state.objectives || [];
+    const currentTemplate = scenarioTemplates.find(t => t.id === this.selectedScenarioId) || scenarioTemplates[0];
+    const isPinned = this.isPinned();
 
-    if (!this.selectedScenarioId && scenarios.length > 0) {
-      this.selectedScenarioId = scenarios[0].id;
-    }
-
-    const currentScenario = scenarios.find(s => s.id === this.selectedScenarioId);
-    const linkedObj = currentScenario ? objectives.find(o => o.id === currentScenario.objectiveId) : null;
-
-    // Severity factor calculation
-    const factor = this.simulatedSeverity / 100;
-
-    // Precalculate scaled impacts
-    let scaledRevenue = { best: '0', expected: '0', worst: '0' };
-    let scaledEbitda = { best: '0', expected: '0', worst: '0' };
-    let scaledCash = { best: '0', expected: '0', worst: '0' };
-
-    if (currentScenario) {
-      const rev = currentScenario.revenueImpact;
-      scaledRevenue = {
-        best: this.formatValue(this.parseValue(rev.best) * factor),
-        expected: this.formatValue(this.parseValue(rev.expected) * factor),
-        worst: this.formatValue(this.parseValue(rev.worst) * factor)
-      };
-
-      const ebi = currentScenario.ebitdaImpact;
-      scaledEbitda = {
-        best: this.scalePercent(ebi.best, factor),
-        expected: this.scalePercent(ebi.expected, factor),
-        worst: this.scalePercent(ebi.worst, factor)
-      };
-
-      const cash = currentScenario.cashImpact;
-      scaledCash = {
-        best: this.formatValue(this.parseValue(cash.best) * factor),
-        expected: this.formatValue(this.parseValue(cash.expected) * factor),
-        worst: this.formatValue(this.parseValue(cash.worst) * factor)
-      };
-    }
+    const activeTimeline = currentTemplate.timeline[this.activeTimelineTab];
+    const activeResponse = currentTemplate.responses[this.selectedResponse];
+    const noResponse = currentTemplate.responses['noIntervention'];
+    const strongResponse = currentTemplate.responses['strong'];
 
     container.innerHTML = `
+      <style>
+        .decision-room-layout {
+          display: grid;
+          grid-template-columns: 1.2fr 1.8fr;
+          gap: 24px;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          margin-top: 15px;
+        }
+        .room-column {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .scenario-meta-box {
+          background: rgba(0,0,0,0.01);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 16px;
+        }
+        .meta-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+        .pinned-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 2px 8px;
+          border-radius: 20px;
+        }
+        .pinned-status.yes {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10B981;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .pinned-status.no {
+          background: rgba(107, 114, 128, 0.1);
+          color: #6B7280;
+          border: 1px solid rgba(107, 114, 128, 0.2);
+        }
+        .timeline-nav {
+          display: flex;
+          background: rgba(0,0,0,0.02);
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          padding: 3px;
+          margin-bottom: 14px;
+        }
+        .timeline-tab {
+          flex: 1;
+          text-align: center;
+          padding: 6px 2px;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          border-radius: 4px;
+          border: none;
+          background: transparent;
+          color: var(--text-secondary);
+          transition: all 0.15s ease;
+        }
+        .timeline-tab.active {
+          background: var(--bg-primary);
+          color: var(--text-primary);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .timeline-card-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .timeline-detail-card {
+          border: 1px solid var(--border-color);
+          background: var(--bg-primary);
+          border-radius: 6px;
+          padding: 12px;
+        }
+        .timeline-detail-card h4 {
+          margin: 0 0 4px 0;
+          font-size: 10px;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          font-weight: 700;
+          letter-spacing: 0.05em;
+        }
+        .timeline-detail-card p {
+          margin: 0;
+          font-size: 12px;
+          color: var(--text-primary);
+          line-height: 1.4;
+        }
+        .response-selectors {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+          margin-bottom: 12px;
+        }
+        .response-btn {
+          text-align: center;
+          padding: 8px 4px;
+          font-size: 10px;
+          font-weight: 700;
+          cursor: pointer;
+          border-radius: 6px;
+          border: 1px solid var(--border-color);
+          background: var(--bg-primary);
+          color: var(--text-secondary);
+          transition: all 0.15s ease;
+        }
+        .response-btn.active {
+          background: var(--color-indigo);
+          color: #fff;
+          border-color: var(--color-indigo);
+        }
+        .response-btn:hover:not(.active) {
+          background: rgba(0,0,0,0.02);
+        }
+        .dimension-card-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .dimension-card {
+          border: 1px solid var(--border-color);
+          background: var(--bg-primary);
+          border-radius: 6px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .dimension-card h4 {
+          margin: 0 0 6px 0;
+          font-size: 10px;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+        }
+        .dimension-value {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: 6px;
+        }
+        .progress-band-bg {
+          height: 5px;
+          background: rgba(0,0,0,0.05);
+          border-radius: 3px;
+          overflow: hidden;
+        }
+        .progress-band-fill {
+          height: 100%;
+          border-radius: 3px;
+          transition: width 0.25s ease;
+        }
+        .side-by-side-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+        .compare-col {
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 12px;
+          background: var(--bg-primary);
+        }
+        .compare-header {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          margin-bottom: 10px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--border-color);
+        }
+        .compare-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          padding: 6px 0;
+          border-bottom: 1px dashed rgba(0,0,0,0.03);
+        }
+        .compare-row span {
+          color: var(--text-secondary);
+        }
+        .compare-row strong {
+          color: var(--text-primary);
+        }
+        .narrative-paper {
+          background: #fbfbfb;
+          border: 1px solid #e2e8f0;
+          border-left: 4px solid var(--color-indigo);
+          border-radius: 6px;
+          padding: 14px;
+          font-family: 'Georgia', serif;
+          color: #2d3748;
+          line-height: 1.55;
+        }
+        .narrative-paper h3 {
+          font-family: 'Inter', sans-serif;
+          font-size: 12px;
+          text-transform: uppercase;
+          color: var(--color-indigo);
+          margin-top: 0;
+          margin-bottom: 10px;
+          letter-spacing: 0.05em;
+        }
+        .narrative-item {
+          margin-bottom: 12px;
+          font-size: 12.5px;
+        }
+        .narrative-item strong {
+          font-family: 'Inter', sans-serif;
+          font-size: 10px;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          display: block;
+          margin-bottom: 2px;
+          letter-spacing: 0.03em;
+        }
+        .board-action-list {
+          padding-left: 16px;
+          margin: 6px 0;
+          font-size: 12px;
+          color: var(--text-primary);
+        }
+        .board-action-list li {
+          margin-bottom: 5px;
+          line-height: 1.4;
+        }
+        .engine-pulsator {
+          width: 6px;
+          height: 6px;
+          background-color: #10B981;
+          border-radius: 50%;
+          display: inline-block;
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          animation: pulse 1.6s infinite;
+          margin-right: 6px;
+          vertical-align: middle;
+        }
+        @keyframes pulse {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+          }
+        }
+        .engine-overlay-bar {
+          background: rgba(0,0,0,0.02);
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          padding: 8px 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 11px;
+          color: var(--text-secondary);
+          cursor: pointer;
+        }
+        .engine-details-box {
+          border: 1px solid var(--border-color);
+          border-top: none;
+          background: var(--bg-primary);
+          border-bottom-left-radius: 6px;
+          border-bottom-right-radius: 6px;
+          padding: 12px;
+          font-size: 11px;
+          color: var(--text-secondary);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .engine-indicator-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 2px 0;
+        }
+      </style>
+
       <div class="page-header">
         <div class="page-title-wrap">
-          <span class="profile-role-badge">Board Decision Room</span>
+          <span class="profile-role-badge">Executive Strategy & Governance</span>
           <h1>Board Decision Room</h1>
-          <p class="page-subtitle">Stress-test a threat scenario and compare management response options.</p>
+          <p class="page-subtitle">Stress-test corporate response strategies under critical risk conditions.</p>
         </div>
       </div>
 
-      <div class="register-layout">
+      <div class="decision-room-layout">
         
-        <!-- LEFT: SELECTION & STRESS CONTROLS -->
-        <div class="details-panel" style="flex: 1.2;">
+        <!-- LEFT COLUMN: SCENARIO SELECTOR, TIMELINE, RESPONSES -->
+        <div class="room-column">
           
-          <div class="glass-panel">
-            <h3 class="dashboard-card-title">Simulation Configurations</h3>
-            
-            <div class="form-group">
-              <label>Select Threat Scenario Template</label>
-              <select class="form-control" id="select-scenario-template" style="font-size: 13px;">
-                ${scenarios.map(s => `<option value="${s.id}" ${this.selectedScenarioId === s.id ? 'selected' : ''}>${s.title}</option>`).join('')}
+          <!-- Scenario Configuration Panel -->
+          <div class="glass-panel" style="padding: 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h3 class="dashboard-card-title" style="margin:0;">Active Threat Scenario</h3>
+              ${isPinned 
+                ? `<span class="pinned-status yes">★ Spotlight Scenario</span>`
+                : `<button class="btn btn-secondary btn-small" id="btn-pin-spotlight" style="font-size:10px; padding:3px 8px;">Pin to Spotlight</button>`
+              }
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">Select Scenario Template</label>
+              <select class="form-control" id="select-scenario-template" style="font-size: 13px; font-weight:600; padding:8px;">
+                ${scenarioTemplates.map(t => `<option value="${t.id}" ${this.selectedScenarioId === t.id ? 'selected' : ''}>[${t.category}] ${t.title}</option>`).join('')}
               </select>
             </div>
 
-            <!-- DYNAMIC RESILIENCE ADJUSTER -->
-            <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-                <label style="font-weight: 700; font-size:11px; text-transform:uppercase; color:var(--text-secondary); margin:0;">
-                  Stress Severity Multiplier
-                </label>
-                <span class="stress-severity-label status-badge ${this.simulatedSeverity > 130 ? 'above' : this.simulatedSeverity > 80 ? 'near' : 'within'}" style="font-size:11px; font-weight:700;">
-                  ${this.simulatedSeverity}% Scale
-                </span>
-              </div>
-              <p style="font-size: 11px; color:var(--text-muted); line-height: 1.3; margin-bottom:14px;">
-                Slide to scale the scale and threat vectors. Scales direct operational expenses and regulatory penalties accordingly.
-              </p>
+            <div class="scenario-meta-box">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--color-navy); margin-bottom:4px;">Trigger Event</div>
+              <p style="font-size:12px; color:var(--text-primary); line-height:1.4; margin:0 0 10px 0;">${currentTemplate.trigger}</p>
               
-              <div class="slider-group">
-                <input type="range" id="resilience-severity-slider" min="50" max="200" value="${this.simulatedSeverity}" step="10" style="accent-color: var(--color-indigo);" />
-              </div>
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--color-navy); margin-bottom:4px;">Immediate Impact</div>
+              <p style="font-size:12px; color:var(--text-secondary); line-height:1.4; margin:0 0 10px 0;">${currentTemplate.immediateImpact}</p>
               
-              <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary);">
-                <span>50% (Low Stress)</span>
-                <span>100% (Baseline Case)</span>
-                <span>200% (Extreme Stress)</span>
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--color-navy); margin-bottom:4px;">Affected Objectives</div>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:2px;">
+                ${currentTemplate.affectedObjectives.map(o => `<span class="status-badge near" style="font-size:9px; font-weight:600;">${o}</span>`).join('')}
               </div>
             </div>
-
           </div>
 
-          <!-- CONNECTED CONTROLS & MITIGATION VECTORS -->
-          <div class="glass-panel">
-            <h3 class="dashboard-card-title">Targeted Governance Strategy</h3>
-            <p style="font-size:11px; color:var(--text-secondary); line-height:1.4; margin-bottom: 12px;">
-              Enterprise controls mapped to secure the threatened objective: <strong>${linkedObj?.title || 'None'}</strong>
-            </p>
+          <!-- Timeline Explorer -->
+          <div class="glass-panel" style="padding: 16px;">
+            <h3 class="dashboard-card-title">Timeline Progression</h3>
+            <p style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top: -6px; margin-bottom: 12px;">Track operational and financial impacts through different timeline gates.</p>
+            
+            <div class="timeline-nav">
+              <button class="timeline-tab ${this.activeTimelineTab === 'day1' ? 'active' : ''}" data-timeline="day1">Day 1</button>
+              <button class="timeline-tab ${this.activeTimelineTab === 'week1' ? 'active' : ''}" data-timeline="week1">Week 1</button>
+              <button class="timeline-tab ${this.activeTimelineTab === 'month1' ? 'active' : ''}" data-timeline="month1">Month 1</button>
+              <button class="timeline-tab ${this.activeTimelineTab === 'quarter1' ? 'active' : ''}" data-timeline="quarter1">Qtr 1</button>
+              <button class="timeline-tab ${this.activeTimelineTab === 'year1' ? 'active' : ''}" data-timeline="year1">Year 1</button>
+            </div>
 
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              <div style="padding:10px; background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:6px; font-size:11px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <strong>Enterprise Business Continuity Plan (BCP)</strong>
-                  <div style="font-size: 9px; color: var(--text-muted);">Frequency: Annually | Type: Preventive</div>
-                </div>
-                <span class="status-badge within" style="font-size: 8px;">Effective</span>
+            <div class="timeline-card-grid">
+              <div class="timeline-detail-card" style="border-left: 3px solid var(--color-indigo);">
+                <h4>Operational Effects</h4>
+                <p>${activeTimeline.operational}</p>
               </div>
+              <div class="timeline-detail-card" style="border-left: 3px solid var(--color-near-appetite);">
+                <h4>Financial Effects</h4>
+                <p>${activeTimeline.financial}</p>
+              </div>
+              <div class="timeline-detail-card" style="border-left: 3px solid var(--color-above-appetite);">
+                <h4>Reputation Effects</h4>
+                <p>${activeTimeline.reputation}</p>
+              </div>
+              <div class="timeline-detail-card" style="border-left: 3px solid #6b7280;">
+                <h4>Control Breakdown & Key Vulnerabilities</h4>
+                <p>${activeTimeline.controls}</p>
+              </div>
+              <div class="timeline-detail-card" style="border-left: 3px solid #10b981;">
+                <h4>Recovery Action In Progress</h4>
+                <p>${activeTimeline.recovery}</p>
+              </div>
+            </div>
+          </div>
 
-              <div style="padding:10px; background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:6px; font-size:11px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <strong>Regulatory Action Response Framework</strong>
-                  <div style="font-size: 9px; color: var(--text-muted);">Frequency: Continuous | Type: Corrective</div>
-                </div>
-                <span class="status-badge near" style="font-size: 8px;">Partially Effective</span>
+          <!-- Management Response Option Selection -->
+          <div class="glass-panel" style="padding: 16px;">
+            <h3 class="dashboard-card-title">Management Response Options</h3>
+            <p style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top: -6px; margin-bottom: 12px;">Toggle different intervention levels to modify outcome metrics.</p>
+
+            <div class="response-selectors">
+              <button class="response-btn ${this.selectedResponse === 'noIntervention' ? 'active' : ''}" data-response="noIntervention">No Intervention</button>
+              <button class="response-btn ${this.selectedResponse === 'basic' ? 'active' : ''}" data-response="basic">Basic Response</button>
+              <button class="response-btn ${this.selectedResponse === 'strong' ? 'active' : ''}" data-response="strong">Strong Response</button>
+              <button class="response-btn ${this.selectedResponse === 'aggressive' ? 'active' : ''}" data-response="aggressive">Aggressive Response</button>
+            </div>
+
+            <div style="background:rgba(0,0,0,0.015); border:1px solid var(--border-color); border-radius:6px; padding:12px; font-size:12px; line-height:1.4; color:var(--text-primary);">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                <span style="font-weight:700; text-transform:uppercase; font-size:10px; color:var(--text-secondary);">Selected Level Characteristics</span>
+                <span class="status-badge within" style="font-size:9px; font-weight:700; background:rgba(99,102,241,0.1); color:var(--color-indigo);">
+                  ${this.selectedResponse === 'noIntervention' ? 'Level 0' : this.selectedResponse === 'basic' ? 'Level 1' : this.selectedResponse === 'strong' ? 'Level 2' : 'Level 3'}
+                </span>
               </div>
+              <div style="margin-bottom:6px;"><strong>Outcome:</strong> ${activeResponse.outcome}</div>
+              <div style="margin-bottom:6px;"><strong>Controls that Matter:</strong> ${activeResponse.controls}</div>
+              <div style="margin-bottom:6px;"><strong>Insurance Cover:</strong> ${activeResponse.insurance}</div>
+              <div style="margin-bottom:6px;"><strong>Comms Quality:</strong> ${activeResponse.comms}</div>
+              <div><strong>Recovery Effectiveness:</strong> <span style="font-weight:600; color:var(--color-indigo);">${activeResponse.recovery}</span></div>
             </div>
           </div>
 
         </div>
 
-        <!-- RIGHT: THE DECISION MATRIX (CASE PROJECTIONS) -->
-        <div class="details-panel" style="flex: 2;">
+        <!-- RIGHT COLUMN: IMPACT DIMENSIONS, SIDE-BY-SIDE COMPARE, NARRATIVE & ACTIONS -->
+        <div class="room-column">
           
-          <!-- THREE SCENARIOS COMPARISON CARDS -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+          <!-- Dynamic Impact Dimensions under Selected Response -->
+          <div class="glass-panel" style="padding: 16px;">
+            <h3 class="dashboard-card-title">Impact Dimensions (Current Response)</h3>
             
-            <!-- Best Case Card -->
-            <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="best" style="border-top: 4px solid var(--color-within-appetite); padding: 16px; cursor: pointer;">
-              <span class="profile-role-badge within" style="font-size: 9px; margin-bottom: 6px;">Best Case</span>
-              <h3 class="best-revenue" style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-within-appetite);">
-                ${scaledRevenue.best}
-              </h3>
-              <p style="font-size:11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
-                Rapid recovery, zero net customer loss, and minimal brand damage.
-              </p>
-              <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 11px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                  <span style="color:var(--text-muted);">EBITDA Margin:</span>
-                  <span class="best-ebitda" style="font-weight: 600; color: var(--color-within-appetite);">${scaledEbitda.best}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                  <span style="color:var(--text-muted);">Cash impact:</span>
-                  <span class="best-cash" style="font-weight: 600; color: var(--color-within-appetite);">${scaledCash.best}</span>
+            <div class="dimension-card-grid">
+              
+              <div class="dimension-card">
+                <h4>Revenue Impact</h4>
+                <div class="dimension-value" style="color: ${this.getColorForImpact(activeResponse.revenue)};">${activeResponse.revenue}</div>
+                <div class="progress-band-bg">
+                  <div class="progress-band-fill" style="width: ${this.getPercentageWidth(activeResponse.revenue)}; background: ${this.getColorForImpact(activeResponse.revenue)};"></div>
                 </div>
               </div>
-            </div>
 
-            <!-- Expected Case Card -->
-            <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="expected" style="border-top: 4px solid var(--color-near-appetite); padding: 16px; background: rgba(217, 119, 6, 0.02); cursor: pointer;">
-              <span class="profile-role-badge near" style="font-size: 9px; margin-bottom: 6px;">Expected Case</span>
-              <h3 class="expected-revenue" style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-near-appetite);">
-                ${scaledRevenue.expected}
-              </h3>
-              <p style="font-size:11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
-                Baseline operational disruption, standard customer SLA payouts.
-              </p>
-              <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 11px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                  <span style="color:var(--text-muted);">EBITDA Margin:</span>
-                  <span class="expected-ebitda" style="font-weight: 600; color: var(--color-near-appetite);">${scaledEbitda.expected}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                  <span style="color:var(--text-muted);">Cash impact:</span>
-                  <span class="expected-cash" style="font-weight: 600; color: var(--color-near-appetite);">${scaledCash.expected}</span>
+              <div class="dimension-card">
+                <h4>Cash Impact</h4>
+                <div class="dimension-value" style="color: ${this.getColorForImpact(activeResponse.cash)};">${activeResponse.cash}</div>
+                <div class="progress-band-bg">
+                  <div class="progress-band-fill" style="width: ${this.getPercentageWidth(activeResponse.cash)}; background: ${this.getColorForImpact(activeResponse.cash)};"></div>
                 </div>
               </div>
-            </div>
 
-            <!-- Worst Case Card -->
-            <div class="glass-panel ai-explain-trigger" data-explain-type="scenario" data-explain-id="worst" style="border-top: 4px solid var(--color-above-appetite); padding: 16px; background: rgba(225, 29, 72, 0.02); cursor: pointer;">
-              <span class="profile-role-badge above" style="font-size: 9px; margin-bottom: 6px;">Worst Case</span>
-              <h3 class="worst-revenue" style="font-size: 20px; font-weight:800; font-family: var(--font-header); margin-bottom: 8px; color: var(--color-above-appetite);">
-                ${scaledRevenue.worst}
-              </h3>
-              <p style="font-size:11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
-                Severe penalty, key account churn, and major system blackout.
-              </p>
-              <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 11px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                  <span style="color:var(--text-muted);">EBITDA Margin:</span>
-                  <span class="worst-ebitda" style="font-weight: 600; color: var(--color-above-appetite);">${scaledEbitda.worst}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                  <span style="color:var(--text-muted);">Cash impact:</span>
-                  <span class="worst-cash" style="font-weight: 600; color: var(--color-above-appetite);">${scaledCash.worst}</span>
+              <div class="dimension-card">
+                <h4>EBITDA Impact</h4>
+                <div class="dimension-value" style="color: ${this.getEbitdaColor(activeResponse.ebitda)};">${activeResponse.ebitda}</div>
+                <div class="progress-band-bg">
+                  <div class="progress-band-fill" style="width: ${this.getEbitdaPercentageWidth(activeResponse.ebitda)}; background: ${this.getEbitdaColor(activeResponse.ebitda)};"></div>
                 </div>
               </div>
-            </div>
 
-          </div>
-
-          <!-- Chart 4: Scenario Impact Chart -->
-          <div class="glass-panel" style="padding: 20px; margin-top: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">FINANCIAL IMPACT COMPARISON</span>
-              <!-- Custom Legend -->
-              <div style="display: flex; gap: 16px; font-size: 11px; font-family: Calibri, sans-serif; font-weight: 500;">
-                <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background-color: #4A6FA5; border-radius: 50%; display: inline-block;"></span>Revenue</span>
-                <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background-color: #EF9F27; border-radius: 50%; display: inline-block;"></span>EBITDA Margin</span>
-                <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background-color: #E24B4A; border-radius: 50%; display: inline-block;"></span>Cash Impact</span>
+              <div class="dimension-card">
+                <h4>Board Escalation Level</h4>
+                <div class="dimension-value" style="font-size:13px; padding-top:4px;">${activeResponse.escalation}</div>
+                <span class="${this.getBadgeClass(activeResponse.escalation)}" style="margin-top:4px; font-size:9px; width:fit-content;">${activeResponse.escalation.includes('Level 4') ? 'Immediate Alert' : activeResponse.escalation.includes('Level 3') ? 'Executive Action' : 'Standard Watch'}</span>
               </div>
-            </div>
-            <div class="scenario-chart-container">
-              <canvas id="scenario-impact-chart" height="180"></canvas>
+
+              <div class="dimension-card">
+                <h4>Reputation Exposure</h4>
+                <div class="dimension-value" style="font-size:14px; padding-top:4px;">${activeResponse.reputation}</div>
+                <span class="${this.getBadgeClass(activeResponse.reputation)}" style="font-size:9px; width:fit-content;">${activeResponse.reputation}</span>
+              </div>
+
+              <div class="dimension-card">
+                <h4>Customer Trust</h4>
+                <div class="dimension-value" style="font-size:14px; padding-top:4px;">${activeResponse.trust}</div>
+                <span class="${this.getBadgeClass(activeResponse.trust)}" style="font-size:9px; width:fit-content;">${activeResponse.trust}</span>
+              </div>
+
+              <div class="dimension-card">
+                <h4>Risk Appetite Impact</h4>
+                <div class="dimension-value" style="font-size:14px; padding-top:4px;">${activeResponse.appetite}</div>
+                <span class="${this.getBadgeClass(activeResponse.appetite)}" style="font-size:9px; width:fit-content;">${activeResponse.appetite}</span>
+              </div>
+
+              <div class="dimension-card">
+                <h4>Recovery Duration</h4>
+                <div class="dimension-value" style="font-size:15px; padding-top:4px;">${activeResponse.duration}</div>
+                <span class="status-badge within" style="font-size:9px; width:fit-content; background:rgba(0,0,0,0.04); color:var(--text-primary); border:none;">Target Limit: 12m</span>
+              </div>
+
             </div>
           </div>
 
-          <!-- STRATEGIC OBJECTIVE DESTRUCTIVE TRAJECTORY -->
-          <div class="glass-panel" style="padding: 20px; margin-top: 16px;">
-            <h3 class="dashboard-card-title">Threatened Objective Cascade Path</h3>
+          <!-- Side-by-Side Comparison: No Intervention vs. Strong Response -->
+          <div class="glass-panel" style="padding: 16px;">
+            <h3 class="dashboard-card-title">Intervention Trade-off Comparison</h3>
             
-            <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; display:flex; gap:16px; align-items:center;">
-              <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(225,29,72,0.08); display:flex; justify-content:center; align-items:center; flex-shrink:0;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="var(--color-above-appetite)" style="width:24px;height:24px;">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
+            <div class="side-by-side-grid">
+              
+              <!-- No Response Col -->
+              <div class="compare-col" style="border-top: 4px solid var(--color-above-appetite);">
+                <div class="compare-header" style="color: var(--color-above-appetite);">Without Intervention</div>
+                
+                <div class="compare-row">
+                  <span>Revenue Impact</span>
+                  <strong style="color:var(--color-above-appetite);">${noResponse.revenue}</strong>
+                </div>
+                <div class="compare-row">
+                  <span>Cash Impact</span>
+                  <strong>${noResponse.cash}</strong>
+                </div>
+                <div class="compare-row">
+                  <span>EBITDA Shock</span>
+                  <strong style="color:var(--color-above-appetite);">${noResponse.ebitda}</strong>
+                </div>
+                <div class="compare-row">
+                  <span>Reputation</span>
+                  <span class="${this.getBadgeClass(noResponse.reputation)}" style="font-size:8px;">${noResponse.reputation}</span>
+                </div>
+                <div class="compare-row">
+                  <span>Escalation</span>
+                  <strong>Level 4</strong>
+                </div>
+                <div class="compare-row" style="border:none;">
+                  <span>Recovery Time</span>
+                  <strong>${noResponse.duration}</strong>
+                </div>
               </div>
+
+              <!-- Strong Response Col -->
+              <div class="compare-col" style="border-top: 4px solid var(--color-within-appetite);">
+                <div class="compare-header" style="color: var(--color-within-appetite);">With Strong Response</div>
+                
+                <div class="compare-row">
+                  <span>Revenue Impact</span>
+                  <strong style="color:var(--color-within-appetite);">${strongResponse.revenue}</strong>
+                </div>
+                <div class="compare-row">
+                  <span>Cash Impact</span>
+                  <strong>${strongResponse.cash}</strong>
+                </div>
+                <div class="compare-row">
+                  <span>EBITDA Shock</span>
+                  <strong style="color:var(--color-within-appetite);">${strongResponse.ebitda}</strong>
+                </div>
+                <div class="compare-row">
+                  <span>Reputation</span>
+                  <span class="${this.getBadgeClass(strongResponse.reputation)}" style="font-size:8px;">${strongResponse.reputation}</span>
+                </div>
+                <div class="compare-row">
+                  <span>Escalation</span>
+                  <strong>Level 2</strong>
+                </div>
+                <div class="compare-row" style="border:none;">
+                  <span>Recovery Time</span>
+                  <strong>${strongResponse.duration}</strong>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Narrative Engine Paper & Board Actions -->
+          <div class="glass-panel" style="padding: 16px;">
+            <h3 class="dashboard-card-title">Executive Briefing Paper</h3>
+            
+            <div class="narrative-paper">
+              <h3>Board Narrative Briefing</h3>
+              
+              <div class="narrative-item">
+                <strong>Executive Summary</strong>
+                ${currentTemplate.narratives[this.selectedResponse].summary}
+              </div>
+
+              <div class="narrative-item">
+                <strong>Expected Outcome</strong>
+                ${currentTemplate.narratives[this.selectedResponse].expected}
+              </div>
+
+              <div class="narrative-item">
+                <strong>Worst Case Trajectory</strong>
+                ${currentTemplate.narratives[this.selectedResponse].worst}
+              </div>
+
+              <div class="narrative-item">
+                <strong>Recovery Path</strong>
+                ${currentTemplate.narratives[this.selectedResponse].recovery}
+              </div>
+
+              <div class="narrative-item" style="margin-bottom:0;">
+                <strong>Board Oversight Note</strong>
+                ${currentTemplate.narratives[this.selectedResponse].boardNote}
+              </div>
+            </div>
+
+            ${currentTemplate.narratives.executiveBrief ? `
+            <div style="border-top:1px solid var(--border-color); padding-top:14px; margin-top:14px;">
+              <h4 style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--color-navy); margin:0 0 8px 0;">Executive Briefs</h4>
+              
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="background:rgba(0,0,0,0.02); border-left:3px solid var(--color-indigo); padding:10px 12px; border-radius:4px;">
+                  <strong style="font-size:10px; color:var(--color-indigo); text-transform:uppercase; font-weight:700; display:block; margin-bottom:6px;">CEO Memo to Board</strong>
+                  <div style="font-size:11px; color:var(--text-primary); line-height:1.5; white-space:pre-wrap; font-family:'Georgia', serif;">${currentTemplate.narratives.executiveBrief.ceoMemo}</div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.02); border-left:3px solid var(--color-above-appetite); padding:10px 12px; border-radius:4px;">
+                  <strong style="font-size:10px; color:var(--color-above-appetite); text-transform:uppercase; font-weight:700; display:block; margin-bottom:6px;">General Counsel Assessment</strong>
+                  <div style="font-size:11px; color:var(--text-primary); line-height:1.5; white-space:pre-wrap; font-family:'Georgia', serif;">${currentTemplate.narratives.executiveBrief.legalCounsel}</div>
+                </div>
+              </div>
+            </div>
+            ` : ''}
+
+            <div style="border-top:1px solid var(--border-color); padding-top:14px; margin-top:14px;">
+              <h4 style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--color-navy); margin:0 0 8px 0;">Board Actions Panel</h4>
+              
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <div>
+                  <strong style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">Questions the Board Should Ask:</strong>
+                  <ul class="board-action-list">
+                    ${currentTemplate.boardActions.questions.map(q => `<li>${q}</li>`).join('')}
+                  </ul>
+                </div>
+
+                <div>
+                  <strong style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">Decisions Required:</strong>
+                  <ul class="board-action-list">
+                    ${currentTemplate.boardActions.decisions.map(d => `<li>${d}</li>`).join('')}
+                  </ul>
+                </div>
+
+                <div>
+                  <strong style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">Committees Involved:</strong>
+                  <div style="display:flex; gap:6px; margin-top:4px;">
+                    ${currentTemplate.boardActions.committees.map(c => `<span class="status-badge within" style="font-size:9px; font-weight:600; background:rgba(0,0,0,0.04); color:var(--text-primary); border:none;">${c}</span>`).join('')}
+                  </div>
+                </div>
+
+                <div>
+                  <strong style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">Escalation Requirements:</strong>
+                  <ul class="board-action-list">
+                    ${currentTemplate.boardActions.escalations.map(e => `<li>${e}</li>`).join('')}
+                  </ul>
+                </div>
+
+                <div>
+                  <strong style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">Suggested Immediate Actions:</strong>
+                  <ul class="board-action-list">
+                    ${currentTemplate.boardActions.immediateActions.map(a => `<li>${a}</li>`).join('')}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Future-Ready hidden analytical engines status bar -->
+          <div>
+            <div class="engine-overlay-bar" id="engine-overlay-toggle">
               <div>
-                <span class="profile-role-badge above" style="font-size: 8px; margin-bottom: 2px;">Threat to Goal Alignment</span>
-                <strong style="font-size: 14px; color: var(--text-primary); display:block; margin-bottom:2px;">
-                  ${linkedObj ? linkedObj.title : 'No objective linked'}
-                </strong>
-                <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin: 0;">
-                  ${currentScenario ? currentScenario.objectiveImpact : 'No simulation run.'}
-                </p>
+                <span class="engine-pulsator"></span>
+                <strong>Analytical Overlay Engines: Active (Hidden)</strong>
               </div>
+              <span id="engine-chevron" style="font-size: 10px;">${this.enginesExpanded ? '▲' : '▼'}</span>
             </div>
-
-            <!-- INTERACTIVE STRATEGIC BRIEF GENERATED -->
-            <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px; font-size:12px; line-height:1.4; color: var(--text-secondary);">
-              *CRO Boardroom Advisory: An expected EBITDA shock of <strong class="advisory-ebitda" style="color:var(--color-near-appetite);">${scaledEbitda.expected}</strong> coupled with cash drain of <strong class="advisory-cash" style="color:var(--color-near-appetite);">${scaledCash.expected}</strong> directly breaches the corporate risk tolerance models. The board is advised to prioritize the validation of the corresponding IT backup architectures and redundant cloud integrations.
-            </div>
-
+            
+            ${this.enginesExpanded ? `
+              <div class="engine-details-box">
+                <div class="engine-indicator-row">
+                  <span>Monte Carlo Engine</span>
+                  <span class="pinned-status yes" style="font-size:8px; padding:1px 6px;">Standby (Overlay active)</span>
+                </div>
+                <div class="engine-indicator-row">
+                  <span>Bayesian Updating Registry</span>
+                  <span class="pinned-status yes" style="font-size:8px; padding:1px 6px;">Standby</span>
+                </div>
+                <div class="engine-indicator-row">
+                  <span>Risk Gravity Matrix</span>
+                  <span class="pinned-status yes" style="font-size:8px; padding:1px 6px;">Standby</span>
+                </div>
+                <div class="engine-indicator-row">
+                  <span>Fragility Indexer</span>
+                  <span class="pinned-status yes" style="font-size:8px; padding:1px 6px;">Standby</span>
+                </div>
+                <div class="engine-indicator-row" style="border:none;">
+                  <span>Entropy Tracking Protocol</span>
+                  <span class="pinned-status yes" style="font-size:8px; padding:1px 6px;">Standby</span>
+                </div>
+                <div style="font-size:9px; color:var(--text-muted); line-height:1.3; border-top:1px dashed var(--border-color); padding-top:6px; margin-top:4px;">
+                  All analytical math engines process simulation variables in background threads to protect board executive comprehension from statistics jargon.
+                </div>
+              </div>
+            ` : ''}
           </div>
 
         </div>
@@ -300,257 +775,66 @@ export class ScenarioComponent {
     `;
 
     if (this._fromDashboard) {
-      AIInsightService.renderBackToDashboardBanner(this, container, `Scenario Planner — Template ${this.selectedScenarioId}`);
+      AIInsightService.renderBackToDashboardBanner(this, container, `Decision Room — ${currentTemplate.title}`);
     }
 
     this.bindEvents(container);
-    setTimeout(() => {
-      this.initScenarioChart(container);
-    }, 0);
   }
 
   bindEvents(container) {
-    const scenarios = this.state.scenarios || [];
-    const currentScenario = scenarios.find(s => s.id === this.selectedScenarioId);
-
-    // 1. Select template change
+    // 1. Template dropdown change
     const select = container.querySelector('#select-scenario-template');
     if (select) {
       select.addEventListener('change', () => {
         this.selectedScenarioId = select.value;
+        this.activeTimelineTab = 'day1';
+        this.selectedResponse = 'strong';
+        this.render(container);
+        
+        // Notify state changes if needed
+        if (this.onStateChange) {
+          this.onStateChange({ activeScenarioId: this.selectedScenarioId });
+        }
+      });
+    }
+
+    // 2. Timeline tab switcher click
+    container.querySelectorAll('.timeline-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        this.activeTimelineTab = tab.dataset.timeline;
+        this.render(container);
+      });
+    });
+
+    // 3. Management response level selector click
+    container.querySelectorAll('.response-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.selectedResponse = btn.dataset.response;
+        this.render(container);
+      });
+    });
+
+    // 4. Pin to spotlight button click
+    const btnPin = container.querySelector('#btn-pin-spotlight');
+    if (btnPin) {
+      btnPin.addEventListener('click', () => {
+        localStorage.setItem('spotlight_scenario_id', this.selectedScenarioId);
+        this.render(container);
+        
+        // Force header re-render on parent if state is synced
+        if (this.onStateChange) {
+          this.onStateChange({ spotlightUpdated: true });
+        }
+      });
+    }
+
+    // 5. Expandable analytical overlay toggle
+    const toggle = container.querySelector('#engine-overlay-toggle');
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        this.enginesExpanded = !this.enginesExpanded;
         this.render(container);
       });
     }
-
-    // 2. Resilience severity slider input (Synchronous inline updates to prevent focus glitches)
-    const slider = container.querySelector('#resilience-severity-slider');
-    if (slider && currentScenario) {
-      slider.addEventListener('input', () => {
-        this.simulatedSeverity = parseInt(slider.value);
-        const factor = this.simulatedSeverity / 100;
-
-        // Recalculate values locally
-        const rev = currentScenario.revenueImpact;
-        const ebi = currentScenario.ebitdaImpact;
-        const cash = currentScenario.cashImpact;
-
-        const bestRevText = this.formatValue(this.parseValue(rev.best) * factor);
-        const expectedRevText = this.formatValue(this.parseValue(rev.expected) * factor);
-        const worstRevText = this.formatValue(this.parseValue(rev.worst) * factor);
-
-        const bestEbitdaText = this.scalePercent(ebi.best, factor);
-        const expectedEbitdaText = this.scalePercent(ebi.expected, factor);
-        const worstEbitdaText = this.scalePercent(ebi.worst, factor);
-
-        const bestCashText = this.formatValue(this.parseValue(cash.best) * factor);
-        const expectedCashText = this.formatValue(this.parseValue(cash.expected) * factor);
-        const worstCashText = this.formatValue(this.parseValue(cash.worst) * factor);
-
-        // Update slider label badge and style class
-        const badge = container.querySelector('.stress-severity-label');
-        if (badge) {
-          badge.textContent = `${this.simulatedSeverity}% Scale`;
-          badge.className = 'stress-severity-label status-badge ' + (this.simulatedSeverity > 130 ? 'above' : this.simulatedSeverity > 80 ? 'near' : 'within');
-        }
-
-        // Update DOM elements in place
-        const bestRevEl = container.querySelector('.best-revenue');
-        if (bestRevEl) bestRevEl.textContent = bestRevText;
-        const bestEbiEl = container.querySelector('.best-ebitda');
-        if (bestEbiEl) bestEbiEl.textContent = bestEbitdaText;
-        const bestCashEl = container.querySelector('.best-cash');
-        if (bestCashEl) bestCashEl.textContent = bestCashText;
-
-        const expectedRevEl = container.querySelector('.expected-revenue');
-        if (expectedRevEl) expectedRevEl.textContent = expectedRevText;
-        const expectedEbiEl = container.querySelector('.expected-ebitda');
-        if (expectedEbiEl) expectedEbiEl.textContent = expectedEbitdaText;
-        const expectedCashEl = container.querySelector('.expected-cash');
-        if (expectedCashEl) expectedCashEl.textContent = expectedCashText;
-
-        const worstRevEl = container.querySelector('.worst-revenue');
-        if (worstRevEl) worstRevEl.textContent = worstRevText;
-        const worstEbiEl = container.querySelector('.worst-ebitda');
-        if (worstEbiEl) worstEbiEl.textContent = worstEbitdaText;
-        const worstCashEl = container.querySelector('.worst-cash');
-        if (worstCashEl) worstCashEl.textContent = worstCashText;
-
-        const advisoryEbiEl = container.querySelector('.advisory-ebitda');
-        if (advisoryEbiEl) advisoryEbiEl.textContent = expectedEbitdaText;
-        const advisoryCashEl = container.querySelector('.advisory-cash');
-        if (advisoryCashEl) advisoryCashEl.textContent = expectedCashText;
-
-        // Update the scenario chart
-        this.updateScenarioChart();
-      });
-    }
-
-    // Click-to-Explain Bindings
-    container.querySelectorAll('.ai-explain-trigger').forEach(trigger => {
-      trigger.addEventListener('click', (e) => {
-        // Only trigger explain if slider drag was not active
-        if (e.target.tagName === 'INPUT') return;
-        const type = trigger.dataset.explainType;
-        const id = trigger.dataset.explainId;
-        
-        let item = null;
-        if (type === 'scenario') {
-          item = this.state.scenarios.find(s => s.id === this.selectedScenarioId);
-          if (item) {
-            item = { ...item, selectedCase: id, simulatedSeverity: this.simulatedSeverity };
-          }
-        }
-        
-        if (item) {
-          AIInsightService.showExplanationModal(type, item, this.state);
-        }
-      });
-    });
-  }
-
-  initScenarioChart(container) {
-    const canvasId = 'scenario-impact-chart';
-    const canvas = container.querySelector(`#${canvasId}`);
-    if (!canvas) return;
-
-    // Destroy existing instance first (Flag 2 destroy pattern)
-    const existing = window.Chart.getChart(canvas);
-    if (existing) existing.destroy();
-
-    const scenarios = this.state.scenarios || [];
-    const currentScenario = scenarios.find(s => s.id === this.selectedScenarioId);
-    if (!currentScenario) return;
-
-    const factor = this.simulatedSeverity / 100;
-    const rev = currentScenario.revenueImpact;
-    const ebi = currentScenario.ebitdaImpact;
-    const cash = currentScenario.cashImpact;
-
-    const revData = [
-      this.parseValue(rev.best) * factor,
-      this.parseValue(rev.expected) * factor,
-      this.parseValue(rev.worst) * factor
-    ];
-
-    const ebiData = [
-      parseFloat(this.scalePercent(ebi.best, factor)),
-      parseFloat(this.scalePercent(ebi.expected, factor)),
-      parseFloat(this.scalePercent(ebi.worst, factor))
-    ];
-
-    const cashData = [
-      this.parseValue(cash.best) * factor,
-      this.parseValue(cash.expected) * factor,
-      this.parseValue(cash.worst) * factor
-    ];
-
-    this.scenarioChart = new window.Chart(canvas, {
-      type: 'bar',
-      data: {
-        labels: ['Best Case', 'Expected Case', 'Worst Case'],
-        datasets: [
-          {
-            label: 'Revenue',
-            data: revData,
-            backgroundColor: '#4A6FA5',
-            borderRadius: 4
-          },
-          {
-            label: 'EBITDA Margin',
-            data: ebiData,
-            backgroundColor: '#EF9F27',
-            borderRadius: 4
-          },
-          {
-            label: 'Cash Impact',
-            data: cashData,
-            backgroundColor: '#E24B4A',
-            borderRadius: 4
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-          duration: 300,
-          easing: 'easeOutQuad'
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#0D1B2A',
-            titleColor: '#FFFFFF',
-            bodyColor: '#FFFFFF',
-            callbacks: {
-              label: (context) => {
-                const val = context.raw;
-                const datasetIdx = context.datasetIndex;
-                if (datasetIdx === 0) {
-                  return ` Revenue Impact: ${this.formatValue(val)}`;
-                } else if (datasetIdx === 1) {
-                  return ` EBITDA Margin Impact: ${val.toFixed(1)}%`;
-                } else {
-                  return ` Cash Impact: ${this.formatValue(val)}`;
-                }
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            border: { display: false },
-            ticks: {
-              color: '#6B7280',
-              font: { family: 'Inter', size: 11 }
-            }
-          },
-          y: {
-            grid: { display: false },
-            border: { display: false },
-            ticks: {
-              color: '#6B7280',
-              font: { family: 'Inter', size: 11 }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  updateScenarioChart() {
-    if (!this.scenarioChart) return;
-    const scenarios = this.state.scenarios || [];
-    const currentScenario = scenarios.find(s => s.id === this.selectedScenarioId);
-    if (!currentScenario) return;
-
-    const factor = this.simulatedSeverity / 100;
-    const rev = currentScenario.revenueImpact;
-    const ebi = currentScenario.ebitdaImpact;
-    const cash = currentScenario.cashImpact;
-
-    const revData = [
-      this.parseValue(rev.best) * factor,
-      this.parseValue(rev.expected) * factor,
-      this.parseValue(rev.worst) * factor
-    ];
-
-    const ebiData = [
-      parseFloat(this.scalePercent(ebi.best, factor)),
-      parseFloat(this.scalePercent(ebi.expected, factor)),
-      parseFloat(this.scalePercent(ebi.worst, factor))
-    ];
-
-    const cashData = [
-      this.parseValue(cash.best) * factor,
-      this.parseValue(cash.expected) * factor,
-      this.parseValue(cash.worst) * factor
-    ];
-
-    this.scenarioChart.data.datasets[0].data = revData;
-    this.scenarioChart.data.datasets[1].data = ebiData;
-    this.scenarioChart.data.datasets[2].data = cashData;
-    this.scenarioChart.update();
   }
 }
