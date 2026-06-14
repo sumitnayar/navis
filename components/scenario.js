@@ -499,12 +499,19 @@ export class ScenarioComponent {
         },
         scales: {
           x: {
-            grid: { display: false }
+            grid: { display: false },
+            border: { display: false },
+            ticks: {
+              color: '#6B7280',
+              font: { family: 'Inter', size: 11 }
+            }
           },
           y: {
+            grid: { display: false },
             border: { display: false },
-            grid: {
-              color: 'rgba(13,27,42,0.06)'
+            ticks: {
+              color: '#6B7280',
+              font: { family: 'Inter', size: 11 }
             }
           }
         }

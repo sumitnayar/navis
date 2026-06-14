@@ -1123,12 +1123,12 @@ export class NetworkComponent {
             min: 0,
             max: 25,
             border: { display: false },
-            grid: {
-              color: 'rgba(13,27,42,0.06)'
-            },
+            grid: { display: false },
             ticks: {
               maxTicksLimit: 3,
-              stepSize: 10
+              stepSize: 10,
+              color: '#6B7280',
+              font: { family: 'Inter', size: 10 }
             }
           }
         }

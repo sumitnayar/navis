@@ -177,19 +177,27 @@ export class PortfolioComponent {
           const stats = this.calculatePortfolioStats(port.risks);
           const isSelected = this.selectedPortfolioKey === key;
           
+          const aboveCount = port.risks.filter(r => r.appetiteStatus === 'Above Appetite').length;
+          const nearCount = port.risks.filter(r => r.appetiteStatus === 'Near Appetite').length;
+          const withinCount = port.risks.filter(r => r.appetiteStatus === 'Within Appetite').length;
+          const totalCount = port.risks.length || 1;
+
           return `
             <div class="ticker-card clickable-portfolio ${isSelected ? 'selected-port-card' : ''}" 
                  data-key="${key}"
                  style="cursor: pointer; border-left: 4px solid var(--border-color); ${isSelected ? 'border-color: var(--color-indigo); background: rgba(0, 181, 181, 0.04);' : ''}; display: flex; flex-direction: column; gap: 8px;">
               <span class="ticker-label" style="font-weight: 700; color: var(--text-primary); font-size:12px;">${key.toUpperCase()} Portfolio</span>
               
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 56px; height: 56px; flex-shrink: 0; position: relative;">
-                  <canvas id="portfolio-donut-${key}" width="56" height="56"></canvas>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
                   <span style="font-size: 20px; font-weight: 600; color: var(--text-primary); line-height: 1;">${stats.score}</span>
-                  <span class="status-badge ${stats.class}" style="font-size: 8px; padding: 1px 5px; width: fit-content;">${stats.status}</span>
+                  <span class="status-badge ${stats.class}" style="font-size: 8px; padding: 1px 5px;">${stats.status}</span>
+                </div>
+                <!-- Mini Progress Band -->
+                <div class="portfolio-progress-band" style="display: flex; height: 6px; background: #E5E7EB; border-radius: var(--radius-sm); overflow: hidden; width: 100%;">
+                  ${aboveCount > 0 ? `<div style="width: ${(aboveCount/totalCount)*100}%; background: var(--color-critical);"></div>` : ''}
+                  ${nearCount > 0 ? `<div style="width: ${(nearCount/totalCount)*100}%; background: var(--color-warning);"></div>` : ''}
+                  ${withinCount > 0 ? `<div style="width: ${(withinCount/totalCount)*100}%; background: var(--color-safe);"></div>` : ''}
                 </div>
               </div>
               
@@ -318,12 +326,12 @@ export class PortfolioComponent {
     }
 
     this.bindEvents(container, portfolios);
-    setTimeout(() => {
-      this.initPortfolioDonuts(container, portfolios);
-    }, 0);
   }
 
   initPortfolioDonuts(container, portfolios) {
+    // Replaced with horizontal progress bands in HTML
+  }
+  initPortfolioDonutsOld(container, portfolios) {
     // Destroy previous instances
     this.donutCharts.forEach(chart => {
       try { chart.destroy(); } catch (e) {}

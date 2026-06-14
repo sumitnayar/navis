@@ -29,6 +29,11 @@ export class DashboardComponent {
     const risks = this.state.risks || [];
     const objectives = this.state.objectives || [];
 
+    const aboveCount = risks.filter(r => r.appetiteStatus === 'Above Appetite').length;
+    const nearCount = risks.filter(r => r.appetiteStatus === 'Near Appetite').length;
+    const withinCount = risks.filter(r => r.appetiteStatus === 'Within Appetite').length;
+    const totalCount = aboveCount + nearCount + withinCount || 1;
+
     // Calculate dimensions fragility
     const dimensions = [
       { key: 'revenue', label: 'Revenue' },
@@ -190,13 +195,24 @@ export class DashboardComponent {
           
           <!-- Panel 1: Active Intelligence -->
           <div class="glass-panel" style="padding: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
               <div style="display: flex; flex-direction: column; gap: 2px;">
                 <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.07em;">ACTIVE INTELLIGENCE</span>
                 <span style="font-size: 12px; color: var(--color-navy-secondary);">Ranked signals requiring board attention</span>
               </div>
-              <div class="posture-donut-wrapper" style="margin-top: -10px; margin-bottom: -10px;">
-                <canvas id="posture-donut-chart" width="120" height="120"></canvas>
+              
+              <!-- Posture Progress Band (Bloomberg style stacked progress) -->
+              <div class="posture-progress-band" style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 500;">
+                  <span style="color: var(--color-critical);">Above: <strong>${aboveCount}</strong></span>
+                  <span style="color: var(--color-warning);">Near: <strong>${nearCount}</strong></span>
+                  <span style="color: var(--color-safe);">Within: <strong>${withinCount}</strong></span>
+                </div>
+                <div style="display: flex; height: 8px; background: #E5E7EB; border-radius: var(--radius-sm); overflow: hidden; width: 100%;">
+                  ${aboveCount > 0 ? `<div style="width: ${(aboveCount/totalCount)*100}%; background: var(--color-critical);"></div>` : ''}
+                  ${nearCount > 0 ? `<div style="width: ${(nearCount/totalCount)*100}%; background: var(--color-warning);"></div>` : ''}
+                  ${withinCount > 0 ? `<div style="width: ${(withinCount/totalCount)*100}%; background: var(--color-safe);"></div>` : ''}
+                </div>
               </div>
             </div>
             <div id="active-intel-list">
@@ -278,7 +294,6 @@ export class DashboardComponent {
     this.bindEvents(container);
     setTimeout(() => {
       this.initFragilityChart(container);
-      this.initPostureDonut(container);
       this.initSparklines(container);
       this.initHeatmap(container);
     }, 0);
@@ -384,14 +399,16 @@ export class DashboardComponent {
             max: 100,
             ticks: {
               stepSize: 20,
-              callback: (value) => value + '%'
+              callback: (value) => value + '%',
+              color: '#6B7280'
             },
-            grid: {
-              color: 'rgba(13,27,42,0.06)'
-            },
+            grid: { display: false },
             border: { display: false }
           },
           y: {
+            ticks: {
+              color: '#111827'
+            },
             grid: { display: false },
             border: { display: false }
           }
@@ -405,6 +422,9 @@ export class DashboardComponent {
   }
 
   initPostureDonut(container) {
+    // Replaced with horizontal progress band in HTML
+  }
+  initPostureDonutOld(container) {
     const canvasId = 'posture-donut-chart';
     const canvas = container.querySelector(`#${canvasId}`);
     if (!canvas) return;
@@ -551,21 +571,21 @@ export class DashboardComponent {
         const x3 = x.getPixelForValue(3);
         const y3 = y.getPixelForValue(3);
 
-        // Bottom-Left: Low zone (#E6F5F0)
-        ctx.fillStyle = '#E6F5F0';
-        ctx.fillRect(left, y3, x3 - left, bottom - y3);
+        ctx.strokeStyle = '#E5E7EB';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
 
-        // Top-Left: Elevated (#FEF6E7)
-        ctx.fillStyle = '#FEF6E7';
-        ctx.fillRect(left, top, x3 - left, y3 - top);
+        // Draw horizontal divider Y=3
+        ctx.beginPath();
+        ctx.moveTo(left, y3);
+        ctx.lineTo(right, y3);
+        ctx.stroke();
 
-        // Bottom-Right: Elevated (#FEF6E7)
-        ctx.fillStyle = '#FEF6E7';
-        ctx.fillRect(x3, y3, right - x3, bottom - y3);
-
-        // Top-Right: Critical (#FDECEC)
-        ctx.fillStyle = '#FDECEC';
-        ctx.fillRect(x3, top, right - x3, y3 - top);
+        // Draw vertical divider X=3
+        ctx.beginPath();
+        ctx.moveTo(x3, top);
+        ctx.lineTo(x3, bottom);
+        ctx.stroke();
 
         ctx.restore();
       }
@@ -633,19 +653,18 @@ export class DashboardComponent {
               max: 5.5,
               ticks: {
                 stepSize: 1,
-                color: 'var(--color-navy)',
-                font: { family: 'Calibri', size: 11 }
+                color: '#6B7280',
+                font: { family: 'Inter', size: 11 }
               },
               grid: {
-                color: 'rgba(13, 27, 42, 0.05)',
-                drawTicks: false
+                display: false
               },
-              border: { color: 'var(--border-color)' },
+              border: { display: false },
               title: {
                 display: true,
                 text: 'Likelihood →',
-                color: 'var(--color-navy)',
-                font: { family: 'Calibri', size: 12, weight: 'bold' }
+                color: '#111827',
+                font: { family: 'Inter', size: 12, weight: 'bold' }
               }
             },
             y: {
@@ -653,19 +672,18 @@ export class DashboardComponent {
               max: 5.5,
               ticks: {
                 stepSize: 1,
-                color: 'var(--color-navy)',
-                font: { family: 'Calibri', size: 11 }
+                color: '#6B7280',
+                font: { family: 'Inter', size: 11 }
               },
               grid: {
-                color: 'rgba(13, 27, 42, 0.05)',
-                drawTicks: false
+                display: false
               },
-              border: { color: 'var(--border-color)' },
+              border: { display: false },
               title: {
                 display: true,
                 text: 'Impact ↑',
-                color: 'var(--color-navy)',
-                font: { family: 'Calibri', size: 12, weight: 'bold' }
+                color: '#111827',
+                font: { family: 'Inter', size: 12, weight: 'bold' }
               }
             }
           }
