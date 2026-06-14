@@ -18,6 +18,7 @@ import { BoardQAComponent } from './components/boardQA.js';
 import { IntelligencePolicyComponent } from './components/intelligencePolicy.js';
 import { BoardPackComponent } from './components/boardPack.js';
 import { PolicyStudioComponent } from './components/policyStudio.js';
+import { PublicWebsite } from './components/publicWebsite.js';
 
 const TAB_ROUTES = {
   dashboard: '/dashboard',
@@ -65,7 +66,17 @@ const PROTECTED_ROUTES = {
   '/settings': 'settings'
 };
 
-const PUBLIC_ROUTES = new Set(['/', '/login', '/contact']);
+const PUBLIC_WEBSITE_ROUTES = new Set([
+  '/',
+  '/product',
+  '/policy-studio',
+  '/board-decision-room',
+  '/about',
+  '/request-demo',
+  '/contact'
+]);
+
+const PUBLIC_ROUTES = new Set([...PUBLIC_WEBSITE_ROUTES, '/login']);
 
 const MODE_TABS = {
   board: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
@@ -122,6 +133,7 @@ class RiskOSApplication {
     this.sidebarEventsBound = false;
     this.appContainer = document.querySelector('#app-container');
     this.publicContainer = document.querySelector('#public-route-container');
+    this.publicWebsite = new PublicWebsite(this.publicContainer, (path) => this.navigate(path));
   }
 
   async initialize() {
@@ -131,7 +143,9 @@ class RiskOSApplication {
 
     AuthService.onAuthStateChange((session) => {
       const path = getCurrentPath();
-      if (!session && !PUBLIC_ROUTES.has(path)) {
+      const protectedPolicyStudioIsOpen = path === '/policy-studio'
+        && !this.appContainer.classList.contains('is-hidden');
+      if (!session && (!PUBLIC_ROUTES.has(path) || protectedPolicyStudioIsOpen)) {
         this.resetAuthenticatedState();
         this.navigate('/login', { replace: true });
       }
@@ -144,13 +158,8 @@ class RiskOSApplication {
     const path = getCurrentPath();
     const session = await this.getSessionSafely();
 
-    if (path === '/') {
-      this.renderHome(session);
-      return;
-    }
-
-    if (path === '/contact') {
-      this.renderContact(session);
+    if (PUBLIC_WEBSITE_ROUTES.has(path) && !(path === '/policy-studio' && session)) {
+      this.renderPublicWebsite(path, session);
       return;
     }
 
@@ -210,6 +219,11 @@ class RiskOSApplication {
     this.publicContainer.classList.add('is-hidden');
     this.appContainer.classList.remove('is-hidden');
     this.appContainer.removeAttribute('aria-hidden');
+  }
+
+  renderPublicWebsite(path, session) {
+    this.showPublicRoute();
+    this.publicWebsite.render(path, session);
   }
 
   renderHome(session) {

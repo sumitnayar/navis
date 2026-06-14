@@ -16,8 +16,10 @@ try {
     Write-Host "Press Ctrl+C in this terminal window to stop." -ForegroundColor Red
     Write-Host "------------------------------------------"
     
-    # Auto-launch default browser
-    Start-Process "http://127.0.0.1:$port/"
+    # Auto-launch default browser unless the server is running as a hidden test helper.
+    if (-not $env:NAVIS_NO_BROWSER) {
+        Start-Process "http://127.0.0.1:$port/"
+    }
     
     while ($listener.IsListening) {
         $context = $listener.GetContext()
@@ -39,6 +41,11 @@ try {
         $urlPath = [System.Uri]::UnescapeDataString($urlPath)
         
         $filePath = Join-Path $PSScriptRoot $urlPath
+
+        # Serve the application shell for clean client-side routes.
+        if (-not (Test-Path $filePath -PathType Leaf) -and [System.IO.Path]::GetExtension($urlPath) -eq "") {
+            $filePath = Join-Path $PSScriptRoot "index.html"
+        }
         
         if (Test-Path $filePath -PathType Leaf) {
             $bytes = [System.IO.File]::ReadAllBytes($filePath)
