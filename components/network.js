@@ -171,7 +171,7 @@ export class NetworkComponent {
       
       const occupiedHeight = (count - 1) * verticalDistance;
       const centeringOffset = (canvasHeight - paddingTop - paddingBottom - occupiedHeight) / 2;
-      const yStart = paddingTop + Math.max(0, Math.min(20, centeringOffset));
+      const yStart = paddingTop + Math.max(0, Math.min(8, centeringOffset));
 
       group.forEach((node, index) => {
         positions[node.id] = {
@@ -520,7 +520,7 @@ export class NetworkComponent {
       const horizontalDistance = (canvasWidth - 48 - 120) / 3;
       const x = 48 + (l - 1) * horizontalDistance;
       return `
-        <text x="${x}" y="52" 
+        <text x="${x}" y="16" 
               text-anchor="middle"
               style="font-family: var(--font-header); font-size: 8px; font-weight: 700; fill: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">
           ${this.layers[l].name}
