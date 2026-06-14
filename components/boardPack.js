@@ -1,3 +1,22 @@
+const cleanDescription = (desc) => {
+  if (!desc) return '';
+  let cleaned = desc;
+  const markerIdx = cleaned.indexOf('Demo marker:');
+  if (markerIdx !== -1) {
+    cleaned = cleaned.substring(0, markerIdx).trim();
+  }
+  const demoIdx = cleaned.indexOf('[DEMO');
+  if (demoIdx !== -1) {
+    const endIdx = cleaned.indexOf(']', demoIdx);
+    if (endIdx !== -1) {
+      cleaned = cleaned.substring(0, demoIdx) + cleaned.substring(endIdx + 1);
+    } else {
+      cleaned = cleaned.substring(0, demoIdx);
+    }
+  }
+  return cleaned.trim();
+};
+
 export class BoardPackComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -176,7 +195,7 @@ export class BoardPackComponent {
                   <tr style="border-bottom:1px solid rgba(13,27,42,0.15); vertical-align:top;">
                     <td style="padding:8px; font-weight:600; color:#0D1B2A;">
                       ${r.title}
-                      <div style="font-size:9px; color:var(--color-navy-secondary); font-weight:400; margin-top:2px; line-height:1.3;">${r.description.slice(0, 100)}...</div>
+                      <div style="font-size:9px; color:var(--color-navy-secondary); font-weight:400; margin-top:2px; line-height:1.3;">${cleanDescription(r.description).slice(0, 100)}...</div>
                     </td>
                     <td style="padding:8px;">${r.category}</td>
                     <td style="padding:8px; font-weight:700; color:var(--color-critical);">${r.residualScore}</td>

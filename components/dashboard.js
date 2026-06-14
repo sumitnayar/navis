@@ -13,6 +13,25 @@ const cleanTitle = (title) => {
     .trim();
 };
 
+const cleanDescription = (desc) => {
+  if (!desc) return '';
+  let cleaned = desc;
+  const markerIdx = cleaned.indexOf('Demo marker:');
+  if (markerIdx !== -1) {
+    cleaned = cleaned.substring(0, markerIdx).trim();
+  }
+  const demoIdx = cleaned.indexOf('[DEMO');
+  if (demoIdx !== -1) {
+    const endIdx = cleaned.indexOf(']', demoIdx);
+    if (endIdx !== -1) {
+      cleaned = cleaned.substring(0, demoIdx) + cleaned.substring(endIdx + 1);
+    } else {
+      cleaned = cleaned.substring(0, demoIdx);
+    }
+  }
+  return cleaned.trim();
+};
+
 export class DashboardComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -182,7 +201,7 @@ export class DashboardComponent {
       const cleanRTitle = cleanTitle(r.title);
       const hasHistory = r.scoreHistory && r.scoreHistory.length >= 2;
       return `
-        <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;" title="${cleanRTitle}">
+        <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px; min-width: 0;" title="${cleanRTitle}">
           <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; min-width: 0;">${cleanRTitle}</span>
           ${hasHistory ? `
             <canvas class="sparkline-canvas" data-risk-id="${r.id}" data-type="worsening" width="48" height="24" style="width: 48px; height: 24px; flex-shrink: 0;"></canvas>
@@ -196,7 +215,7 @@ export class DashboardComponent {
       const cleanRTitle = cleanTitle(r.title);
       const hasHistory = r.scoreHistory && r.scoreHistory.length >= 2;
       return `
-        <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px;" title="${cleanRTitle}">
+        <div class="movement-row" data-risk-id="${r.id}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; font-size: 12px; min-width: 0;" title="${cleanRTitle}">
           <span style="color: var(--color-navy); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; min-width: 0;">${cleanRTitle}</span>
           ${hasHistory ? `
             <canvas class="sparkline-canvas" data-risk-id="${r.id}" data-type="improving" width="48" height="24" style="width: 48px; height: 24px; flex-shrink: 0;"></canvas>
@@ -1091,14 +1110,14 @@ export class DashboardComponent {
           <button id="btn-close-drawer" style="border: none; background: none; font-size: 20px; cursor: pointer; color: var(--color-navy-secondary);">&times;</button>
         </div>
         
-        <h2 style="font-size: 20px; font-weight: 600; color: var(--color-navy); margin-bottom: 4px;">${cleanTitle(risk.title)}</h2>
-        <div style="font-size: 11px; color: var(--color-navy-secondary); margin-bottom: 12px; font-weight: 500;">ID: ${risk.id}</div>
+        <h2 style="font-size: 20px; font-weight: 600; color: var(--color-navy); margin-bottom: 4px;" title="ID: ${risk.id}">${cleanTitle(risk.title)}</h2>
+        <div style="display: none;" title="ID: ${risk.id}">ID: ${risk.id}</div>
         <span class="status-badge ${appClass}" style="font-size: 10px; padding: 2px 8px; margin-bottom: 16px; display: inline-block;">
           ${risk.appetiteStatus} (${risk.residualScore})
         </span>
 
         <p style="font-size: 13px; color: var(--color-navy); line-height: 1.5; margin-bottom: 20px;">
-          ${risk.description}
+          ${cleanDescription(risk.description)}
         </p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 11px; margin-bottom: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">

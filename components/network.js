@@ -171,7 +171,7 @@ export class NetworkComponent {
       
       const occupiedHeight = (count - 1) * verticalDistance;
       const centeringOffset = (canvasHeight - paddingTop - paddingBottom - occupiedHeight) / 2;
-      const yStart = paddingTop + Math.max(0, Math.min(40, centeringOffset));
+      const yStart = paddingTop + Math.max(0, Math.min(20, centeringOffset));
 
       group.forEach((node, index) => {
         positions[node.id] = {

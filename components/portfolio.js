@@ -11,6 +11,25 @@ const cleanTitle = (title) => {
     .trim();
 };
 
+const cleanDescription = (desc) => {
+  if (!desc) return '';
+  let cleaned = desc;
+  const markerIdx = cleaned.indexOf('Demo marker:');
+  if (markerIdx !== -1) {
+    cleaned = cleaned.substring(0, markerIdx).trim();
+  }
+  const demoIdx = cleaned.indexOf('[DEMO');
+  if (demoIdx !== -1) {
+    const endIdx = cleaned.indexOf(']', demoIdx);
+    if (endIdx !== -1) {
+      cleaned = cleaned.substring(0, demoIdx) + cleaned.substring(endIdx + 1);
+    } else {
+      cleaned = cleaned.substring(0, demoIdx);
+    }
+  }
+  return cleaned.trim();
+};
+
 export class PortfolioComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
@@ -216,7 +235,7 @@ export class PortfolioComponent {
           <div class="glass-panel">
             <h3 class="dashboard-card-title">${activePort.title}</h3>
             <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;">
-              ${activePort.description}
+              ${cleanDescription(activePort.description)}
             </p>
 
             <div style="display:flex; flex-direction:column; gap:8px;">
