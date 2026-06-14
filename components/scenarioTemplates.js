@@ -1925,6 +1925,7 @@ export const scenarioTemplates = [
         worst: "Tooling unit costs increase by 5% in worst-case scenario.",
         recovery: "Estimated recovery duration: 1.5 months.",
         boardNote: "Supply chain risk is successfully resolved; inventory reserve levels are high."
+      }
     }
   },
   {
