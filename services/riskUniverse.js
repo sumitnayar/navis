@@ -474,7 +474,7 @@ export const seededScenarios = [
     cashImpact: { best: "-₹45L", expected: "-₹1.5Cr", worst: "-₹6.8Cr" },
     objectiveImpact: "Triggers SLA breach penalties and blocks core financial account onboarding pipelines."
   }
-]_;
+];
 
 // 3. RISK CULTURE SCORECARD INDEX DATA (F9 Mappings)
 export const seededCultureMetrics = {
