@@ -394,9 +394,8 @@ export class ScenarioComponent {
 
       <div class="page-header">
         <div class="page-title-wrap">
-          <span class="profile-role-badge">Executive Strategy & Governance</span>
-          <h1>Board Decision Room</h1>
-          <p class="page-subtitle">Stress-test corporate response strategies under critical risk conditions.</p>
+          <span class="profile-role-badge">Strategy Simulation</span>
+          <h1>Decision Room</h1>
         </div>
       </div>
 
@@ -408,7 +407,7 @@ export class ScenarioComponent {
           <!-- Scenario Configuration Panel -->
           <div class="glass-panel" style="padding: 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <h3 class="dashboard-card-title" style="margin:0;">Active Threat Scenario</h3>
+              <h3 class="dashboard-card-title" style="margin:0;">Scenario</h3>
               ${isPinned 
                 ? `<span class="pinned-status yes">★ Spotlight Scenario</span>`
                 : `<button class="btn btn-secondary btn-small" id="btn-pin-spotlight" style="font-size:10px; padding:3px 8px;">Pin to Spotlight</button>`
@@ -416,7 +415,6 @@ export class ScenarioComponent {
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
-              <label style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:4px;">Select Scenario Template</label>
               <select class="form-control" id="select-scenario-template" style="font-size: 13px; font-weight:600; padding:8px;">
                 ${scenarioTemplates.map(t => `<option value="${t.id}" ${this.selectedScenarioId === t.id ? 'selected' : ''}>[${t.category}] ${t.title}</option>`).join('')}
               </select>
@@ -438,7 +436,7 @@ export class ScenarioComponent {
 
           <!-- Timeline Explorer -->
           <div class="glass-panel" style="padding: 16px;">
-            <h3 class="dashboard-card-title">Timeline Progression</h3>
+            <h3 class="dashboard-card-title">Timeline</h3>
             <p style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top: -6px; margin-bottom: 12px;">Track operational and financial impacts through different timeline gates.</p>
             
             <div class="timeline-nav">
@@ -475,7 +473,7 @@ export class ScenarioComponent {
 
           <!-- Management Response Option Selection -->
           <div class="glass-panel" style="padding: 16px;">
-            <h3 class="dashboard-card-title">Management Response Options</h3>
+            <h3 class="dashboard-card-title">Response</h3>
             <p style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top: -6px; margin-bottom: 12px;">Toggle different intervention levels to modify outcome metrics.</p>
 
             <div class="response-selectors">
@@ -502,144 +500,85 @@ export class ScenarioComponent {
 
         </div>
 
-        <!-- RIGHT COLUMN: IMPACT DIMENSIONS, SIDE-BY-SIDE COMPARE, NARRATIVE & ACTIONS -->
+        <!-- RIGHT COLUMN: OUTCOME METRICS, NARRATIVE & ACTIONS -->
         <div class="room-column">
           
-          <!-- Dynamic Impact Dimensions under Selected Response -->
+          <!-- Outcome Metrics & Comparison Cards -->
           <div class="glass-panel" style="padding: 16px;">
-            <h3 class="dashboard-card-title">Impact Dimensions (Current Response)</h3>
-            
-            <div class="dimension-card-grid">
-              
-              <div class="dimension-card">
-                <h4>Revenue Impact</h4>
-                <div class="dimension-value" style="color: ${this.getColorForImpact(activeResponse.revenue)};">${activeResponse.revenue}</div>
-                <div class="progress-band-bg">
+            <h3 class="dashboard-card-title">Comparison</h3>
+            <p style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top: -6px; margin-bottom: 12px;">Selected response compared to without intervention baseline.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Revenue Card -->
+              <div class="dimension-card" style="padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between;">
+                <h4 style="margin:0 0 6px 0; font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Revenue Impact</h4>
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                  <span style="font-size:18px; font-weight:700; color: ${this.getColorForImpact(activeResponse.revenue)};">${activeResponse.revenue}</span>
+                  <span style="font-size:10px; color:var(--text-secondary);">vs ${noResponse.revenue} baseline</span>
+                </div>
+                <div class="progress-band-bg" style="margin-top: 6px;">
                   <div class="progress-band-fill" style="width: ${this.getPercentageWidth(activeResponse.revenue)}; background: ${this.getColorForImpact(activeResponse.revenue)};"></div>
                 </div>
               </div>
 
-              <div class="dimension-card">
-                <h4>Cash Impact</h4>
-                <div class="dimension-value" style="color: ${this.getColorForImpact(activeResponse.cash)};">${activeResponse.cash}</div>
-                <div class="progress-band-bg">
+              <!-- Cash Card -->
+              <div class="dimension-card" style="padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between;">
+                <h4 style="margin:0 0 6px 0; font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Cash Impact</h4>
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                  <span style="font-size:18px; font-weight:700; color: ${this.getColorForImpact(activeResponse.cash)};">${activeResponse.cash}</span>
+                  <span style="font-size:10px; color:var(--text-secondary);">vs ${noResponse.cash} baseline</span>
+                </div>
+                <div class="progress-band-bg" style="margin-top: 6px;">
                   <div class="progress-band-fill" style="width: ${this.getPercentageWidth(activeResponse.cash)}; background: ${this.getColorForImpact(activeResponse.cash)};"></div>
                 </div>
               </div>
 
-              <div class="dimension-card">
-                <h4>EBITDA Impact</h4>
-                <div class="dimension-value" style="color: ${this.getEbitdaColor(activeResponse.ebitda)};">${activeResponse.ebitda}</div>
-                <div class="progress-band-bg">
+              <!-- EBITDA Card -->
+              <div class="dimension-card" style="padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between;">
+                <h4 style="margin:0 0 6px 0; font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">EBITDA Impact</h4>
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                  <span style="font-size:18px; font-weight:700; color: ${this.getEbitdaColor(activeResponse.ebitda)};">${activeResponse.ebitda}</span>
+                  <span style="font-size:10px; color:var(--text-secondary);">vs ${noResponse.ebitda} baseline</span>
+                </div>
+                <div class="progress-band-bg" style="margin-top: 6px;">
                   <div class="progress-band-fill" style="width: ${this.getEbitdaPercentageWidth(activeResponse.ebitda)}; background: ${this.getEbitdaColor(activeResponse.ebitda)};"></div>
                 </div>
               </div>
 
-              <div class="dimension-card">
-                <h4>Board Escalation Level</h4>
-                <div class="dimension-value" style="font-size:13px; padding-top:4px;">${activeResponse.escalation}</div>
-                <span class="${this.getBadgeClass(activeResponse.escalation)}" style="margin-top:4px; font-size:9px; width:fit-content;">${activeResponse.escalation.includes('Level 4') ? 'Immediate Alert' : activeResponse.escalation.includes('Level 3') ? 'Executive Action' : 'Standard Watch'}</span>
+              <!-- Recovery Duration Card -->
+              <div class="dimension-card" style="padding: 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between;">
+                <h4 style="margin:0 0 6px 0; font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Recovery Duration</h4>
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                  <span style="font-size:18px; font-weight:700; color: var(--text-primary);">${activeResponse.duration}</span>
+                  <span style="font-size:10px; color:var(--text-secondary);">vs ${noResponse.duration} baseline</span>
+                </div>
+                <div class="progress-band-bg" style="margin-top: 6px;">
+                  <div class="progress-band-fill" style="width: ${activeResponse.duration.includes('month') ? '30%' : '100%'}; background: var(--color-indigo);"></div>
+                </div>
               </div>
-
-              <div class="dimension-card">
-                <h4>Reputation Exposure</h4>
-                <div class="dimension-value" style="font-size:14px; padding-top:4px;">${activeResponse.reputation}</div>
-                <span class="${this.getBadgeClass(activeResponse.reputation)}" style="font-size:9px; width:fit-content;">${activeResponse.reputation}</span>
-              </div>
-
-              <div class="dimension-card">
-                <h4>Customer Trust</h4>
-                <div class="dimension-value" style="font-size:14px; padding-top:4px;">${activeResponse.trust}</div>
-                <span class="${this.getBadgeClass(activeResponse.trust)}" style="font-size:9px; width:fit-content;">${activeResponse.trust}</span>
-              </div>
-
-              <div class="dimension-card">
-                <h4>Risk Appetite Impact</h4>
-                <div class="dimension-value" style="font-size:14px; padding-top:4px;">${activeResponse.appetite}</div>
-                <span class="${this.getBadgeClass(activeResponse.appetite)}" style="font-size:9px; width:fit-content;">${activeResponse.appetite}</span>
-              </div>
-
-              <div class="dimension-card">
-                <h4>Recovery Duration</h4>
-                <div class="dimension-value" style="font-size:15px; padding-top:4px;">${activeResponse.duration}</div>
-                <span class="status-badge within" style="font-size:9px; width:fit-content; background:rgba(0,0,0,0.04); color:var(--text-primary); border:none;">Target Limit: 12m</span>
-              </div>
-
             </div>
-          </div>
 
-          <!-- Side-by-Side Comparison: No Intervention vs. Strong Response -->
-          <div class="glass-panel" style="padding: 16px;">
-            <h3 class="dashboard-card-title">Intervention Trade-off Comparison</h3>
-            
-            <div class="side-by-side-grid">
-              
-              <!-- No Response Col -->
-              <div class="compare-col" style="border-top: 4px solid var(--color-above-appetite);">
-                <div class="compare-header" style="color: var(--color-above-appetite);">Without Intervention</div>
-                
-                <div class="compare-row">
-                  <span>Revenue Impact</span>
-                  <strong style="color:var(--color-above-appetite);">${noResponse.revenue}</strong>
-                </div>
-                <div class="compare-row">
-                  <span>Cash Impact</span>
-                  <strong>${noResponse.cash}</strong>
-                </div>
-                <div class="compare-row">
-                  <span>EBITDA Shock</span>
-                  <strong style="color:var(--color-above-appetite);">${noResponse.ebitda}</strong>
-                </div>
-                <div class="compare-row">
-                  <span>Reputation</span>
-                  <span class="${this.getBadgeClass(noResponse.reputation)}" style="font-size:8px;">${noResponse.reputation}</span>
-                </div>
-                <div class="compare-row">
-                  <span>Escalation</span>
-                  <strong>Level 4</strong>
-                </div>
-                <div class="compare-row" style="border:none;">
-                  <span>Recovery Time</span>
-                  <strong>${noResponse.duration}</strong>
-                </div>
+            <!-- Qualitative dimensions as clean horizontal metadata badges -->
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; font-size: 11px;">
+              <div style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color);">
+                <span style="color:var(--text-secondary);">Escalation:</span> <strong style="color:var(--text-primary);">${activeResponse.escalation}</strong>
               </div>
-
-              <!-- Strong Response Col -->
-              <div class="compare-col" style="border-top: 4px solid var(--color-within-appetite);">
-                <div class="compare-header" style="color: var(--color-within-appetite);">With Strong Response</div>
-                
-                <div class="compare-row">
-                  <span>Revenue Impact</span>
-                  <strong style="color:var(--color-within-appetite);">${strongResponse.revenue}</strong>
-                </div>
-                <div class="compare-row">
-                  <span>Cash Impact</span>
-                  <strong>${strongResponse.cash}</strong>
-                </div>
-                <div class="compare-row">
-                  <span>EBITDA Shock</span>
-                  <strong style="color:var(--color-within-appetite);">${strongResponse.ebitda}</strong>
-                </div>
-                <div class="compare-row">
-                  <span>Reputation</span>
-                  <span class="${this.getBadgeClass(strongResponse.reputation)}" style="font-size:8px;">${strongResponse.reputation}</span>
-                </div>
-                <div class="compare-row">
-                  <span>Escalation</span>
-                  <strong>Level 2</strong>
-                </div>
-                <div class="compare-row" style="border:none;">
-                  <span>Recovery Time</span>
-                  <strong>${strongResponse.duration}</strong>
-                </div>
+              <div style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color);">
+                <span style="color:var(--text-secondary);">Reputation:</span> <strong style="color:var(--text-primary);">${activeResponse.reputation}</strong>
               </div>
-
+              <div style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color);">
+                <span style="color:var(--text-secondary);">Customer Trust:</span> <strong style="color:var(--text-primary);">${activeResponse.trust}</strong>
+              </div>
+              <div style="background: var(--bg-primary); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color);">
+                <span style="color:var(--text-secondary);">Appetite Status:</span> <strong style="color:var(--text-primary);">${activeResponse.appetite}</strong>
+              </div>
             </div>
+
           </div>
 
           <!-- Narrative Engine Paper & Board Actions -->
           <div class="glass-panel" style="padding: 16px;">
-            <h3 class="dashboard-card-title">Executive Briefing Paper</h3>
+            <h3 class="dashboard-card-title">Briefing</h3>
             
             <div class="narrative-paper">
               <h3>Board Narrative Briefing</h3>

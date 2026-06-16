@@ -152,10 +152,10 @@ export class PolicyStudioComponent {
         <!-- LEFT: SELECTION & COMPANY PROFILE -->
         <div class="details-panel" style="flex: 1 1 320px;">
           <div class="glass-panel">
-            <h3 class="dashboard-card-title">Policy Selection</h3>
+            <h3 class="dashboard-card-title">Selection</h3>
             
             <div class="form-group">
-              <label>Policy Domain</label>
+              <label>Domain</label>
               <select class="form-control" id="gen-domain-select">
                 ${Object.entries(domains).map(([k, d]) => `
                   <option value="${k}" ${this.genDomain === k ? 'selected' : ''}>${d.name}</option>
@@ -164,7 +164,7 @@ export class PolicyStudioComponent {
             </div>
 
             <div class="form-group">
-              <label>Target Policy Document</label>
+              <label>Template</label>
               <select class="form-control" id="gen-template-select">
                 ${Object.entries(subPolicies).map(([k, t]) => `
                   <option value="${k}" ${this.genTemplate === k ? 'selected' : ''}>${t.title}</option>
@@ -173,7 +173,7 @@ export class PolicyStudioComponent {
             </div>
 
             <div class="form-group">
-              <label>Industry Variant</label>
+              <label>Industry</label>
               <select class="form-control" id="gen-industry-select">
                 <option value="SaaS" ${this.genIndustry === 'SaaS' ? 'selected' : ''}>SaaS</option>
                 <option value="FinTech" ${this.genIndustry === 'FinTech' ? 'selected' : ''}>FinTech</option>
@@ -185,37 +185,37 @@ export class PolicyStudioComponent {
           </div>
 
           <div class="glass-panel" style="margin-top:16px;">
-            <h3 class="dashboard-card-title">Company Profile</h3>
+            <h3 class="dashboard-card-title">Profile</h3>
             
             <div class="form-group">
-              <label>Operating Countries</label>
+              <label>Countries</label>
               <input type="text" class="form-control profile-field" data-key="countries" value="${this.genProfile.countries}" />
             </div>
             
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
-                <label>Cloud Provider</label>
+                <label>Cloud</label>
                 <input type="text" class="form-control profile-field" data-key="cloudProvider" value="${this.genProfile.cloudProvider}" />
               </div>
               <div class="form-group">
-                <label>Employee Count</label>
+                <label>Employees</label>
                 <input type="text" class="form-control profile-field" data-key="employeeCount" value="${this.genProfile.employeeCount}" />
               </div>
             </div>
 
             <div class="form-group">
-              <label>Customer Types</label>
+              <label>Customers</label>
               <input type="text" class="form-control profile-field" data-key="customerTypes" value="${this.genProfile.customerTypes}" />
             </div>
 
             <div class="form-group">
-              <label>Data Categories Processed</label>
+              <label>Data Categories</label>
               <textarea class="form-control profile-field" data-key="dataCategories" rows="2" style="font-size:11px;">${this.genProfile.dataCategories}</textarea>
             </div>
           </div>
 
           <div class="glass-panel" style="margin-top:16px; background:rgba(0,181,181,0.02);">
-            <h3 class="dashboard-card-title" style="color:var(--color-indigo);">Clause Library Moat</h3>
+            <h3 class="dashboard-card-title">Clause Library</h3>
             <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:10px;">
               Browse consultant-grade clauses to use as reusable building blocks.
             </p>
@@ -235,10 +235,10 @@ export class PolicyStudioComponent {
           <div class="glass-panel" style="min-height:580px;display:flex;flex-direction:column;justify-content:space-between;">
             
             <div>
-              <h3 class="dashboard-card-title">Drafting Workspace</h3>
+              <h3 class="dashboard-card-title">Drafting</h3>
               
               <div class="form-group">
-                <label>Custom Drafting Prompts (Optional)</label>
+                <label>Custom Prompts</label>
                 <textarea class="form-control" id="gen-prompt-input" rows="3" placeholder="e.g. Include specific guidelines for Indian data residency and ISO 27001 logging controls..." style="font-size:11px;">${this.genPrompt}</textarea>
               </div>
 
@@ -298,10 +298,10 @@ export class PolicyStudioComponent {
         <!-- LEFT: AUDIT WORKFLOW TRIGGERS -->
         <div class="details-panel" style="flex: 1 1 320px;">
           <div class="glass-panel">
-            <h3 class="dashboard-card-title">Upgrade Wizard Configuration</h3>
+            <h3 class="dashboard-card-title">Configuration</h3>
             
             <div class="form-group">
-              <label>Select Ingested Policy</label>
+              <label>Select Policy</label>
               <select class="form-control" id="audit-doc-select">
                 <option value="">-- Choose from Vault --</option>
                 ${vaultDocs.map(d => `
@@ -311,7 +311,7 @@ export class PolicyStudioComponent {
             </div>
 
             <div class="form-group">
-              <label>Target Framework</label>
+              <label>Framework</label>
               <select class="form-control" id="audit-framework-select">
                 ${Object.entries(frameworks).map(([k, f]) => `
                   <option value="${k}" ${this.targetFramework === k ? 'selected' : ''}>${f.name}</option>
@@ -326,7 +326,7 @@ export class PolicyStudioComponent {
 
           <!-- REQ PACK INSPECTOR -->
           <div class="glass-panel" style="margin-top:16px;">
-            <h3 class="dashboard-card-title">Requirement Pack Preview</h3>
+            <h3 class="dashboard-card-title">Requirements</h3>
             <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:12px;">
               Exposing requirements mapped by ${frameworks[this.targetFramework]?.name || 'Target Framework'}.
             </p>
@@ -344,7 +344,7 @@ export class PolicyStudioComponent {
         <!-- RIGHT: RESULTS PANEL -->
         <div class="details-panel" style="flex: 2 1 500px;">
           <div class="glass-panel" style="min-height:580px;">
-            <h3 class="dashboard-card-title">Analysis Workspace</h3>
+            <h3 class="dashboard-card-title">Analysis</h3>
 
             ${this.isAnalyzing ? `
               <div style="text-align:center;padding:120px 0;color:var(--text-muted);">
@@ -510,7 +510,7 @@ export class PolicyStudioComponent {
         <!-- LEFT: POLICY SELECTOR -->
         <div class="details-panel" style="flex: 1 1 320px;">
           <div class="glass-panel">
-            <h3 class="dashboard-card-title">Policy Selection</h3>
+            <h3 class="dashboard-card-title">Selection</h3>
             <div class="form-group">
               <label>Choose Policy</label>
               <select class="form-control" id="ver-doc-select">
@@ -536,10 +536,10 @@ export class PolicyStudioComponent {
           <!-- STAGING WORKFLOW -->
           ${this.isPublishing ? `
             <div class="glass-panel" style="border-color:var(--color-indigo);margin-bottom:16px;">
-              <h3 class="dashboard-card-title" style="color:var(--color-indigo);">Approval Workflow & Publication</h3>
+              <h3 class="dashboard-card-title">Approval Workflow</h3>
               
               <div class="form-group" style="margin-top:12px;">
-                <label>Review Summary / Change Notes</label>
+                <label>Change Notes</label>
                 <textarea class="form-control" id="pub-summary-input" rows="3" placeholder="e.g. Added consent withdrawal clause to satisfy DPDP criteria, and verified least-privilege logging parameters." style="font-size:11px;">${this.reviewSummary}</textarea>
               </div>
 
@@ -552,7 +552,7 @@ export class PolicyStudioComponent {
 
           <!-- VERSION LEDGER -->
           <div class="glass-panel" style="min-height:460px;">
-            <h3 class="dashboard-card-title">Version History ledger</h3>
+            <h3 class="dashboard-card-title">Versions</h3>
             
             ${!activeDocId ? `
               <div style="text-align:center;padding:100px 0;color:var(--text-muted);">

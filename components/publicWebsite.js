@@ -167,7 +167,7 @@ function renderPrivatePreview() {
       <div class="nw-container">
         <span class="nw-eyebrow">Private preview</span>
         <h2>Navis is currently in private preview.</h2>
-        <p>We are working closely with boards, founders and risk leaders shaping the next generation of governance intelligence.</p>
+        <p>We are onboarding selected boards, founders, risk teams and governance leaders.</p>
         ${routeLink('/request-demo', 'Request Private Demo', 'nw-button nw-button-light')}
       </div>
     </section>
@@ -269,65 +269,392 @@ function renderExperiencePreview() {
   `;
 }
 
-function renderHome(session) {
+function renderMockupPlaceholder(type, title) {
+  if (type === 'board-mode') {
+    return `
+      <div class="nw-mockup-placeholder nw-mockup-board">
+        <div class="nw-mockup-header">
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-title">${title}</span>
+          <span class="nw-mockup-badge">LIVE POSTURE</span>
+        </div>
+        <div class="nw-mockup-body">
+          <div class="nw-mockup-sidebar">
+            <div class="nw-mockup-item active"></div>
+            <div class="nw-mockup-item"></div>
+            <div class="nw-mockup-item"></div>
+          </div>
+          <div class="nw-mockup-main">
+            <div class="nw-mockup-stats-row">
+              <div class="nw-mockup-stat-card">
+                <span>Enterprise Posture</span>
+                <strong>Elevated</strong>
+              </div>
+              <div class="nw-mockup-stat-card">
+                <span>Confidence</span>
+                <strong>82%</strong>
+              </div>
+              <div class="nw-mockup-stat-card">
+                <span>Risks</span>
+                <strong>14 Active</strong>
+              </div>
+            </div>
+            <div class="nw-mockup-chart-placeholder">
+              <div class="nw-mockup-bar" style="height: 60%"></div>
+              <div class="nw-mockup-bar" style="height: 85%"></div>
+              <div class="nw-mockup-bar" style="height: 40%"></div>
+              <div class="nw-mockup-bar" style="height: 70%"></div>
+              <div class="nw-mockup-bar" style="height: 50%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  if (type === 'policy-studio') {
+    return `
+      <div class="nw-mockup-placeholder nw-mockup-policy">
+        <div class="nw-mockup-header">
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-title">${title}</span>
+          <span class="nw-mockup-badge">POLICY DESK</span>
+        </div>
+        <div class="nw-mockup-body">
+          <div class="nw-mockup-sidebar">
+            <div class="nw-mockup-item"></div>
+            <div class="nw-mockup-item active"></div>
+          </div>
+          <div class="nw-mockup-main">
+            <div class="nw-mockup-doc-header">
+              <strong>Data Protection Policy</strong>
+              <span>v3.2 — Pending Approval</span>
+            </div>
+            <div class="nw-mockup-clause-list">
+              <div class="nw-mockup-clause">
+                <div class="nw-mockup-clause-num">12.4</div>
+                <div class="nw-mockup-clause-text">Escalation of material privacy incidents to the CRO...</div>
+                <div class="nw-mockup-clause-status active">APPROVED</div>
+              </div>
+              <div class="nw-mockup-clause">
+                <div class="nw-mockup-clause-num">14.1</div>
+                <div class="nw-mockup-clause-text">Processor audit frequency and evidence logs...</div>
+                <div class="nw-mockup-clause-status pending">REVIEW</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  if (type === 'board-decision-room') {
+    return `
+      <div class="nw-mockup-placeholder nw-mockup-decision">
+        <div class="nw-mockup-header">
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-title">${title}</span>
+          <span class="nw-mockup-badge">SIMULATION ACTIVE</span>
+        </div>
+        <div class="nw-mockup-body">
+          <div class="nw-mockup-sidebar">
+            <div class="nw-mockup-item"></div>
+            <div class="nw-mockup-item active"></div>
+          </div>
+          <div class="nw-mockup-main">
+            <div class="nw-mockup-scenario-header">
+              <strong>Scenario: Critical Cloud Outage</strong>
+              <span>Impact: Operational / Reputation</span>
+            </div>
+            <div class="nw-mockup-response-options">
+              <div class="nw-mockup-option">
+                <span>Option A: Immediate Failover</span>
+                <div class="nw-mockup-bar-confidence" style="width: 82%">Confidence: 82%</div>
+              </div>
+              <div class="nw-mockup-option">
+                <span>Option B: Managed Recovery</span>
+                <div class="nw-mockup-bar-confidence" style="width: 64%">Confidence: 64%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  if (type === 'ask-navis') {
+    return `
+      <div class="nw-mockup-placeholder nw-mockup-ask">
+        <div class="nw-mockup-header">
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-dot"></span>
+          <span class="nw-mockup-title">${title}</span>
+          <span class="nw-mockup-badge">AI CHAT</span>
+        </div>
+        <div class="nw-mockup-body">
+          <div class="nw-mockup-chat">
+            <div class="nw-mockup-message user">
+              <p>Show me all policies and risks affected by a privacy breach.</p>
+            </div>
+            <div class="nw-mockup-message assistant">
+              <p>Analyzing corporate governance model... Found:</p>
+              <ul>
+                <li>Policy: Data Privacy Policy (Clause 12.4)</li>
+                <li>Risk: Regulatory compliance failure</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  return '';
+}
+
+function renderHeroSection(session) {
   const dashboardPath = session ? '/dashboard' : '/login';
   const dashboardLabel = session ? 'Open Dashboard' : 'Login';
   return `
-    <main>
-      <section class="nw-hero">
-        <div class="nw-container nw-hero-grid">
-          <div class="nw-hero-copy">
-            <span class="nw-eyebrow">AI-native governance intelligence</span>
-            <h1>AI-native governance and risk intelligence for modern boards.</h1>
-            <p>Navis helps boards, leadership teams and risk professionals move beyond static risk registers into living governance, policy intelligence, scenario planning and board-ready decision support.</p>
-            <div class="nw-actions">
-              ${routeLink('/request-demo', 'Request Private Demo', 'nw-button nw-button-primary')}
-              ${routeLink(dashboardPath, dashboardLabel, 'nw-button nw-button-secondary')}
+    <section class="nw-hero">
+      <div class="nw-container nw-hero-grid">
+        <div class="nw-hero-copy">
+          <span class="nw-eyebrow">AI-native governance intelligence</span>
+          <h1>AI-native governance and risk intelligence for modern boards</h1>
+          <p>Move beyond static risk registers into policy intelligence, board decision simulations, living governance and board-ready decision support.</p>
+          <div class="nw-actions">
+            ${routeLink('/request-demo', 'Request Demo', 'nw-button nw-button-primary')}
+            ${routeLink(dashboardPath, dashboardLabel, 'nw-button nw-button-secondary')}
+          </div>
+          <div class="nw-trust-line"><span>Built for consequential decisions</span><span>Human approval by design</span><span>Private preview</span></div>
+        </div>
+        <div class="nw-hero-visual-container">
+          <figure class="nw-screenshot-frame nw-hero-screenshot">
+            <div class="nw-screenshot-bar">
+              <span></span><span></span><span></span>
+              <strong>Board Mode — Live Posture</strong>
             </div>
-            <div class="nw-trust-line"><span>Built for consequential decisions</span><span>Human approval by design</span><span>Private preview</span></div>
-          </div>
-          ${renderHeroScreenshot()}
+            <img src="/assets/screenshots/navis-board-mode.png" alt="Navis Board Risk Intelligence Console showing overall enterprise posture" onerror="this.style.display='none'; this.closest('.nw-hero-screenshot').classList.add('no-image');">
+            <div class="nw-screenshot-fallback">
+              ${renderMockupPlaceholder('board-mode', 'Board Risk Intelligence')}
+            </div>
+          </figure>
         </div>
-      </section>
-      ${renderPillars()}
-      ${renderProductEvidence()}
-      <section class="nw-band nw-problem-band">
-        <div class="nw-container nw-problem-grid">
-          <div class="nw-section-heading">
-            <span class="nw-eyebrow">The governance gap</span>
-            <h2>Static governance cannot keep up with a changing business.</h2>
-            <p>Most leadership teams have more data than ever, but still lack a coherent view of what matters, what changed and what decision comes next.</p>
+      </div>
+    </section>
+  `;
+}
+
+function renderProblemSection() {
+  return `
+    <section class="nw-band nw-problem-band">
+      <div class="nw-container nw-problem-grid">
+        <div class="nw-section-heading">
+          <span class="nw-eyebrow">The governance gap</span>
+          <h2>Static governance cannot keep up with a changing business.</h2>
+          <p>Most leadership teams have more data than ever, but still lack a coherent view of what matters, what changed and what decision comes next.</p>
+        </div>
+        <div class="nw-problem-list">
+          <span><b>01</b>Risk registers become stale</span>
+          <span><b>02</b>Policies are fragmented</span>
+          <span><b>03</b>Board packs take too long</span>
+          <span><b>04</b>Scenario planning is shallow</span>
+          <span><b>05</b>Governance evidence lives across documents, spreadsheets and email</span>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderProductPillarsSection() {
+  const pillars = [
+    {
+      index: '01',
+      title: 'Board Risk Intelligence',
+      copy: 'Turn live risk, control and action signals into a clear board-level view of enterprise exposure.'
+    },
+    {
+      index: '02',
+      title: 'Policy Studio',
+      copy: 'Generate, upgrade, interrogate and govern policies with human approval at every step.'
+    },
+    {
+      index: '03',
+      title: 'Board Decision Room',
+      copy: 'Stress-test events, compare management responses and identify board decisions.'
+    },
+    {
+      index: '04',
+      title: 'Ask Navis',
+      copy: 'Ask boardroom questions across risks, controls, objectives, policies and scenarios.'
+    }
+  ];
+
+  return `
+    <section class="nw-band nw-band-ink">
+      <div class="nw-container">
+        <div class="nw-section-heading nw-section-heading-light">
+          <span class="nw-eyebrow">Core product pillars</span>
+          <h2>Four pillars. One governance operating layer.</h2>
+          <p>Navis integrates risk tracking, policy management, scenario simulations, and Q&A into a single platform.</p>
+        </div>
+        <div class="nw-pillar-grid">
+          ${pillars.map((pillar) => `
+            <article class="nw-pillar-card">
+              <span class="nw-card-index">${pillar.index}</span>
+              <h3>${pillar.title}</h3>
+              <p>${pillar.copy}</p>
+            </article>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderInteractivePreviewSection() {
+  return `
+    <section class="nw-band nw-preview-section">
+      <div class="nw-container">
+        <div class="nw-section-heading nw-section-heading-centered">
+          <span class="nw-eyebrow">See Navis in action</span>
+          <h2>See Navis in action</h2>
+          <p class="nw-section-subtitle">A quick walkthrough of how Navis connects risks, policies, scenarios and board decisions into one governance operating layer.</p>
+        </div>
+
+        <div class="nw-main-preview-card">
+          <div class="nw-main-preview-media">
+            <div class="nw-main-preview-frame">
+              <img src="/assets/screenshots/navis-board-mode.png" alt="Navis Board Risk Intelligence Walkthrough" onerror="this.style.display='none'; this.closest('.nw-main-preview-frame').classList.add('no-image');">
+              <div class="nw-screenshot-fallback">
+                ${renderMockupPlaceholder('board-mode', 'Board Risk Intelligence')}
+              </div>
+              <button class="nw-play-overlay-btn" aria-label="Play video walkthrough" data-timestamp="0">
+                <span class="nw-play-icon">▶</span>
+              </button>
+            </div>
           </div>
-          <div class="nw-problem-list">
-            <span><b>01</b>Risk registers become stale</span>
-            <span><b>02</b>Policies are fragmented</span>
-            <span><b>03</b>Board packs take too long</span>
-            <span><b>04</b>Scenario planning is shallow</span>
-            <span><b>05</b>Compliance evidence lives across documents and spreadsheets</span>
+          <div class="nw-main-preview-info">
+            <p class="nw-main-preview-caption">Understand enterprise posture, key risks, and strategic board decisions in real-time.</p>
+            <button class="nw-button nw-button-primary nw-watch-walkthrough-btn" data-timestamp="0">Watch 2-minute walkthrough</button>
           </div>
         </div>
-      </section>
-      ${renderPlatformSection()}
-      ${renderPolicySection()}
-      ${renderDecisionSection()}
-      <section class="nw-band nw-band-soft">
-        <div class="nw-container">
-          <div class="nw-section-heading">
-            <span class="nw-eyebrow">Who Navis is for</span>
-            <h2>One shared intelligence layer. Five critical perspectives.</h2>
-          </div>
-          <div class="nw-audience-grid">
-            ${[
-              ['Boards and Independent Directors', 'See the exposure, evidence and choices behind every material decision.'],
-              ['CEOs and Founders', 'Connect strategic ambition to the risks and actions that shape execution.'],
-              ['CROs and Risk Teams', 'Replace fragmented registers with a living enterprise risk system.'],
-              ['Compliance and Privacy Teams', 'Govern policies, clauses and evidence through controlled workflows.'],
-              ['Investors and Advisors', 'Understand resilience, readiness and decision quality with greater clarity.']
-            ].map(([title, copy]) => `<article><h3>${title}</h3><p>${copy}</p></article>`).join('')}
-          </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderVideoChaptersSection() {
+  const chapters = [
+    {
+      timestamp: 0,
+      timestampLabel: '0:00',
+      title: 'Board Risk Intelligence',
+      caption: 'Understand enterprise posture, top board issues and threatened objectives in seconds.',
+      screenshot: '/assets/screenshots/navis-board-mode.png',
+      mockupType: 'board-mode'
+    },
+    {
+      timestamp: 30,
+      timestampLabel: '0:30',
+      title: 'AI Policy Generation and Governance',
+      caption: 'Generate, upgrade, interrogate and govern policies with human approval at every step.',
+      screenshot: '/assets/screenshots/navis-policy-studio.png',
+      mockupType: 'policy-studio'
+    },
+    {
+      timestamp: 75,
+      timestampLabel: '1:15',
+      title: 'Strategic Scenario Simulation',
+      caption: 'Stress-test events, compare management responses and identify board decisions.',
+      screenshot: '/assets/screenshots/navis-board-decision-room.png',
+      mockupType: 'board-decision-room'
+    },
+    {
+      timestamp: 120,
+      timestampLabel: '2:00',
+      title: 'Governance Q&A',
+      caption: 'Ask boardroom questions across risks, controls, objectives, policies and scenarios.',
+      screenshot: '/assets/screenshots/navis-ask-navis.png',
+      mockupType: 'ask-navis'
+    }
+  ];
+
+  return `
+    <section class="nw-band nw-chapters-section">
+      <div class="nw-container">
+        <div class="nw-section-heading nw-section-heading-centered">
+          <span class="nw-eyebrow">Walkthrough Chapters</span>
+          <h2>Explore specific capabilities</h2>
+          <p class="nw-section-subtitle">Select a chapter below to jump directly to that part of the product tour.</p>
         </div>
-      </section>
-      ${renderExperiencePreview()}
+        <div class="nw-chapters-grid">
+          ${chapters.map((chapter) => `
+            <article class="nw-chapter-card" data-timestamp="${chapter.timestamp}">
+              <div class="nw-chapter-media">
+                <img src="${chapter.screenshot}" alt="${chapter.title}" onerror="this.style.display='none'; this.closest('.nw-chapter-media').classList.add('no-image');" loading="lazy">
+                <div class="nw-screenshot-fallback">
+                  ${renderMockupPlaceholder(chapter.mockupType, chapter.title)}
+                </div>
+                <div class="nw-chapter-overlay">
+                  <span class="nw-chapter-play-icon">▶</span>
+                </div>
+              </div>
+              <div class="nw-chapter-content">
+                <span class="nw-chapter-time">${chapter.timestampLabel}</span>
+                <h3>${chapter.title}</h3>
+                <p>${chapter.caption}</p>
+                <span class="nw-chapter-cta">Watch chapter <span class="nw-cta-arrow">&rarr;</span></span>
+              </div>
+            </article>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderWhoIsForSection() {
+  const audiences = [
+    ['Boards and Independent Directors', 'See the exposure, evidence and choices behind every material decision.'],
+    ['CEOs and Founders', 'Connect strategic ambition to the risks and actions that shape execution.'],
+    ['CROs and Risk Teams', 'Replace fragmented registers with a living enterprise risk system.'],
+    ['Compliance and Privacy Teams', 'Govern policies, clauses and evidence through controlled workflows.'],
+    ['Investors and Advisors', 'Understand resilience, readiness and decision quality with greater clarity.']
+  ];
+
+  return `
+    <section class="nw-band nw-band-soft nw-audience-section">
+      <div class="nw-container">
+        <div class="nw-section-heading nw-section-heading-centered">
+          <span class="nw-eyebrow">Who Navis is for</span>
+          <h2>One shared intelligence layer. Five critical perspectives.</h2>
+        </div>
+        <div class="nw-audience-grid">
+          ${audiences.map(([title, copy]) => `
+            <article class="nw-audience-card">
+              <h3>${title}</h3>
+              <p>${copy}</p>
+            </article>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderHome(session) {
+  return `
+    <main>
+      ${renderHeroSection(session)}
+      ${renderProblemSection()}
+      ${renderProductPillarsSection()}
+      ${renderInteractivePreviewSection()}
+      ${renderVideoChaptersSection()}
+      ${renderWhoIsForSection()}
       ${renderPrivatePreview()}
     </main>
   `;
@@ -550,8 +877,18 @@ export class PublicWebsite {
         <footer class="nw-footer">
           <div class="nw-container nw-footer-grid">
             <div class="nw-footer-brand">${routeLink('/', '<span class="nw-brand-mark">N</span><span class="nw-brand-word">NAVIS</span>', 'nw-brand')}<p>Navigate Risk. Enable Growth.</p></div>
-            <div><strong>Product</strong>${routeLink('/product', 'Platform')}${routeLink('/policy-studio', 'Policy Studio')}${routeLink('/board-decision-room', 'Board Decision Room')}</div>
-            <div><strong>Company</strong>${routeLink('/about', 'About')}${routeLink('/request-demo', 'Contact')}${routeLink(accountPath, accountLabel)}</div>
+            <div>
+              <strong>Product</strong>
+              ${routeLink('/product', 'Product')}
+              ${routeLink('/policy-studio', 'Policy Studio')}
+              ${routeLink('/board-decision-room', 'Board Decision Room')}
+            </div>
+            <div>
+              <strong>Company</strong>
+              ${routeLink('/about', 'About')}
+              ${routeLink('/request-demo', 'Request Demo')}
+              ${routeLink(accountPath, accountLabel)}
+            </div>
             <div class="nw-footer-preview"><strong>Private preview</strong><p>AI-native governance intelligence for modern boards.</p></div>
           </div>
           <div class="nw-container nw-footer-bottom"><span>Navis &copy; 2026</span><span>Built for consequential decisions.</span></div>
@@ -562,6 +899,7 @@ export class PublicWebsite {
     this.bindRoutes();
     this.bindMenu();
     this.bindDemoForm();
+    this.bindVideoEvents();
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
@@ -601,5 +939,118 @@ export class PublicWebsite {
       status.textContent = 'Thank you. Your request has been received and the Navis team will follow up shortly.';
       status.classList.remove('is-hidden');
     });
+  }
+
+  bindVideoEvents() {
+    const playButtons = this.container.querySelectorAll('.nw-play-overlay-btn, .nw-watch-walkthrough-btn, .nw-chapter-card');
+    playButtons.forEach(btn => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        let timestamp = 0;
+        if (btn.dataset.timestamp !== undefined) {
+          timestamp = parseInt(btn.dataset.timestamp, 10);
+        } else {
+          const card = btn.closest('.nw-chapter-card');
+          if (card && card.dataset.timestamp !== undefined) {
+            timestamp = parseInt(card.dataset.timestamp, 10);
+          }
+        }
+        
+        this.openVideoModal(timestamp);
+      });
+    });
+  }
+
+  openVideoModal(seconds = 0) {
+    this.closeVideoModal();
+
+    const modal = document.createElement('div');
+    modal.id = 'navis-video-modal';
+    modal.className = 'nw-video-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Navis Walkthrough Video');
+    
+    const videoSrc = `/assets/video/navis-walkthrough.mp4#t=${seconds}`;
+    
+    modal.innerHTML = `
+      <div class="nw-video-modal-backdrop"></div>
+      <div class="nw-video-modal-container">
+        <button class="nw-video-modal-close" aria-label="Close video player">&times;</button>
+        <div class="nw-video-modal-body">
+          <video id="navis-walkthrough-video" class="nw-video-element" controls playsinline>
+            <source src="${videoSrc}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    
+    const video = modal.querySelector('#navis-walkthrough-video');
+    const closeBtn = modal.querySelector('.nw-video-modal-close');
+    const backdrop = modal.querySelector('.nw-video-modal-backdrop');
+    
+    closeBtn.focus();
+    
+    if (seconds > 0) {
+      video.addEventListener('loadedmetadata', () => {
+        video.currentTime = seconds;
+      });
+    }
+    
+    video.play().catch(err => {
+      console.warn("Playback blocked or failed:", err);
+    });
+    
+    video.addEventListener('error', () => {
+      const body = modal.querySelector('.nw-video-modal-body');
+      if (body) {
+        body.innerHTML = `
+          <div class="nw-video-placeholder-message">
+            <span class="nw-placeholder-icon">✦</span>
+            <h3>Walkthrough coming soon</h3>
+            <p>Our interactive 2-minute product tour is currently in private preview.</p>
+          </div>
+        `;
+      }
+    });
+
+    const close = () => {
+      try {
+        video.pause();
+      } catch (e) {}
+      modal.remove();
+      document.body.style.overflow = '';
+    };
+    
+    closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+    
+    const keyHandler = (event) => {
+      if (event.key === 'Escape') {
+        close();
+        document.removeEventListener('keydown', keyHandler);
+      }
+    };
+    document.addEventListener('keydown', keyHandler);
+  }
+
+  closeVideoModal() {
+    const modal = document.querySelector('#navis-video-modal');
+    if (modal) {
+      const video = modal.querySelector('video');
+      if (video) {
+        try {
+          video.pause();
+        } catch (e) {}
+      }
+      modal.remove();
+      document.body.style.overflow = '';
+    }
   }
 }

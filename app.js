@@ -757,18 +757,58 @@ class RiskOSApplication {
     document.getElementById('mode-switcher')?.remove();
     document.getElementById('mode-switcher-divider')?.remove();
 
-    const mode = this.state.operatingMode || 'board';
-    const allowedTabs = MODE_TABS[mode];
     const navContainer = document.getElementById('top-nav-modules');
     if (navContainer) {
-      navContainer.innerHTML = allowedTabs
-        .filter(tabId => tabId !== 'settings')
-        .map(tabId => `
-          <div class="top-nav-item" id="nav-${tabId}" data-tab="${tabId}">${TAB_LABELS[tabId]}</div>
-        `).join('');
+      const primaryTabs = ['dashboard', 'policyStudio', 'scenario', 'boardQA', 'boardPack'];
+      const secondaryTabs = ['objectives', 'intelligencePolicy', 'portfolio', 'network', 'settings'];
+
+      let html = primaryTabs.map(tabId => `
+        <div class="top-nav-item" id="nav-${tabId}" data-tab="${tabId}">${TAB_LABELS[tabId]}</div>
+      `).join('');
+
+      html += `
+        <div class="top-nav-item top-nav-dropdown" id="nav-more">
+          <span class="dropdown-trigger">More <span class="dropdown-arrow">▾</span></span>
+          <div class="dropdown-menu">
+            ${secondaryTabs.map(tabId => `
+              <div class="dropdown-item" id="nav-${tabId}" data-tab="${tabId}">${TAB_LABELS[tabId] || 'Settings'}</div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      navContainer.innerHTML = html;
       
       navContainer.querySelectorAll('.top-nav-item[data-tab]').forEach(el => {
-        el.addEventListener('click', () => this.routeTo(el.dataset.tab));
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.routeTo(el.dataset.tab);
+        });
+      });
+
+      navContainer.querySelectorAll('.dropdown-item[data-tab]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.routeTo(el.dataset.tab);
+          const menu = navContainer.querySelector('.dropdown-menu');
+          if (menu) menu.classList.remove('is-open');
+        });
+      });
+
+      const moreBtn = navContainer.querySelector('#nav-more');
+      if (moreBtn) {
+        moreBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const menu = moreBtn.querySelector('.dropdown-menu');
+          if (menu) {
+            menu.classList.toggle('is-open');
+          }
+        });
+      }
+
+      document.addEventListener('click', () => {
+        const menu = navContainer.querySelector('.dropdown-menu');
+        if (menu) menu.classList.remove('is-open');
       });
     }
 
@@ -790,20 +830,26 @@ class RiskOSApplication {
 
   updateTopNavActive(tabId) {
     document.querySelectorAll('.top-nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
+    
     const activeEl = document.getElementById(`nav-${tabId}`);
     if (activeEl) {
       activeEl.classList.add('active');
     }
+
+    const secondaryTabs = ['objectives', 'intelligencePolicy', 'portfolio', 'network', 'settings'];
+    if (secondaryTabs.includes(tabId)) {
+      const moreBtn = document.getElementById('nav-more');
+      if (moreBtn) {
+        moreBtn.classList.add('active');
+      }
+    }
   }
 
   routeTo(tabId, options = {}) {
-    const mode = this.state.operatingMode || 'board';
-    const allowedTabs = MODE_TABS[mode];
-    if (!allowedTabs.includes(tabId)) {
+    if (!this.components[tabId]) {
       tabId = 'dashboard';
     }
-
-    if (!this.components[tabId]) return;
 
     if (options.updateUrl !== false) {
       const path = TAB_ROUTES[tabId] || '/dashboard';
@@ -826,10 +872,6 @@ class RiskOSApplication {
     const ComponentClass = this.components[tabId];
     this.activeComponentInstance = new ComponentClass(this.state, (stateUpdates) => {
       if (stateUpdates) {
-        if (stateUpdates.operatingMode) {
-          this.setOperatingMode(stateUpdates.operatingMode);
-          return;
-        }
         Object.assign(this.state, stateUpdates);
         this.updateBrandVisuals();
         
@@ -852,21 +894,6 @@ class RiskOSApplication {
     // Sign out
     document.getElementById('top-nav-signout')?.addEventListener('click',
       () => this.handleSignOut());
-  }
-
-  setOperatingMode(mode) {
-    this.state.operatingMode = mode;
-    localStorage.setItem('navis_operating_mode', mode);
-    
-    this.renderTopNav();
-
-    // Intercept active tab if not allowed in new mode
-    const allowedTabs = MODE_TABS[mode];
-    if (!allowedTabs.includes(this.state.activeTab)) {
-      this.routeTo('dashboard');
-    } else {
-      this.routeTo(this.state.activeTab);
-    }
   }
 
   async handleSignOut() {
