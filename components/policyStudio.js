@@ -488,14 +488,14 @@ export class PolicyStudioComponent {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
               <div>
                 <label style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">Group</label>
-                <select class="form-control" id="clause-group-filter" style="font-size:10px;height:26px;padding:2px 6px;">
+                <select class="form-control" id="clause-group-filter" style="font-size:11px;padding:4px 8px;height:auto;">
                   <option value="all" ${this.clauseGroupFilter === 'all' ? 'selected' : ''}>All Groups</option>
                   ${groupsList.map(g => `<option value="${g}" ${this.clauseGroupFilter === g ? 'selected' : ''}>${g}</option>`).join('')}
                 </select>
               </div>
               <div>
                 <label style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">Framework</label>
-                <select class="form-control" id="clause-fw-filter" style="font-size:10px;height:26px;padding:2px 6px;">
+                <select class="form-control" id="clause-fw-filter" style="font-size:11px;padding:4px 8px;height:auto;">
                   <option value="all" ${this.clauseFwFilter === 'all' ? 'selected' : ''}>All Frameworks</option>
                   ${frameworksList.map(f => `<option value="${f}" ${this.clauseFwFilter === f ? 'selected' : ''}>${f}</option>`).join('')}
                 </select>
