@@ -1,5 +1,5 @@
 // Navis Policy Intelligence Studio Component
-// Implements Modules 1 to 11
+// Implements Wave 1 - Policy Studio Maturity
 
 import { StorageService } from '../services/storageService.js';
 import { AIService } from '../services/aiService.js';
@@ -12,23 +12,39 @@ export class PolicyStudioComponent {
 
     this.activeSubTab = 'generator'; // 'generator', 'upgrade', 'versions'
     
-    // Generator State
-    this.genDomain = 'infosec';
-    this.genTemplate = 'access_control';
-    this.genIndustry = 'SaaS';
+    // Generator Selections
+    this.genDomain = 'privacy';
+    this.genTemplate = 'pims';
     this.genPrompt = '';
     
-    this.genProfile = {
-      countries: 'India, USA',
-      cloudProvider: 'AWS',
-      customerTypes: 'B2B Enterprise',
+    // Load frameworks selection from cache or default to Trackier verification set
+    const storedFws = localStorage.getItem('navis_v3_selected_frameworks');
+    this.selectedFrameworks = storedFws ? JSON.parse(storedFws) : ['DPDPA', 'GDPR', 'ISO 27701'];
+    
+    // Load profile from cache or default to Trackier verification profile
+    const storedProfile = localStorage.getItem('navis_v3_company_profile');
+    this.genProfile = storedProfile ? JSON.parse(storedProfile) : {
+      companyName: 'Trackier',
+      industry: 'SaaS',
+      country: 'India',
+      customerGeography: 'India + EU',
       employeeCount: '150',
-      dataCategories: 'User Accounts, Event Tracking, Payment Details'
+      b2bB2c: 'B2B',
+      controllerProcessor: 'Processor + Fiduciary',
+      cloudProvider: 'AWS',
+      specialCategories: 'None',
+      dpoOfficer: 'Sumit Nayar',
+      grievanceOfficer: 'Sumit Nayar',
+      processingPurpose: 'Enterprise SaaS tracking analytics and event attribution metadata operations'
     };
     
+    // Clause list filters
+    this.clauseGroupFilter = 'all';
+    this.clauseFwFilter = 'all';
+
     this.isGenerating = false;
     this.genResultText = '';
-    this.genTitle = 'Access Control Policy';
+    this.genTitle = 'PIMS Policy';
 
     // Upgrade Wizard / Gap Analysis State
     this.selectedDocId = '';
@@ -59,7 +75,6 @@ export class PolicyStudioComponent {
     const versions = data ? JSON.parse(data) : {};
     if (!versions[docId]) versions[docId] = [];
     
-    // Determine next version number
     const nextVer = `v${versions[docId].length + 1}`;
     const newVer = {
       version: nextVer,
@@ -81,7 +96,7 @@ export class PolicyStudioComponent {
     const queue = await StorageService.getChangeQueue();
     const newItem = {
       id: `cq-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      itemType: type, // 'Risk', 'Control', 'Action', 'ObjectiveLink', 'PolicyUpdate'
+      itemType: type,
       title: title,
       description: description,
       confidence: metadata.confidence || 'high',
@@ -94,7 +109,6 @@ export class PolicyStudioComponent {
     queue.push(newItem);
     await StorageService.saveChangeQueue(queue);
     
-    // Notify user with small alert
     alert(`Change request created in global queue: [${type}] ${title}`);
   }
 
@@ -146,84 +160,188 @@ export class PolicyStudioComponent {
     const subPolicies = activeDomain ? activeDomain.templates : {};
     const clauses = PolicyTemplateService.getClauseLibrary();
 
+    // Available groups and frameworks for filters
+    const groupsList = ["Purpose", "Scope", "Definitions", "Roles and Responsibilities", "Consent", "DSAR", "Retention", "Incident Response", "Third Party Management", "Cross-Border Transfers", "Audit Rights", "Training", "Review Frequency"];
+    const frameworksList = ["ISO 27001", "ISO 27701", "SOC 2", "DPDPA", "GDPR", "NIST CSF"];
+
+    // Filter logic for Clause Library
+    let filteredClauses = clauses;
+    if (this.clauseGroupFilter !== 'all') {
+      filteredClauses = filteredClauses.filter(c => c.group === this.clauseGroupFilter);
+    }
+    if (this.clauseFwFilter !== 'all') {
+      filteredClauses = filteredClauses.filter(c => {
+        const alias = this.clauseFwFilter === 'DPDPA' ? 'DPDP' : this.clauseFwFilter;
+        return c.frameworks.includes(this.clauseFwFilter) || c.frameworks.includes(alias);
+      });
+    }
+
     return `
       <div class="register-layout">
         
         <!-- LEFT: SELECTION & COMPANY PROFILE -->
-        <div class="details-panel" style="flex: 1 1 320px;">
+        <div class="details-panel" style="flex: 1 1 340px;">
+          
+          <!-- SELECTION BOX -->
           <div class="glass-panel">
             <h3 class="dashboard-card-title">Selection</h3>
             
-            <div class="form-group">
-              <label>Domain</label>
-              <select class="form-control" id="gen-domain-select">
-                ${Object.entries(domains).map(([k, d]) => `
-                  <option value="${k}" ${this.genDomain === k ? 'selected' : ''}>${d.name}</option>
-                `).join('')}
-              </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Domain</label>
+                <select class="form-control" id="gen-domain-select">
+                  ${Object.entries(domains).map(([k, d]) => `
+                    <option value="${k}" ${this.genDomain === k ? 'selected' : ''}>${d.name}</option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Template</label>
+                <select class="form-control" id="gen-template-select">
+                  ${Object.entries(subPolicies).map(([k, t]) => `
+                    <option value="${k}" ${this.genTemplate === k ? 'selected' : ''}>${t.title}</option>
+                  `).join('')}
+                </select>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label>Template</label>
-              <select class="form-control" id="gen-template-select">
-                ${Object.entries(subPolicies).map(([k, t]) => `
-                  <option value="${k}" ${this.genTemplate === k ? 'selected' : ''}>${t.title}</option>
-                `).join('')}
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Industry</label>
-              <select class="form-control" id="gen-industry-select">
-                <option value="SaaS" ${this.genIndustry === 'SaaS' ? 'selected' : ''}>SaaS</option>
-                <option value="FinTech" ${this.genIndustry === 'FinTech' ? 'selected' : ''}>FinTech</option>
-                <option value="Healthcare" ${this.genIndustry === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
-                <option value="EdTech" ${this.genIndustry === 'EdTech' ? 'selected' : ''}>EdTech</option>
-                <option value="Manufacturing" ${this.genIndustry === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
-              </select>
+            <div class="form-group" style="margin-top:12px;">
+              <label style="margin-bottom: 6px; display:block;">Target Frameworks</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:11px;">
+                ${frameworksList.map(fw => {
+                  const checked = this.selectedFrameworks.includes(fw) ? 'checked' : '';
+                  return `
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;user-select:none;">
+                      <input type="checkbox" class="gen-fw-checkbox" value="${fw}" ${checked} />
+                      ${fw}
+                    </label>
+                  `;
+                }).join('')}
+              </div>
             </div>
           </div>
 
+          <!-- COMPANY PROFILE BOX -->
           <div class="glass-panel" style="margin-top:16px;">
-            <h3 class="dashboard-card-title">Profile</h3>
+            <h3 class="dashboard-card-title">Company Profile</h3>
             
-            <div class="form-group">
-              <label>Countries</label>
-              <input type="text" class="form-control profile-field" data-key="countries" value="${this.genProfile.countries}" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" class="form-control profile-field" data-key="companyName" value="${this.genProfile.companyName || ''}" />
+              </div>
+              <div class="form-group">
+                <label>Industry</label>
+                <select class="form-control profile-field" data-key="industry">
+                  <option value="SaaS" ${this.genProfile.industry === 'SaaS' ? 'selected' : ''}>SaaS</option>
+                  <option value="FinTech" ${this.genProfile.industry === 'FinTech' ? 'selected' : ''}>FinTech</option>
+                  <option value="Healthcare" ${this.genProfile.industry === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
+                  <option value="EdTech" ${this.genProfile.industry === 'EdTech' ? 'selected' : ''}>EdTech</option>
+                  <option value="Manufacturing" ${this.genProfile.industry === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Origin Country</label>
+                <input type="text" class="form-control profile-field" data-key="country" value="${this.genProfile.country || ''}" />
+              </div>
+              <div class="form-group">
+                <label>Customer Geographies</label>
+                <input type="text" class="form-control profile-field" data-key="customerGeography" value="${this.genProfile.customerGeography || ''}" />
+              </div>
             </div>
             
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
-                <label>Cloud</label>
-                <input type="text" class="form-control profile-field" data-key="cloudProvider" value="${this.genProfile.cloudProvider}" />
+                <label>Cloud Provider</label>
+                <input type="text" class="form-control profile-field" data-key="cloudProvider" value="${this.genProfile.cloudProvider || ''}" />
               </div>
               <div class="form-group">
                 <label>Employees</label>
-                <input type="text" class="form-control profile-field" data-key="employeeCount" value="${this.genProfile.employeeCount}" />
+                <input type="number" class="form-control profile-field" data-key="employeeCount" value="${this.genProfile.employeeCount || ''}" />
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Model (B2B/B2C)</label>
+                <select class="form-control profile-field" data-key="b2bB2c">
+                  <option value="B2B" ${this.genProfile.b2bB2c === 'B2B' ? 'selected' : ''}>B2B</option>
+                  <option value="B2C" ${this.genProfile.b2bB2c === 'B2C' ? 'selected' : ''}>B2C</option>
+                  <option value="Both" ${this.genProfile.b2bB2c === 'Both' ? 'selected' : ''}>Both</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Posture</label>
+                <select class="form-control profile-field" data-key="controllerProcessor">
+                  <option value="Processor" ${this.genProfile.controllerProcessor === 'Processor' ? 'selected' : ''}>Processor</option>
+                  <option value="Fiduciary" ${this.genProfile.controllerProcessor === 'Fiduciary' ? 'selected' : ''}>Fiduciary</option>
+                  <option value="Processor + Fiduciary" ${this.genProfile.controllerProcessor === 'Processor + Fiduciary' ? 'selected' : ''}>Processor + Fiduciary</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>DPO / Privacy Officer</label>
+                <input type="text" class="form-control profile-field" data-key="dpoOfficer" value="${this.genProfile.dpoOfficer || ''}" />
+              </div>
+              <div class="form-group">
+                <label>Grievance Officer</label>
+                <input type="text" class="form-control profile-field" data-key="grievanceOfficer" value="${this.genProfile.grievanceOfficer || ''}" />
               </div>
             </div>
 
             <div class="form-group">
-              <label>Customers</label>
-              <input type="text" class="form-control profile-field" data-key="customerTypes" value="${this.genProfile.customerTypes}" />
+              <label>Processing Purpose Summary</label>
+              <textarea class="form-control profile-field" data-key="processingPurpose" rows="2" style="font-size:11px;">${this.genProfile.processingPurpose || ''}</textarea>
             </div>
 
             <div class="form-group">
-              <label>Data Categories</label>
-              <textarea class="form-control profile-field" data-key="dataCategories" rows="2" style="font-size:11px;">${this.genProfile.dataCategories}</textarea>
+              <label>Special Categories of Data</label>
+              <input type="text" class="form-control profile-field" data-key="specialCategories" value="${this.genProfile.specialCategories || ''}" />
             </div>
           </div>
 
-          <div class="glass-panel" style="margin-top:16px; background:rgba(0,181,181,0.02);">
+          <!-- CLAUSE LIBRARY BOX -->
+          <div class="glass-panel" style="margin-top:16px;">
             <h3 class="dashboard-card-title">Clause Library</h3>
-            <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:10px;">
-              Browse consultant-grade clauses to use as reusable building blocks.
+            <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:12px;">
+              Consultant-grade building blocks. Use filters to browse clauses.
             </p>
-            <div style="display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;padding-right:4px;">
-              ${clauses.map(c => `
-                <div class="clause-pill" style="padding:8px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;font-size:11px;cursor:pointer;" data-clause-id="${c.id}">
-                  <strong style="color:var(--text-primary);display:block;">${c.name}</strong>
-                  <span style="font-size:9px;color:var(--text-muted);">${c.frameworks.join(', ')} | ${c.confidence} Confidence</span>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+              <div>
+                <label style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">Group</label>
+                <select class="form-control" id="clause-group-filter" style="font-size:10px;height:26px;padding:2px 6px;">
+                  <option value="all" ${this.clauseGroupFilter === 'all' ? 'selected' : ''}>All Groups</option>
+                  ${groupsList.map(g => `<option value="${g}" ${this.clauseGroupFilter === g ? 'selected' : ''}>${g}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">Framework</label>
+                <select class="form-control" id="clause-fw-filter" style="font-size:10px;height:26px;padding:2px 6px;">
+                  <option value="all" ${this.clauseFwFilter === 'all' ? 'selected' : ''}>All Frameworks</option>
+                  ${frameworksList.map(f => `<option value="${f}" ${this.clauseFwFilter === f ? 'selected' : ''}>${f}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;padding-right:4px;" id="clause-list-container">
+              ${filteredClauses.length === 0 ? `
+                <div style="text-align:center;padding:20px 0;color:var(--text-muted);font-size:11px;">No matching clauses.</div>
+              ` : filteredClauses.map(c => `
+                <div class="clause-item" style="padding:8px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">
+                  <div style="flex-grow:1;margin-right:8px;overflow:hidden;">
+                    <strong style="color:var(--text-primary);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name}</strong>
+                    <span style="font-size:9px;color:var(--text-muted);">${c.group} | ${c.maturity || 'Consultant-Grade'}</span>
+                  </div>
+                  <button class="btn btn-secondary btn-small btn-view-clause-details" style="font-size:9px;padding:2px 6px;flex-shrink:0;height:22px;" data-clause-id="${c.id}">
+                    View details
+                  </button>
                 </div>
               `).join('')}
             </div>
@@ -238,7 +356,7 @@ export class PolicyStudioComponent {
               <h3 class="dashboard-card-title">Drafting</h3>
               
               <div class="form-group">
-                <label>Custom Prompts</label>
+                <label>Custom Prompt Directives</label>
                 <textarea class="form-control" id="gen-prompt-input" rows="3" placeholder="e.g. Include specific guidelines for Indian data residency and ISO 27001 logging controls..." style="font-size:11px;">${this.genPrompt}</textarea>
               </div>
 
@@ -260,20 +378,20 @@ export class PolicyStudioComponent {
                 ` : ''}
               </div>
 
-              <div id="gen-result-container" style="flex-grow:1;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:8px;padding:16px;font-family:var(--font-body);font-size:12px;line-height:1.6;color:var(--text-primary);overflow-y:auto;max-height:360px;white-space:pre-wrap;">
+              <div id="gen-result-container" style="flex-grow:1;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:8px;padding:16px;font-family:var(--font-body);font-size:12px;line-height:1.6;color:var(--text-primary);overflow-y:auto;max-height:460px;white-space:pre-wrap;">
                 ${this.isGenerating ? `
-                  <div style="text-align:center;padding:80px 0;color:var(--text-muted);">
+                  <div style="text-align:center;padding:120px 0;color:var(--text-muted);">
                     <svg class="spinner" viewBox="0 0 50 50" style="width:36px;height:36px;margin:0 auto 12px;animation:spin 1s linear infinite;">
                       <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke="var(--color-indigo)"></circle>
                     </svg>
                     Executing real-time analysis & drafting...
                   </div>
                 ` : this.genResultText ? this.genResultText : `
-                  <div style="text-align:center;padding:100px 0;color:var(--text-muted);">
+                  <div style="text-align:center;padding:120px 0;color:var(--text-muted);">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" style="width:40px;height:40px;margin:0 auto 12px;opacity:0.3;">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
-                    Configure selections on the left and click Generate to begin.
+                    Configure selections and company profile on the left, then click Generate.
                   </div>
                 `}
               </div>
@@ -383,7 +501,7 @@ export class PolicyStudioComponent {
               </div>
 
               <!-- CLAUSE INTELLIGENCE & SUGGESTIONS -->
-              <h4 style="font-size:12px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:10px;">Clause Intelligence & Recommendations</h4>
+              <h4 style="font-size:12px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:10px;">Clause Recommendations</h4>
               <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
                 ${results.gaps.map(g => {
                   const decision = this.itemDecisions[g.id] || 'pending';
@@ -411,7 +529,7 @@ export class PolicyStudioComponent {
                         
                         <div style="display:flex;gap:6px;align-items:center;">
                           <span class="status-badge within" style="font-size:9px;padding:2px 6px;">
-                            ${g.confidence} Conf
+                            ${g.confidence || 'High'} Conf
                           </span>
                           <button class="btn btn-secondary btn-small toggle-clause-btn" style="font-size:9px;padding:2px 6px;" data-clause-id="${g.id}">
                             ${isExpanded ? 'Collapse' : 'Review & Edit'}
@@ -615,7 +733,6 @@ export class PolicyStudioComponent {
     if (this.activeSubTab === 'generator') {
       const domSelect = container.querySelector('#gen-domain-select');
       const tempSelect = container.querySelector('#gen-template-select');
-      const indSelect = container.querySelector('#gen-industry-select');
       const promptInput = container.querySelector('#gen-prompt-input');
 
       // Sync Selection Changes
@@ -634,33 +751,96 @@ export class PolicyStudioComponent {
         this.render(container);
       });
 
-      indSelect?.addEventListener('change', () => {
-        this.genIndustry = indSelect.value;
-      });
-
       promptInput?.addEventListener('input', () => {
         this.genPrompt = promptInput.value;
       });
 
-      // Sync Profile Field Changes
-      container.querySelectorAll('.profile-field').forEach(field => {
-        field.addEventListener('input', () => {
-          this.genProfile[field.dataset.key] = field.value;
+      // Target Framework Checkboxes
+      container.querySelectorAll('.gen-fw-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const checked = Array.from(container.querySelectorAll('.gen-fw-checkbox:checked')).map(el => el.value);
+          this.selectedFrameworks = checked;
+          localStorage.setItem('navis_v3_selected_frameworks', JSON.stringify(this.selectedFrameworks));
+          this.render(container);
         });
       });
 
-      // Click Clause Pill to Inject Clause
-      container.querySelectorAll('.clause-pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-          const clauseId = pill.dataset.clauseId;
+      // Sync Profile Field Changes & Save to LocalStorage
+      container.querySelectorAll('.profile-field').forEach(field => {
+        field.addEventListener('input', () => {
+          this.genProfile[field.dataset.key] = field.value;
+          localStorage.setItem('navis_v3_company_profile', JSON.stringify(this.genProfile));
+        });
+      });
+
+      // Filter controls for Clause Library
+      const groupFilter = container.querySelector('#clause-group-filter');
+      const fwFilter = container.querySelector('#clause-fw-filter');
+
+      groupFilter?.addEventListener('change', () => {
+        this.clauseGroupFilter = groupFilter.value;
+        this.render(container);
+      });
+
+      fwFilter?.addEventListener('change', () => {
+        this.clauseFwFilter = fwFilter.value;
+        this.render(container);
+      });
+
+      // Clause Details Modal Popups
+      container.querySelectorAll('.btn-view-clause-details').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cid = btn.dataset.clauseId;
           const lib = PolicyTemplateService.getClauseLibrary();
-          const clause = lib.find(c => c.id === clauseId);
-          if (clause) {
-            const promptArea = container.querySelector('#gen-prompt-input');
+          const clause = lib.find(c => c.id === cid);
+          if (!clause) return;
+
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop';
+          backdrop.innerHTML = `
+            <div class="modal-container" style="max-width: 540px;">
+              <button class="modal-close-btn" id="btn-close-clause-modal">&times;</button>
+              <div class="modal-content">
+                <span class="profile-role-badge" style="text-transform: uppercase;">${clause.group}</span>
+                <h2 class="modal-heading" style="margin-top:6px;font-size:16px;">${clause.name}</h2>
+                
+                <div style="margin: 12px 0; font-size:11px; color:var(--text-secondary); line-height:1.45;">
+                  <div style="margin-bottom:4px;"><strong>Draft Strength (Maturity):</strong> <span class="status-badge within" style="font-size:9px;padding:2px 6px;">${clause.maturity || 'Consultant-Grade'}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Frameworks Mapped:</strong> <span>${clause.frameworks.join(', ')}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Jurisdiction:</strong> <span>${clause.jurisdiction ? clause.jurisdiction.join(', ') : 'Global'}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Industry Fit:</strong> <span>${clause.industry ? clause.industry.join(', ') : 'Global'}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Clause Version:</strong> <span>${clause.version || 'v1.0'}</span></div>
+                </div>
+
+                <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;padding:12px;font-family:var(--font-body);font-size:11px;line-height:1.5;white-space:pre-wrap;color:var(--text-primary);margin-bottom:12px;">
+                  ${clause.text}
+                </div>
+
+                <div style="background:var(--color-safe-bg);color:var(--color-safe-text);border:1px solid var(--color-safe);border-radius:6px;padding:10px;font-size:11px;line-height:1.4;margin-bottom:16px;">
+                  <strong>GRC Consultant Rationale:</strong> ${clause.rationale}
+                </div>
+
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                  <button class="btn btn-secondary btn-small" id="btn-modal-close">Close</button>
+                  <button class="btn btn-primary btn-small" id="btn-modal-use-clause">Inject Directives</button>
+                </div>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(backdrop);
+
+          const close = () => backdrop.remove();
+          backdrop.querySelector('#btn-close-clause-modal').addEventListener('click', close);
+          backdrop.querySelector('#btn-modal-close').addEventListener('click', close);
+          backdrop.querySelector('#btn-modal-use-clause').addEventListener('click', () => {
             const insertText = `\nInclude clause details: ${clause.text}\n`;
             this.genPrompt = (this.genPrompt + insertText).trim();
+            const promptArea = container.querySelector('#gen-prompt-input');
             if (promptArea) promptArea.value = this.genPrompt;
-          }
+            backdrop.remove();
+          });
+          backdrop.addEventListener('click', (ev) => { if (ev.target === backdrop) backdrop.remove(); });
         });
       });
 
@@ -670,46 +850,45 @@ export class PolicyStudioComponent {
         this.render(container);
 
         try {
-          const baseText = PolicyTemplateService.customizeTemplate(this.genDomain, this.genTemplate, this.genIndustry, {
-            companyName: this.state.settings?.companyName,
-            ...this.genProfile
-          });
-
           const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
           
           if (apiKey || this.state.serverGeminiConfigured) {
             // Live Gemini Call
             const systemPrompt = `You are a consultant-grade GRC policy intelligence assistant.
-Generate a professional, board-ready draft for the policy '${this.genTitle}' for an industry of type '${this.genIndustry}'.
-Use the following baseline text for context:
-${baseText}
+Generate a professional, board-ready draft for the policy '${this.genTitle}' under the domain of '${domains[this.genDomain]?.name}'.
+The policy must explicitly align with the following selected compliance frameworks: ${this.selectedFrameworks.join(', ') || 'General Best Practices'}.
 
-Company Profile details:
-- Operating Countries: ${this.genProfile.countries}
-- Cloud Provider: ${this.genProfile.cloudProvider}
+Company Profile Context:
+- Company Name: ${this.genProfile.companyName}
+- Industry: ${this.genProfile.industry}
+- Country of Origin: ${this.genProfile.country}
+- Customer Geographies: ${this.genProfile.customerGeography}
 - Employee Count: ${this.genProfile.employeeCount}
-- Customer Types: ${this.genProfile.customerTypes}
-- Data Categories Processed: ${this.genProfile.dataCategories}
+- Business Model: ${this.genProfile.b2bB2c}
+- Controller/Processor Posture: ${this.genProfile.controllerProcessor}
+- Primary Cloud Infrastructure: ${this.genProfile.cloudProvider}
+- Data Protection Officer / Privacy Officer: ${this.genProfile.dpoOfficer}
+- Designated Grievance Officer: ${this.genProfile.grievanceOfficer}
+- Core Personal Data Processing Purpose: ${this.genProfile.processingPurpose}
+- Special Categories of Data Handled: ${this.genProfile.specialCategories}
 
-Specific Drafting Directives:
+Make sure that this company context and selected frameworks are woven deeply into the language of the policy clauses. Do not use generic placeholders.
+
+Use the following specific drafting directives:
 ${this.genPrompt || 'None provided.'}
 
 Output ONLY the complete policy draft document. Do not add conversational introductions or conversational conclusions. Use clear headings.`;
             
             const liveResult = await AIService.queryGemini(systemPrompt, apiKey);
-            this.genResultText = liveResult || baseText;
+            this.genResultText = liveResult || PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
           } else {
-            // Simulation Mode Fallback
+            // Respectable simulated consultant-grade fallback draft
             await new Promise(r => setTimeout(r, 1500)); // Simulate delay
-            let simulatedText = `[DEMO DRAFT] ${this.genTitle}\n\n` + baseText;
-            if (this.genPrompt) {
-              simulatedText += `\n\nCustom Directives Incorporated:\n- ${this.genPrompt}`;
-            }
-            this.genResultText = simulatedText;
+            this.genResultText = PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
           }
         } catch (err) {
           console.error("Drafting failed:", err);
-          this.genResultText = `Drafting execution failed. Fallback template output:\n\n` + PolicyTemplateService.customizeTemplate(this.genDomain, this.genTemplate, this.genIndustry, this.genProfile);
+          this.genResultText = `Drafting execution failed. Fallback simulated output:\n\n` + PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
         } finally {
           this.isGenerating = false;
           this.render(container);
@@ -723,13 +902,13 @@ Output ONLY the complete policy draft document. Do not add conversational introd
           id: docId,
           title: this.genTitle,
           document_type: this.genTitle,
-          framework_tags: [this.genIndustry, 'Draft'],
+          framework_tags: this.selectedFrameworks.concat([this.genProfile.industry, 'Draft']),
           file_name: `${this.genTitle.toLowerCase().replace(/\s+/g, '_')}_draft.txt`,
           file_url: '',
           mime_type: 'text/plain',
           status: 'Ready',
           extracted_text: this.genResultText,
-          summary: `AI Generated ${this.genTitle} draft customized for ${this.genIndustry}.`,
+          summary: `AI Generated ${this.genTitle} draft customized for ${this.genProfile.companyName} (${this.genProfile.industry}). Mapped Frameworks: ${this.selectedFrameworks.join(', ')}.`,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -755,7 +934,7 @@ Output ONLY the complete policy draft document. Do not add conversational introd
         // Seed initial v1 version history entry
         this.savePolicyVersion(docId, {
           summary: 'Initial draft version generated via Policy Intelligence Studio.',
-          frameworks: [this.genIndustry],
+          frameworks: this.selectedFrameworks,
           content: this.genResultText
         });
 
@@ -797,7 +976,6 @@ Output ONLY the complete policy draft document. Do not add conversational introd
         const activeDoc = vaultDocs.find(d => d.id === this.selectedDocId);
         if (!activeDoc) return;
 
-        // Fetch the full text
         const policies = await StorageService.getPolicyDocuments();
         const policyDoc = policies.find(p => p.id === this.selectedDocId);
         const text = policyDoc?.extracted_text || activeDoc.documentSummary || '';
@@ -850,7 +1028,6 @@ Format your response as a valid JSON object with the following schema:
             const liveResult = await AIService.queryGemini(systemPrompt, apiKey);
             let parsed;
             try {
-              // Clean json wrapper markdown code fences if any
               const cleanJson = liveResult.replace(/```json/g, '').replace(/```/g, '').trim();
               parsed = JSON.parse(cleanJson);
             } catch (e) {
@@ -864,18 +1041,18 @@ Format your response as a valid JSON object with the following schema:
             await new Promise(r => setTimeout(r, 1500));
             const sim = PolicyTemplateService.getSimulationAnalysis(text, this.targetFramework);
             
-            // Map requirements to clause library items
             const gaps = [];
             const amendments = [];
             let updatedDraft = text;
 
             const library = PolicyTemplateService.getClauseLibrary();
 
-            // Handle missing / weak items
             const gapReqs = [...sim.missing, ...sim.weak];
             gapReqs.forEach((req, idx) => {
-              // Try to find matching clause
-              const match = library.find(c => c.frameworks.includes(this.targetFramework.toUpperCase()) || c.name.toLowerCase().includes(req.name.toLowerCase().split(' ')[0]));
+              const match = library.find(c => {
+                const searchFw = this.targetFramework === 'dpdp' ? 'DPDPA' : this.targetFramework.toUpperCase();
+                return c.frameworks.includes(searchFw) || c.name.toLowerCase().includes(req.name.toLowerCase().split(' ')[0]);
+              });
               
               const gapItem = {
                 id: `gap-${idx}-${Date.now()}`,
@@ -883,8 +1060,8 @@ Format your response as a valid JSON object with the following schema:
                 status: sim.missing.includes(req) ? 'Missing' : 'Partially Addressed',
                 name: match ? match.name : `${req.name} Clause`,
                 text: match ? match.text : `[Simulated Clause] Mandates control requirements for ${req.name} under ${this.targetFramework.toUpperCase()} regulations.`,
-                rationale: match ? match.rationale : `Directly fulfills the compliance requirement: ${req.desc}`,
-                confidence: match ? match.confidence : 'Medium'
+                rationale: match ? match.rationale : `Directly fulfills compliance requirement: ${req.desc}`,
+                confidence: match ? match.maturity : 'Medium'
               };
 
               gaps.push(gapItem);
@@ -915,7 +1092,7 @@ Format your response as a valid JSON object with the following schema:
         }
       });
 
-      // Expand/Collapse Clause
+      // Expand/Collapse Clause in recommendations list
       container.querySelectorAll('.toggle-clause-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -938,7 +1115,7 @@ Format your response as a valid JSON object with the following schema:
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const cid = btn.dataset.clauseId;
-          const action = btn.dataset.action; // 'accept' or 'dismiss'
+          const action = btn.dataset.action;
           
           const current = this.itemDecisions[cid];
           if (action === 'accept') {
@@ -963,37 +1140,33 @@ Format your response as a valid JSON object with the following schema:
           const clauseText = this.editedClauses[cid] !== undefined ? this.editedClauses[cid] : gap.text;
           const details = {
             sourceDocument: this.state.vaultDocs.find(d => d.id === this.selectedDocId)?.documentName || 'Vault Document',
-            confidence: gap.confidence.toLowerCase(),
+            confidence: 'high',
             deltaStatus: 'New'
           };
 
           if (type === 'Control') {
-            // Propose a control
             await this.pushToChangeQueue('Control', `Map mitigating control: ${gap.name}`, clauseText, {
               ...details,
               effectiveness: 'Highly Effective',
-              riskId: 'risk-001' // Attach to default risk for staging demo
+              riskId: 'risk-001'
             });
           } else if (type === 'Risk') {
-            // Propose a risk
-            await this.pushToChangeQueue('Risk', `Compliance Gap: ${gap.reqName} exposure`, `Failure to address the requirement: ${gap.rationale}. Recommended clause: ${clauseText}`, {
+            await this.pushToChangeQueue('Risk', `Compliance Gap: ${gap.reqName} exposure`, `Failure to address requirement: ${gap.rationale}. Recommended clause: ${clauseText}`, {
               ...details,
               category: 'Compliance',
               likelihood: 3,
               impact: 4
             });
           } else if (type === 'Action') {
-            // Propose an action
             await this.pushToChangeQueue('Action', `Draft implementation: ${gap.name}`, `Action task to implement the clause: ${clauseText}`, {
               ...details,
               owner: 'CISO',
               dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
             });
           } else if (type === 'ObjectiveLink') {
-            // Link to strategic objective
             await this.pushToChangeQueue('ObjectiveLink', `Link Policy to Strategic Objectives`, `Verify compliance alignment between policy and IPO/Cyber objectives. Mapped: ${gap.reqName}`, {
               ...details,
-              objectiveId: 'obj-cyber' // default obj
+              objectiveId: 'obj-cyber'
             });
           }
         });
@@ -1003,7 +1176,7 @@ Format your response as a valid JSON object with the following schema:
       container.querySelector('#btn-approve-and-stage')?.addEventListener('click', () => {
         this.isPublishing = true;
         this.activeSubTab = 'versions';
-        this.reviewSummary = `Approved amendments checklist for ${PolicyTemplateService.getRequirementPacks()[this.targetFramework]?.name || 'Target Framework'}. Added accepted clauses.`;
+        this.reviewSummary = `Approved amendments checklist for ${PolicyTemplateService.getRequirementPacks()[this.targetFramework]?.name || this.targetFramework}. Added accepted clauses.`;
         this.render(container);
       });
     }
@@ -1036,22 +1209,19 @@ Format your response as a valid JSON object with the following schema:
         const activeDoc = vaultDocs.find(d => d.id === docId);
         if (!activeDoc) return;
 
-        // Apply edits & accepted clauses to build the new policy content
         const policies = await StorageService.getPolicyDocuments();
         const policyDoc = policies.find(p => p.id === docId);
         
         let originalText = policyDoc?.extracted_text || activeDoc.documentSummary || '';
         let newText = originalText;
 
-        // Append only accepted clauses
-        const acceptedGaps = [];
+        // Append accepted clauses
         if (this.analysisResults?.gaps) {
           this.analysisResults.gaps.forEach(g => {
             const decision = this.itemDecisions[g.id];
             if (decision === 'accepted') {
               const text = this.editedClauses[g.id] !== undefined ? this.editedClauses[g.id] : g.text;
               newText += `\n\n[Amendment Approved - ${g.name}]:\n${text}`;
-              acceptedGaps.push(g.reqName);
             }
           });
         }
@@ -1066,7 +1236,7 @@ Format your response as a valid JSON object with the following schema:
         };
         await StorageService.savePolicyDocument(updatedDoc);
 
-        // Save new version history record
+        // Save version history record
         const nextVer = this.savePolicyVersion(docId, {
           summary: this.reviewSummary,
           frameworks: [this.targetFramework ? this.targetFramework.toUpperCase() : 'General Update'],
@@ -1100,7 +1270,6 @@ Format your response as a valid JSON object with the following schema:
           const ver = versions[idx];
           if (!ver) return;
 
-          // Open a modal showing version content
           const backdrop = document.createElement('div');
           backdrop.className = 'modal-backdrop';
           backdrop.innerHTML = `
