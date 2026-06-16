@@ -359,7 +359,7 @@ export class DashboardComponent {
       </div>
 
       <!-- RISK SLIDE-IN DRAWER -->
-      <div id="risk-detail-drawer" style="position: fixed; top: 0; right: -380px; width: 380px; height: 100%; border-left: 1px solid var(--border-color); transition: right 0.3s ease; z-index: 2000; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; background: #FFFFFF; box-shadow: -4px 0 24px rgba(15,23,42,0.08);">
+      <div id="risk-detail-drawer" style="position: fixed; top: 0; right: -380px; width: 380px; height: 100%; border-left: 1px solid var(--border-color); transition: right 0.3s ease; z-index: 9995; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; background: #FFFFFF; box-shadow: -4px 0 24px rgba(15,23,42,0.08);">
         <div id="drawer-content-container">
           <!-- Populated dynamically on node click -->
         </div>

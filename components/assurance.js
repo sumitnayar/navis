@@ -183,7 +183,7 @@ export class AssuranceComponent {
 
       <!-- AUDITOR APPOINTMENT DIALOG MODAL -->
       ${this.isResolvingGap ? `
-        <div class="no-print" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; z-index:1000;">
+        <div class="no-print" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; z-index:9999;">
           <div class="glass-panel" style="width:400px; padding:24px; background:white; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
             <h3 style="font-size:16px; margin-bottom:8px;">Appoint Independent Auditor</h3>
             <p style="font-size:12px; color:var(--text-secondary); line-height:1.4; margin-bottom:16px;">
