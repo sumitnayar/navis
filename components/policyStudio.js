@@ -7,6 +7,8 @@ import { PolicyTemplateService } from '../services/policyTemplateService.js';
 import { RedlineService } from '../services/redlineService.js';
 import { VersionHistoryService } from '../services/versionHistoryService.js';
 import { ClauseIntelligenceService } from '../services/clauseIntelligenceService.js';
+import { FrameworkReferenceService } from '../services/frameworkReferenceService.js';
+import { OrganizationMemoryService } from '../services/organizationMemoryService.js';
 
 export class PolicyStudioComponent {
   constructor(appState, onStateChange) {
@@ -23,6 +25,10 @@ export class PolicyStudioComponent {
     // Load cached framework selection or default
     const storedFws = localStorage.getItem('navis_v3_selected_frameworks');
     this.selectedFrameworks = storedFws ? JSON.parse(storedFws) : ['DPDPA', 'GDPR', 'ISO 27701'];
+    this.upgradeFrameworks = storedFws ? JSON.parse(storedFws) : ['DPDPA', 'GDPR', 'ISO 27701'];
+
+    // Initialize scaffolded GRC organization memory
+    OrganizationMemoryService.getMemory();
     
     // Load cached profile or default to Trackier SaaS configuration
     const storedProfile = localStorage.getItem('navis_v3_company_profile');
@@ -665,6 +671,17 @@ export class PolicyStudioComponent {
                         <strong>Framework Mapping:</strong> ${o.frameworks.join(', ')}
                       </div>
 
+                      ${o.frameworkBasis && o.frameworkBasis.length > 0 ? `
+                        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">
+                          <strong>Framework Basis:</strong>
+                          <span style="display:inline-flex;gap:4px;flex-wrap:wrap;margin-top:2px;">
+                            ${o.frameworkBasis.map(fb => `
+                              <span style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:600;color:var(--text-secondary);">${fb}</span>
+                            `).join('')}
+                          </span>
+                        </div>
+                      ` : ''}
+
                       <div style="margin-top:12px;background:var(--panel-bg);border:1px solid var(--border-color);border-radius:6px;padding:12px;font-family:var(--font-body);font-size:11px;line-height:1.5;color:var(--text-primary);white-space:pre-wrap;">
                         <strong>Suggested Clause:</strong>\n${o.suggestedClause}
                       </div>
@@ -799,6 +816,7 @@ export class PolicyStudioComponent {
     const vaultDocs = this.state.vaultDocs || [];
     const frameworks = PolicyTemplateService.getRequirementPacks();
     const results = this.analysisResults;
+    const stagedChanges = this.selectedDocId ? this.getProposedChanges(this.selectedDocId) : [];
 
     return `
       <div class="register-layout">
@@ -819,15 +837,21 @@ export class PolicyStudioComponent {
             </div>
 
             <div class="form-group">
-              <label>Framework</label>
-              <select class="form-control" id="audit-framework-select">
-                ${Object.entries(frameworks).map(([k, f]) => `
-                  <option value="${k}" ${this.targetFramework === k ? 'selected' : ''}>${f.name}</option>
-                `).join('')}
-              </select>
+              <label style="display:block;margin-bottom:8px;font-weight:600;">Target Frameworks</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="upgrade-framework-checkboxes">
+                ${['DPDPA', 'GDPR', 'ISO 27701', 'ISO 27001', 'SOC 2', 'NIST CSF'].map(fw => {
+                  const isChecked = this.upgradeFrameworks.includes(fw);
+                  return `
+                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;color:var(--text-primary);user-select:none;">
+                      <input type="checkbox" class="upgrade-fw-check" value="${fw}" ${isChecked ? 'checked' : ''} style="cursor:pointer;" />
+                      ${fw}
+                    </label>
+                  `;
+                }).join('')}
+              </div>
             </div>
 
-            <button class="btn btn-primary" id="btn-run-policy-audit" style="width:100%;justify-content:center;margin-top:12px;" ${!this.selectedDocId || this.isAnalyzing ? 'disabled' : ''}>
+            <button class="btn btn-primary" id="btn-run-policy-audit" style="width:100%;justify-content:center;margin-top:12px;" ${!this.selectedDocId || this.isAnalyzing || this.upgradeFrameworks.length === 0 ? 'disabled' : ''}>
               ${this.isAnalyzing ? 'Analyzing Alignment...' : 'Analyze Policy & Gaps'}
             </button>
           </div>
@@ -836,15 +860,27 @@ export class PolicyStudioComponent {
           <div class="glass-panel" style="margin-top:16px;">
             <h3 class="dashboard-card-title">Requirements</h3>
             <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:12px;">
-              Exposing requirements mapped by ${frameworks[this.targetFramework]?.name || 'Target Framework'}.
+              Exposing requirements mapped by selected target frameworks.
             </p>
             <div style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;padding-right:4px;">
-              ${(frameworks[this.targetFramework]?.requirements || []).map(r => `
+              ${this.upgradeFrameworks.flatMap(fw => {
+                const fwKey = fw.toLowerCase() === 'dpdpa' ? 'dpdp' : fw.toLowerCase();
+                const pack = frameworks[fwKey];
+                return (pack?.requirements || []).map(r => ({ ...r, fw }));
+              }).map(r => `
                 <div style="padding:8px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;font-size:11px;">
-                  <strong style="color:var(--text-primary);display:block;">${r.name}</strong>
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <strong style="color:var(--text-primary);">${r.name}</strong>
+                    <span class="profile-role-badge" style="font-size:8px;padding:1px 4px;">${r.fw}</span>
+                  </div>
                   <span style="font-size:10px;color:var(--text-secondary);line-height:1.3;display:block;margin-top:2px;">${r.desc}</span>
                 </div>
               `).join('')}
+              ${this.upgradeFrameworks.length === 0 ? `
+                <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:11px;">
+                  No frameworks selected.
+                </div>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -863,8 +899,8 @@ export class PolicyStudioComponent {
               </div>
             ` : results ? `
               
-              <!-- COVERAGE SUMMARY -->
-              <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;padding:16px;margin-bottom:16px;display:grid;grid-template-columns:1fr 2fr;gap:20px;">
+              <!-- COVERAGE SUMMARY / EXECUTIVE SUMMARY -->
+              <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;padding:16px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1.5fr;gap:20px;">
                 <div style="border-right:1px solid var(--border-color);padding-right:10px;display:flex;flex-direction:column;justify-content:center;">
                   <span style="font-size:10px;text-transform:uppercase;color:var(--text-muted);font-weight:700;">Executive Summary</span>
                   <p style="font-size:12px;color:var(--text-primary);line-height:1.45;margin-top:6px;">
@@ -872,55 +908,61 @@ export class PolicyStudioComponent {
                   </p>
                 </div>
                 <div>
-                  <span style="font-size:10px;text-transform:uppercase;color:var(--text-muted);font-weight:700;display:block;margin-bottom:8px;">Coverage Analysis</span>
+                  <span style="font-size:10px;text-transform:uppercase;color:var(--text-muted);font-weight:700;display:block;margin-bottom:8px;">Missing Areas</span>
                   <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                    <div style="padding:10px;background:var(--color-safe-bg);border:1px solid var(--color-safe);border-radius:6px;flex:1;text-align:center;">
-                      <strong style="color:var(--color-safe-text);font-size:16px;display:block;">${results.strong.length}</strong>
-                      <span style="font-size:9px;color:var(--color-safe-text);font-weight:600;text-transform:uppercase;">Strongly Addressed</span>
+                    <div style="padding:10px;background:var(--color-critical-bg);border:1px solid var(--color-critical);border-radius:6px;flex:1;text-align:center;">
+                      <strong style="color:var(--color-critical-text);font-size:16px;display:block;">${results.gaps.filter(g => g.severity === 'Critical').length}</strong>
+                      <span style="font-size:9px;color:var(--color-critical-text);font-weight:600;text-transform:uppercase;">Critical</span>
                     </div>
                     <div style="padding:10px;background:var(--color-warning-bg);border:1px solid var(--color-warning);border-radius:6px;flex:1;text-align:center;">
-                      <strong style="color:var(--color-warning-text);font-size:16px;display:block;">${results.weak.length}</strong>
-                      <span style="font-size:9px;color:var(--color-warning-text);font-weight:600;text-transform:uppercase;">Partially Addressed</span>
+                      <strong style="color:var(--color-warning-text);font-size:16px;display:block;">${results.gaps.filter(g => g.severity === 'Important').length}</strong>
+                      <span style="font-size:9px;color:var(--color-warning-text);font-weight:600;text-transform:uppercase;">Important</span>
                     </div>
-                    <div style="padding:10px;background:var(--color-critical-bg);border:1px solid var(--color-critical);border-radius:6px;flex:1;text-align:center;">
-                      <strong style="color:var(--color-critical-text);font-size:16px;display:block;">${results.missing.length}</strong>
-                      <span style="font-size:9px;color:var(--color-critical-text);font-weight:600;text-transform:uppercase;">Missing Requirements</span>
+                    <div style="padding:10px;background:rgba(100, 116, 139, 0.1);border:1px solid var(--border-color);border-radius:6px;flex:1;text-align:center;">
+                      <strong style="color:var(--text-secondary);font-size:16px;display:block;">${results.gaps.filter(g => g.severity === 'Advisory').length}</strong>
+                      <span style="font-size:9px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;">Advisory</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- CLAUSE RECOMMENDATIONS -->
-              <h4 style="font-size:12px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:10px;">Clause Recommendations</h4>
+              <!-- CLAUSE RECOMMENDATIONS / IMPROVEMENT OPPORTUNITIES -->
+              <h4 style="font-size:12px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:10px;">Improvement Opportunities</h4>
               <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
                 ${results.gaps.map(g => {
                   const decision = this.itemDecisions[g.id] || 'pending';
                   const isExpanded = this.expandedClauseId === g.id;
-                  const currentText = this.editedClauses[g.id] !== undefined ? this.editedClauses[g.id] : g.text;
+                  const currentText = this.editedClauses[g.id] !== undefined ? this.editedClauses[g.id] : (g.suggestedClause || g.text);
 
                   let borderClr = 'var(--border-color)';
-                  if (decision === 'accepted') borderClr = 'var(--color-safe)';
-                  else if (decision === 'dismissed') borderClr = 'var(--color-critical)';
+                  let bgClr = 'var(--bg-secondary)';
+                  let badgeClass = 'within';
+                  if (g.severity === 'Critical') {
+                    borderClr = 'var(--color-critical)';
+                    bgClr = 'var(--color-critical-bg)';
+                    badgeClass = 'above';
+                  } else if (g.severity === 'Important') {
+                    borderClr = 'var(--color-warning)';
+                    bgClr = 'var(--color-warning-bg)';
+                    badgeClass = 'near';
+                  }
 
                   return `
-                    <div style="border:1.5px solid ${borderClr};border-radius:8px;padding:12px;background:var(--bg-secondary);transition:all 0.2s;" class="clause-card" data-clause-id="${g.id}">
+                    <div style="border:1.5px solid ${borderClr};border-radius:8px;padding:12px;background:${bgClr};transition:all 0.2s;" class="clause-card" data-clause-id="${g.id}">
                       
                       <!-- Card Header -->
                       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                         <div>
                           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                            <span class="status-badge ${g.status === 'Missing' ? 'above' : 'near'}" style="font-size:9px;">
-                              ${g.status}
+                            <span class="status-badge ${badgeClass}" style="font-size:9px;text-transform:uppercase;">
+                              ${g.severity || 'Important'}
                             </span>
-                            <span class="profile-role-badge" style="font-size:9px;color:var(--color-indigo);">${g.reqName}</span>
+                            <span class="profile-role-badge" style="font-size:9px;color:var(--color-indigo);">${g.issueType || g.reqName}</span>
                           </div>
-                          <h4 style="font-size:13px;font-weight:700;margin-top:4px;">${g.name}</h4>
+                          <h4 style="font-size:13px;font-weight:700;margin-top:4px;">${g.name || g.observation}</h4>
                         </div>
                         
                         <div style="display:flex;gap:6px;align-items:center;">
-                          <span class="status-badge within" style="font-size:9px;padding:2px 6px;">
-                            ${g.confidence || 'High'} Conf
-                          </span>
                           <button class="btn btn-secondary btn-small toggle-clause-btn" style="font-size:9px;padding:2px 6px;" data-clause-id="${g.id}">
                             ${isExpanded ? 'Collapse' : 'Review & Edit'}
                           </button>
@@ -936,18 +978,33 @@ export class PolicyStudioComponent {
                           </div>
                           
                           <div style="background:var(--bg-primary);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:12px;">
-                            <strong>Rationale:</strong> ${g.rationale}
+                            <strong>Why it matters:</strong> ${g.rationale}
                           </div>
+
+                          <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;">
+                            <strong>Framework Mapping:</strong> ${(g.frameworks || []).join(', ')}
+                          </div>
+
+                          ${g.frameworkBasis && g.frameworkBasis.length > 0 ? `
+                            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;">
+                              <strong>Framework Basis:</strong>
+                              <span style="display:inline-flex;gap:4px;flex-wrap:wrap;margin-top:2px;">
+                                ${g.frameworkBasis.map(fb => `
+                                  <span style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:600;color:var(--text-secondary);">${fb}</span>
+                                `).join('')}
+                              </span>
+                            </div>
+                          ` : ''}
 
                           <!-- Actions Row -->
                           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                             <!-- Decision Actions -->
                             <div style="display:flex;gap:6px;">
-                              <button class="btn btn-secondary btn-small clause-action-btn" data-action="accept" data-clause-id="${g.id}" style="${decision === 'accepted' ? 'background:var(--color-safe-bg);color:var(--color-safe);border-color:var(--color-safe);' : ''}">
-                                ${decision === 'accepted' ? '✓ Accepted' : 'Accept Suggested'}
+                              <button class="btn btn-primary btn-small clause-action-btn" data-action="accept" data-clause-id="${g.id}">
+                                Accept Suggested
                               </button>
-                              <button class="btn btn-secondary btn-small clause-action-btn" data-action="dismiss" data-clause-id="${g.id}" style="${decision === 'dismissed' ? 'background:var(--color-critical-bg);color:var(--color-critical);border-color:var(--color-critical);' : ''}">
-                                ${decision === 'dismissed' ? '✕ Dismissed' : 'Dismiss'}
+                              <button class="btn btn-secondary btn-small clause-action-btn" data-action="dismiss" data-clause-id="${g.id}">
+                                Dismiss
                               </button>
                             </div>
                             
@@ -955,8 +1012,6 @@ export class PolicyStudioComponent {
                             <div style="display:flex;gap:4px;">
                               <button class="btn btn-secondary btn-small push-cq-btn" data-type="Control" data-clause-id="${g.id}" style="font-size:10px;">Create Control</button>
                               <button class="btn btn-secondary btn-small push-cq-btn" data-type="Risk" data-clause-id="${g.id}" style="font-size:10px;">Create Risk</button>
-                              <button class="btn btn-secondary btn-small push-cq-btn" data-type="Action" data-clause-id="${g.id}" style="font-size:10px;">Create Action</button>
-                              <button class="btn btn-secondary btn-small push-cq-btn" data-type="ObjectiveLink" data-clause-id="${g.id}" style="font-size:10px;">Link Objective</button>
                             </div>
                           </div>
                         </div>
@@ -967,33 +1022,38 @@ export class PolicyStudioComponent {
                 }).join('')}
               </div>
 
-              <!-- PROPOSED AMENDMENTS -->
-              <h4 style="font-size:12px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px;">Proposed Amendments Summary</h4>
-              <div class="glass-panel" style="padding:12px;margin-bottom:20px;background:rgba(255,255,255,0.2);">
-                <ul style="padding-left:16px;font-size:11px;color:var(--text-secondary);line-height:1.6;">
-                  ${results.amendments.map(a => `
-                    <li><strong>${a.action}</strong>: ${a.desc}</li>
-                  `).join('')}
-                </ul>
-              </div>
+              <!-- PROPOSED CHANGES (STAGED) -->
+              ${stagedChanges.length > 0 ? `
+                <div class="glass-panel" style="background:rgba(15,118,110,0.015);border-color:var(--color-indigo);padding:14px !important;margin-bottom:20px;">
+                  <h4 style="font-size:10px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin:0 0 10px;font-weight:700;">Proposed Changes Queue (Staged)</h4>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:10px;">
+                    ${stagedChanges.map(sc => `
+                      <div style="padding:10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                        <span style="font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sc.name}</span>
+                        <span style="font-size:9px;color:var(--text-muted);">${sc.source}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
 
-              <!-- APPROVAL BOX -->
-              <div class="glass-panel" style="border-color:var(--color-indigo);background:rgba(0,181,181,0.015);display:flex;justify-content:space-between;align-items:center;">
+              <!-- REVIEW & COMMIT NOTICE -->
+              <div class="glass-panel" style="background:rgba(219,234,254,0.15);border-color:var(--color-indigo);display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
                 <div>
-                  <h4 style="font-size:13px;font-weight:700;">Approve & Create New Version</h4>
+                  <h4 style="font-size:13px;font-weight:700;color:var(--text-primary);">Review Staged Changes</h4>
                   <p style="font-size:11px;color:var(--text-secondary);margin-top:2px;">
-                    Stages the accepted clauses and increments the policy version.
+                    All accepted upgrade recommendations must be reviewed and committed as a new version in Redline Review.
                   </p>
                 </div>
-                <button class="btn btn-primary" id="btn-approve-and-stage" style="height:32px;">Approve Amendments</button>
+                <button class="btn btn-primary" id="btn-go-to-redline-review" style="height:32px;">Go to Redline Review</button>
               </div>
 
             ` : `
               <div style="text-align:center;padding:120px 0;color:var(--text-muted);">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" style="width:40px;height:40px;margin:0 auto 12px;opacity:0.3;">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Select an existing policy document and target framework on the left to begin gap analysis.
+                Select an existing policy document and target frameworks on the left to begin gap analysis.
               </div>
             `}
           </div>
@@ -1630,7 +1690,6 @@ Output ONLY the complete policy draft document. Do not add conversational introd
     // ─── TAB 4: ORIGINAL UPGRADE EVENTS ────────────────────────────────────
     if (this.activeSubTab === 'upgrade') {
       const docSelect = container.querySelector('#audit-doc-select');
-      const fwSelect = container.querySelector('#audit-framework-select');
 
       docSelect?.addEventListener('change', () => {
         this.selectedDocId = docSelect.value;
@@ -1640,12 +1699,22 @@ Output ONLY the complete policy draft document. Do not add conversational introd
         this.render(container);
       });
 
-      fwSelect?.addEventListener('change', () => {
-        this.targetFramework = fwSelect.value;
-        this.analysisResults = null;
-        this.itemDecisions = {};
-        this.editedClauses = {};
-        this.render(container);
+      // Target Framework checkboxes change
+      container.querySelectorAll('.upgrade-fw-check').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const val = chk.value;
+          if (chk.checked) {
+            if (!this.upgradeFrameworks.includes(val)) {
+              this.upgradeFrameworks.push(val);
+            }
+          } else {
+            this.upgradeFrameworks = this.upgradeFrameworks.filter(x => x !== val);
+          }
+          this.analysisResults = null;
+          this.itemDecisions = {};
+          this.editedClauses = {};
+          this.render(container);
+        });
       });
 
       // Run Audit Analysis
@@ -1663,104 +1732,18 @@ Output ONLY the complete policy draft document. Do not add conversational introd
 
         try {
           const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
-          const fwPacks = PolicyTemplateService.getRequirementPacks();
-          const targetFwName = fwPacks[this.targetFramework]?.name || this.targetFramework;
-
-          if (apiKey || this.state.serverGeminiConfigured) {
-            // Live Gemini Call
-            const systemPrompt = `You are an expert GRC policy auditor.
-Analyze the following policy text:
-\"\"\"
-${text}
-\"\"\"
-
-Audit against target framework: '${targetFwName}'.
-You must assess each requirement of the framework. Compare the text and identify:
-1. Strongly Addressed Requirements (fully present in policy)
-2. Partially Addressed Requirements (present but weak language or missing details)
-3. Missing Requirements (totally absent)
-
-Propose specific clauses from your internal knowledge pack for each gap.
-Format your response as a valid JSON object with the following schema:
-{
-  "summary": "Brief executive summary of findings.",
-  "strong": ["Requirement Name 1", "Requirement Name 2"],
-  "weak": ["Requirement Name 3"],
-  "missing": ["Requirement Name 4"],
-  "gaps": [
-    {
-      "id": "unique-gap-id-1",
-      "reqName": "Requirement Name 4",
-      "status": "Missing",
-      "name": "Suggested Clause Title",
-      "text": "Proposed clause text...",
-      "rationale": "Why this clause is needed to meet the requirement.",
-      "confidence": "High"
-    }
-  ],
-  "amendments": [
-    { "action": "Add", "desc": "Grievance redressal mechanism clause" }
-  ],
-  "updatedDraft": "The complete rewritten draft containing all proposed additions."
-}`;
-            const liveResult = await AIService.queryGemini(systemPrompt, apiKey);
-            let parsed;
-            try {
-              const cleanJson = liveResult.replace(/```json/g, '').replace(/```/g, '').trim();
-              parsed = JSON.parse(cleanJson);
-            } catch (e) {
-              console.warn("JSON parsing failed, falling back to simulated engine", e);
-              throw e;
-            }
-
-            this.analysisResults = parsed;
-          } else {
-            // Simulation Fallback Mode
-            await new Promise(r => setTimeout(r, 1500));
-            const sim = PolicyTemplateService.getSimulationAnalysis(text, this.targetFramework);
-            
-            const gaps = [];
-            const amendments = [];
-            let updatedDraft = text;
-
-            const library = PolicyTemplateService.getClauseLibrary();
-
-            const gapReqs = [...sim.missing, ...sim.weak];
-            gapReqs.forEach((req, idx) => {
-              const match = library.find(c => {
-                const searchFw = this.targetFramework === 'dpdp' ? 'DPDPA' : this.targetFramework.toUpperCase();
-                return c.frameworks.includes(searchFw) || c.name.toLowerCase().includes(req.name.toLowerCase().split(' ')[0]);
-              });
-              
-              const gapItem = {
-                id: `gap-${idx}-${Date.now()}`,
-                reqName: req.name,
-                status: sim.missing.includes(req) ? 'Missing' : 'Partially Addressed',
-                name: match ? match.name : `${req.name} Clause`,
-                text: match ? match.text : `[Simulated Clause] Mandates control requirements for ${req.name} under ${this.targetFramework.toUpperCase()} regulations.`,
-                rationale: match ? match.rationale : `Directly fulfills compliance requirement: ${req.desc}`,
-                confidence: match ? match.maturity : 'Medium'
-              };
-
-              gaps.push(gapItem);
-              amendments.push({
-                action: sim.missing.includes(req) ? 'Add' : 'Strengthen',
-                desc: `${req.name} parameter implementation.`
-              });
-
-              updatedDraft += `\n\n[Amendment Added - ${gapItem.name}]:\n${gapItem.text}`;
-            });
-
-            this.analysisResults = {
-              summary: `Policy audited against ${targetFwName}. Identified ${sim.missing.length} missing and ${sim.weak.length} partially addressed requirements.`,
-              strong: sim.strong,
-              weak: sim.weak,
-              missing: sim.missing,
-              gaps: gaps,
-              amendments: amendments,
-              updatedDraft: updatedDraft
-            };
-          }
+          
+          // Call scanPolicy of ClauseIntelligenceService
+          const gaps = await ClauseIntelligenceService.scanPolicy(text, this.upgradeFrameworks, apiKey);
+          
+          this.analysisResults = {
+            summary: `Policy audited against target frameworks: ${this.upgradeFrameworks.join(', ')}. Identified compliance gaps and improvement opportunities.`,
+            gaps: gaps,
+            amendments: gaps.map(g => ({
+              action: g.severity === 'Critical' ? 'Add' : 'Strengthen',
+              desc: g.observation
+            }))
+          };
         } catch (err) {
           console.error("Gap analysis failed:", err);
           alert("Error executing gap analysis. Ensure your API key is correct or try again.");
@@ -1787,23 +1770,49 @@ Format your response as a valid JSON object with the following schema:
         });
       });
 
+      // Accept / Reject Actions inside Policy Upgrade tab
       container.querySelectorAll('.clause-action-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const cid = btn.dataset.clauseId;
           const action = btn.dataset.action;
-          
-          const current = this.itemDecisions[cid];
-          if (action === 'accept') {
-            this.itemDecisions[cid] = current === 'accepted' ? 'pending' : 'accepted';
-          } else {
-            this.itemDecisions[cid] = current === 'dismissed' ? 'pending' : 'dismissed';
-          }
+          const docId = this.selectedDocId;
+          const gap = this.analysisResults.gaps.find(g => g.id === cid);
+          if (!gap) return;
 
+          if (action === 'accept') {
+            const clauseText = this.editedClauses[cid] !== undefined ? this.editedClauses[cid] : (gap.suggestedClause || gap.text);
+            
+            // 1. Stage in Proposed Changes Queue
+            this.addProposedChange(docId, {
+              id: gap.id,
+              name: gap.name || gap.observation,
+              text: clauseText,
+              rationale: gap.rationale,
+              frameworks: gap.frameworks || this.upgradeFrameworks,
+              source: gap.source || 'Policy Upgrade'
+            });
+
+            // 2. Append text to active draft
+            let draftText = this.getActiveDraft(docId);
+            if (!draftText) {
+              draftText = this.baselineText || '';
+            }
+            draftText += `\n\n[Proposed Addition - ${gap.name || gap.observation}]:\n${clauseText}`;
+            this.saveActiveDraft(docId, draftText);
+
+            // 3. Remove recommended card from UI
+            this.analysisResults.gaps = this.analysisResults.gaps.filter(g => g.id !== cid);
+            alert("Upgrade recommendation staged to Proposed Changes Queue. Review in Redline Review.");
+          } else {
+            // Dismiss - remove card
+            this.analysisResults.gaps = this.analysisResults.gaps.filter(g => g.id !== cid);
+          }
           this.render(container);
         });
       });
 
+      // Push to Change Queue buttons
       container.querySelectorAll('.push-cq-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -1812,7 +1821,7 @@ Format your response as a valid JSON object with the following schema:
           const gap = this.analysisResults.gaps.find(g => g.id === cid);
           if (!gap) return;
 
-          const clauseText = this.editedClauses[cid] !== undefined ? this.editedClauses[cid] : gap.text;
+          const clauseText = this.editedClauses[cid] !== undefined ? this.editedClauses[cid] : (gap.suggestedClause || gap.text);
           const details = {
             sourceDocument: this.state.vaultDocs.find(d => d.id === this.selectedDocId)?.documentName || 'Vault Document',
             confidence: 'high',
@@ -1820,38 +1829,38 @@ Format your response as a valid JSON object with the following schema:
           };
 
           if (type === 'Control') {
-            await this.pushToChangeQueue('Control', `Map mitigating control: ${gap.name}`, clauseText, {
+            await this.pushToChangeQueue('Control', `Map mitigating control: ${gap.name || gap.observation}`, clauseText, {
               ...details,
               effectiveness: 'Highly Effective',
               riskId: 'risk-001'
             });
           } else if (type === 'Risk') {
-            await this.pushToChangeQueue('Risk', `Compliance Gap: ${gap.reqName} exposure`, `Failure to address requirement: ${gap.rationale}. Recommended clause: ${clauseText}`, {
+            await this.pushToChangeQueue('Risk', `Compliance Gap: ${(gap.frameworks || []).join('/')} exposure`, `Failure to address requirement: ${gap.rationale}. Recommended clause: ${clauseText}`, {
               ...details,
               category: 'Compliance',
               likelihood: 3,
               impact: 4
             });
-          } else if (type === 'Action') {
-            await this.pushToChangeQueue('Action', `Draft implementation: ${gap.name}`, `Action task to implement the clause: ${clauseText}`, {
-              ...details,
-              owner: 'CISO',
-              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            });
-          } else if (type === 'ObjectiveLink') {
-            await this.pushToChangeQueue('ObjectiveLink', `Link Policy to Strategic Objectives`, `Verify compliance alignment between policy and IPO/Cyber objectives. Mapped: ${gap.reqName}`, {
-              ...details,
-              objectiveId: 'obj-cyber'
-            });
           }
         });
       });
 
-      container.querySelector('#btn-approve-and-stage')?.addEventListener('click', () => {
-        this.isPublishing = true;
-        this.activeSubTab = 'versions';
-        this.reviewSummary = `Approved amendments checklist for ${PolicyTemplateService.getRequirementPacks()[this.targetFramework]?.name || this.targetFramework}. Added accepted clauses.`;
-        this.render(container);
+      // Navigation buttons to go to Redline Review tab
+      container.querySelector('#btn-go-to-redline-review')?.addEventListener('click', () => {
+        this.selectTab('redline', container);
+      });
+      container.querySelector('#btn-go-to-redline')?.addEventListener('click', () => {
+        this.selectTab('redline', container);
+      });
+
+      // Remove staged changes
+      container.querySelectorAll('.btn-remove-staged').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const changeId = btn.dataset.changeId;
+          this.removeProposedChange(this.selectedDocId, changeId);
+          this.render(container);
+        });
       });
     }
 
