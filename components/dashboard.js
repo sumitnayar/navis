@@ -60,20 +60,27 @@ export class DashboardComponent {
     const overdueActionsCount = risks.flatMap(r => r.actions || [])
       .filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today).length;
 
+    const tokens = {
+      safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+      warning: getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim() || '#D97706',
+      critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626',
+      slate: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#64748B'
+    };
+
     let postureValue = "LOW";
-    let postureColor = "var(--color-safe)";
+    let postureColor = tokens.safe;
     if (aboveCount > 15 || breachedKRIs > 20 || overdueActionsCount > 10) {
       postureValue = "CRITICAL";
-      postureColor = "var(--color-critical)";
+      postureColor = tokens.critical;
     } else if (aboveCount > 0 || breachedKRIs > 0 || overdueActionsCount > 0) {
       postureValue = "ELEVATED";
-      postureColor = "var(--color-warning)";
+      postureColor = tokens.warning;
     } else if (worseningCount > 0) {
       postureValue = "MODERATE";
-      postureColor = "var(--color-slate)";
+      postureColor = tokens.slate;
     }
 
-    // Shortened narrative narrative text (50% reduction)
+    // Shortened narrative text (50% reduction)
     const narrativeHTML = `
       Posture is <strong style="color: ${postureColor};">${postureValue}</strong>. 
       <strong style="color: var(--color-critical);">${aboveCount}</strong> risks are above appetite. 
@@ -212,34 +219,114 @@ export class DashboardComponent {
         </div>
       </div>
 
-      <!-- ================= ABOVE THE FOLD ================= -->
+      <!-- ================= TOP ROW: Posture + Ask Navis ================= -->
       <div style="display: grid; grid-template-columns: 55% 45%; gap: 20px; margin-bottom: 24px;">
         
-        <!-- LEFT COLUMN: Posture & Top Issues -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          
-          <!-- Risk Posture Card -->
-          <div class="glass-panel" style="padding: 16px;">
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Risk Posture</span>
-                <span class="status-badge" style="font-size: 11px; background: ${postureColor}15; color: ${postureColor}; border: 1px solid ${postureColor}; font-weight: 700; border-radius: var(--radius-sm); padding: 1px 6px; text-transform: uppercase;">
-                  ${postureValue}
-                </span>
-              </div>
-              <div class="posture-progress-band" style="width: 100%;">
-                <div style="display: flex; height: 6px; background: #E5E7EB; border-radius: var(--radius-sm); overflow: hidden; width: 100%;">
-                  ${aboveCount > 0 ? `<div style="width: ${(aboveCount/totalCount)*100}%; background: var(--color-critical);"></div>` : ''}
-                  ${nearCount > 0 ? `<div style="width: ${(nearCount/totalCount)*100}%; background: var(--color-warning);"></div>` : ''}
-                  ${withinCount > 0 ? `<div style="width: ${(withinCount/totalCount)*100}%; background: var(--color-safe);"></div>` : ''}
-                </div>
-              </div>
-              <div style="font-size: 12.5px; color: var(--text-primary); margin-top: 4px; line-height: 1.4;">
-                ${narrativeHTML}
-              </div>
+        <!-- Risk Posture Card -->
+        <div class="glass-panel" style="padding: 16px; display: flex; flex-direction: column; justify-content: center; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Risk Posture</span>
+            <span class="status-badge" style="font-size: 11px; background: ${postureColor}15; color: ${postureColor}; border: 1px solid ${postureColor}; font-weight: 700; border-radius: var(--radius-sm); padding: 1px 6px; text-transform: uppercase;">
+              ${postureValue}
+            </span>
+          </div>
+          <div class="posture-progress-band" style="width: 100%;">
+            <div style="display: flex; height: 6px; background: #E5E7EB; border-radius: var(--radius-sm); overflow: hidden; width: 100%;">
+              ${aboveCount > 0 ? `<div style="width: ${(aboveCount/totalCount)*100}%; background: var(--color-critical);"></div>` : ''}
+              ${nearCount > 0 ? `<div style="width: ${(nearCount/totalCount)*100}%; background: var(--color-warning);"></div>` : ''}
+              ${withinCount > 0 ? `<div style="width: ${(withinCount/totalCount)*100}%; background: var(--color-safe);"></div>` : ''}
             </div>
           </div>
+          <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.4;">
+            ${narrativeHTML}
+          </div>
+        </div>
 
+        <!-- Ask Navis Quick Card -->
+        <div class="glass-panel" style="padding: 16px; display: flex; flex-direction: column; justify-content: center; gap: 8px;">
+          <div style="display: flex; gap: 8px;">
+            <input type="text" class="form-control" id="board-ask-prompt-input" style="flex-grow: 1; font-size:12px; height: 32px;" placeholder="Query risk, objective, policy, and control context..." />
+            <button class="btn btn-primary" id="board-ask-prompt-submit" style="font-size:12px; padding: 4px 12px; height: 32px;">Ask &rarr;</button>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <button class="btn btn-secondary btn-small suggested-ask-btn" style="padding: 2px 6px; font-size: 10px; border-radius: 4px;" data-query="Which risks are above appetite?">Appetite Bounds</button>
+            <button class="btn btn-secondary btn-small suggested-ask-btn" style="padding: 2px 6px; font-size: 10px; border-radius: 4px;" data-query="What threatens our growth objectives?">Strategic Threats</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= BODY: Telemetry (60%) & Operational Feed (40%) ================= -->
+      <div style="display: grid; grid-template-columns: 60% 40%; gap: 20px; align-items: start;">
+        
+        <!-- LEFT COLUMN: Telemetry Core (Graphs + Spotlight/Movement) -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Charts Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            
+            <!-- Fragility Card -->
+            <div class="glass-panel" style="padding: 16px; display: flex; flex-direction: column;">
+              <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;">
+                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Fragility</span>
+              </div>
+              <div class="fragility-chart-container" style="height: 180px; position: relative;">
+                <canvas id="fragility-bar-chart"></canvas>
+              </div>
+              <div id="fragility-drilldown-link" style="font-size: 11px; color: var(--color-indigo); margin-top: 8px; text-align: right; cursor: pointer; font-weight: 600;">
+                Drill down &rarr;
+              </div>
+            </div>
+
+            <!-- Portfolio Card -->
+            <div class="glass-panel" style="padding: 16px; display: flex; flex-direction: column;">
+              <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;">
+                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Portfolio</span>
+              </div>
+              <div style="position: relative; height: 180px; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; flex-grow: 1;">
+                <canvas id="heatmap-chart-canvas"></canvas>
+              </div>
+              <div style="margin-top: 8px; text-align: right;">
+                <a href="#" id="link-open-full-analysis" style="font-size: 11px; color: var(--color-indigo); text-decoration: none; font-weight: 600;">Full analysis &rarr;</a>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Spotlight & Movement Row -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            
+            <!-- Scenario Spotlight Card -->
+            ${spotlightHTML}
+
+            <!-- Movement Card -->
+            <div class="glass-panel" style="padding: 16px;">
+              <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
+                <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Movement</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <h4 style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--color-critical); letter-spacing: 0.05em; margin-bottom: 8px; margin-top:0;">Worsening</h4>
+                  <div id="dynamics-worsening-list">
+                    ${worseningHTML}
+                  </div>
+                </div>
+                <div>
+                  <h4 style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--color-safe); letter-spacing: 0.05em; margin-bottom: 8px; margin-top:0;">Improving</h4>
+                  <div id="dynamics-improving-list">
+                    ${improvingHTML}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Operational Feed -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          
           <!-- Top Issues Card -->
           <div class="glass-panel" style="padding: 16px;">
             <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;">
@@ -250,96 +337,13 @@ export class DashboardComponent {
             </div>
           </div>
 
-        </div>
-
-        <!-- RIGHT COLUMN: Objectives, Spotlight, Ask Navis -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          
-          <!-- Objectives Card -->
+          <!-- Objectives at Risk Card -->
           <div class="glass-panel" style="padding: 16px;">
             <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;">
               <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Objectives at Risk</span>
             </div>
             <div id="board-threatened-objectives-list">
               ${objectivesHTML}
-            </div>
-          </div>
-
-          <!-- Spotlight Card -->
-          ${spotlightHTML}
-
-          <!-- Ask Navis Quick Card -->
-          <div class="glass-panel" style="padding: 16px;">
-            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;">
-              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Ask Navis</span>
-            </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-              <input type="text" class="form-control" id="board-ask-prompt-input" style="flex-grow: 1; font-size:12px; height: 32px;" placeholder="Query risk, objective, policy, and control context..." />
-              <button class="btn btn-primary" id="board-ask-prompt-submit" style="font-size:12px; padding: 4px 12px; height: 32px;">Ask &rarr;</button>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-              <button class="btn btn-secondary btn-small suggested-ask-btn" style="padding: 2px 6px; font-size: 10px; border-radius: 4px;" data-query="Which risks are above appetite?">Appetite Bounds</button>
-              <button class="btn btn-secondary btn-small suggested-ask-btn" style="padding: 2px 6px; font-size: 10px; border-radius: 4px;" data-query="What threatens our growth objectives?">Strategic Threats</button>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- ================= BELOW THE FOLD ================= -->
-      <div style="border-top: 1px solid var(--border-color); padding-top: 24px; margin-top: 24px;">
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-          
-          <!-- Fragility Card -->
-          <div class="glass-panel" style="padding: 16px;">
-            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;">
-              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Fragility</span>
-            </div>
-            <div class="fragility-chart-container" style="height: 200px; position: relative;">
-              <canvas id="fragility-bar-chart"></canvas>
-            </div>
-            <div id="fragility-drilldown-link" style="font-size: 11px; color: var(--color-indigo); margin-top: 8px; text-align: right; cursor: pointer; font-weight: 600;">
-              Drill down &rarr;
-            </div>
-          </div>
-
-          <!-- Portfolio Card -->
-          <div class="glass-panel" style="padding: 16px;">
-            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;">
-              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Portfolio</span>
-            </div>
-            <div style="position: relative; height: 200px; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px;">
-              <canvas id="heatmap-chart-canvas"></canvas>
-            </div>
-            <div style="margin-top: 8px; text-align: right;">
-              <a href="#" id="link-open-full-analysis" style="font-size: 12px; color: var(--color-indigo); text-decoration: none; font-weight: 600;">Full analysis &rarr;</a>
-            </div>
-          </div>
-
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          
-          <!-- Movement Card -->
-          <div class="glass-panel" style="padding: 16px;">
-            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px;">
-              <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--color-navy-secondary); letter-spacing: 0.05em;">Movement</span>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-              <div>
-                <h4 style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-critical); letter-spacing: 0.05em; margin-bottom: 8px;">Worsening</h4>
-                <div id="dynamics-worsening-list">
-                  ${worseningHTML}
-                </div>
-              </div>
-              <div>
-                <h4 style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-safe); letter-spacing: 0.05em; margin-bottom: 8px;">Improving</h4>
-                <div id="dynamics-improving-list">
-                  ${improvingHTML}
-                </div>
-              </div>
             </div>
           </div>
 
@@ -531,10 +535,18 @@ export class DashboardComponent {
       return '→';
     });
 
+    const tokens = {
+      safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+      warning: getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim() || '#D97706',
+      critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626',
+      navy: getComputedStyle(document.documentElement).getPropertyValue('--color-navy').trim() || '#0F172A',
+      slate: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#64748B'
+    };
+
     const barColors = dataPercents.map(pct => {
-      if (pct >= 80) return '#E24B4A';
-      if (pct >= 60) return '#EF9F27';
-      return '#1D9E75';
+      if (pct >= 80) return tokens.critical;
+      if (pct >= 60) return tokens.warning;
+      return tokens.safe;
     });
 
     new window.Chart(canvas, {
@@ -559,7 +571,7 @@ export class DashboardComponent {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#0D1B2A',
+            backgroundColor: tokens.navy,
             titleColor: '#FFFFFF',
             bodyColor: '#FFFFFF',
             callbacks: {
@@ -586,7 +598,7 @@ export class DashboardComponent {
             ticks: {
               stepSize: 25,
               callback: (value) => value + '%',
-              color: '#6B7280',
+              color: tokens.slate,
               font: { family: 'Inter', size: 10 }
             },
             grid: { display: false },
@@ -594,7 +606,7 @@ export class DashboardComponent {
           },
           y: {
             ticks: {
-              color: '#0F172A',
+              color: tokens.navy,
               font: { family: 'Inter', size: 11 }
             },
             grid: { display: false },
@@ -609,6 +621,11 @@ export class DashboardComponent {
     const canvases = container.querySelectorAll('.sparkline-canvas');
     const risks = this.state.risks || [];
 
+    const tokens = {
+      safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+      critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626'
+    };
+
     canvases.forEach(canvas => {
       const existing = window.Chart.getChart(canvas);
       if (existing) existing.destroy();
@@ -619,7 +636,7 @@ export class DashboardComponent {
       if (!risk || !risk.scoreHistory || risk.scoreHistory.length < 2) return;
 
       const last6Scores = risk.scoreHistory.slice(-6).map(h => h.score);
-      const lineColor = type === 'worsening' ? '#E24B4A' : '#1D9E75';
+      const lineColor = type === 'worsening' ? tokens.critical : tokens.safe;
 
       new window.Chart(canvas, {
         type: 'line',
@@ -665,33 +682,12 @@ export class DashboardComponent {
       index: index
     }));
 
-    const quadrantPlugin = {
-      id: 'quadrantShading',
-      beforeDraw(chart) {
-        const { ctx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
-        ctx.save();
-        
-        const x3 = x.getPixelForValue(3);
-        const y3 = y.getPixelForValue(3);
-
-        ctx.strokeStyle = '#E5E7EB';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-
-        // Draw horizontal divider Y=3
-        ctx.beginPath();
-        ctx.moveTo(left, y3);
-        ctx.lineTo(right, y3);
-        ctx.stroke();
-
-        // Draw vertical divider X=3
-        ctx.beginPath();
-        ctx.moveTo(x3, top);
-        ctx.lineTo(x3, bottom);
-        ctx.stroke();
-
-        ctx.restore();
-      }
+    const tokens = {
+      safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+      warning: getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim() || '#D97706',
+      critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626',
+      navy: getComputedStyle(document.documentElement).getPropertyValue('--color-navy').trim() || '#0F172A',
+      slate: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#64748B'
     };
 
     if (typeof window.Chart !== 'undefined') {
@@ -702,21 +698,25 @@ export class DashboardComponent {
             data: bubbleData,
             backgroundColor: (context) => {
               const dataPoint = context.raw;
-              if (!dataPoint) return '#1D9E75';
+              if (!dataPoint) return `${tokens.safe}d8`; // ~85% opacity fill
               const status = dataPoint.riskObj.appetiteStatus;
-              return status === 'Above Appetite' ? '#E24B4A' : status === 'Near Appetite' ? '#EF9F27' : '#1D9E75';
+              return status === 'Above Appetite' 
+                ? `${tokens.critical}d8` 
+                : status === 'Near Appetite' 
+                  ? `${tokens.warning}d8` 
+                  : `${tokens.safe}d8`;
             },
-            borderColor: (context) => {
+            hoverBackgroundColor: (context) => {
               const dataPoint = context.raw;
-              if (!dataPoint) return '#0F6E56';
+              if (!dataPoint) return tokens.safe;
               const status = dataPoint.riskObj.appetiteStatus;
-              return status === 'Above Appetite' ? '#A32D2D' : status === 'Near Appetite' ? '#854F0B' : '#0F6E56';
+              return status === 'Above Appetite' ? tokens.critical : status === 'Near Appetite' ? tokens.warning : tokens.safe;
             },
+            borderColor: 'transparent',
             borderWidth: 0,
             hoverBorderWidth: 0
           }]
         },
-        plugins: [quadrantPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -732,7 +732,7 @@ export class DashboardComponent {
             legend: { display: false },
             tooltip: {
               enabled: true,
-              backgroundColor: '#0D1B2A',
+              backgroundColor: tokens.navy,
               titleColor: '#FFFFFF',
               bodyColor: '#FFFFFF',
               titleFont: { size: 12, family: 'Inter', weight: 'bold' },
@@ -756,7 +756,7 @@ export class DashboardComponent {
               max: 5.5,
               ticks: {
                 stepSize: 1,
-                color: '#6B7280',
+                color: tokens.slate,
                 font: { family: 'Inter', size: 10 }
               },
               grid: { display: false },
@@ -764,7 +764,7 @@ export class DashboardComponent {
               title: {
                 display: true,
                 text: 'Likelihood →',
-                color: '#111827',
+                color: tokens.navy,
                 font: { family: 'Inter', size: 11, weight: 'bold' }
               }
             },
@@ -773,7 +773,7 @@ export class DashboardComponent {
               max: 5.5,
               ticks: {
                 stepSize: 1,
-                color: '#6B7280',
+                color: tokens.slate,
                 font: { family: 'Inter', size: 10 }
               },
               grid: { display: false },
@@ -781,7 +781,7 @@ export class DashboardComponent {
               title: {
                 display: true,
                 text: 'Impact ↑',
-                color: '#111827',
+                color: tokens.navy,
                 font: { family: 'Inter', size: 11, weight: 'bold' }
               }
             }

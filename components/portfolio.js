@@ -366,9 +366,15 @@ export class PortfolioComponent {
       const nearCount = port.risks.filter(r => r.appetiteStatus === 'Near Appetite').length;
       const withinCount = port.risks.filter(r => r.appetiteStatus === 'Within Appetite').length;
 
+      const tokens = {
+        safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+        warning: getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim() || '#D97706',
+        critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626'
+      };
+
       const hasData = (aboveCount + nearCount + withinCount) > 0;
       const dataVals = hasData ? [aboveCount, nearCount, withinCount] : [0, 0, 1];
-      const bgColors = hasData ? ['#E24B4A', '#EF9F27', '#1D9E75'] : ['#E2E8F0', '#E2E8F0', '#E2E8F0'];
+      const bgColors = hasData ? [tokens.critical, tokens.warning, tokens.safe] : ['#E2E8F0', '#E2E8F0', '#E2E8F0'];
 
       const chart = new window.Chart(canvas, {
         type: 'doughnut',

@@ -35,17 +35,24 @@ export class BoardPackComponent {
     const overdueActions = risks.flatMap(r => r.actions || [])
       .filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today);
 
+    const tokens = {
+      safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+      warning: getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim() || '#D97706',
+      critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626',
+      slate: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#64748B'
+    };
+
     let postureValue = "LOW";
-    let postureColor = "#1D9E75"; 
+    let postureColor = tokens.safe; 
     if (aboveAppetiteCount > 15 || breachedKRIs > 20 || overdueActions.length > 10) {
       postureValue = "CRITICAL";
-      postureColor = "#E24B4A"; 
+      postureColor = tokens.critical; 
     } else if (aboveAppetiteCount > 0 || breachedKRIs > 0 || overdueActions.length > 0) {
       postureValue = "ELEVATED";
-      postureColor = "#EF9F27"; 
+      postureColor = tokens.warning; 
     } else if (worseningCount > 0) {
       postureValue = "MODERATE";
-      postureColor = "#4A6FA5"; 
+      postureColor = tokens.slate; 
     }
 
     // Filter Top Risks

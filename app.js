@@ -913,17 +913,24 @@ class RiskOSApplication {
     const overdueActionsCount = risks.flatMap(r => r.actions || [])
       .filter(a => a.status !== 'Completed' && new Date(a.dueDate) < today).length;
 
+    const tokens = {
+      safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+      warning: getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim() || '#D97706',
+      critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626',
+      slate: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#64748B'
+    };
+
     let postureValue = "LOW";
-    let postureColor = "#1D9E75"; // LOW = green
+    let postureColor = tokens.safe; // LOW = green
     if (aboveAppetiteCount > 15 || breachedKRIs > 20 || overdueActionsCount > 10) {
       postureValue = "CRITICAL";
-      postureColor = "#E24B4A"; // CRITICAL = red
+      postureColor = tokens.critical; // CRITICAL = red
     } else if (aboveAppetiteCount > 0 || breachedKRIs > 0 || overdueActionsCount > 0) {
       postureValue = "ELEVATED";
-      postureColor = "#EF9F27"; // ELEVATED = amber
+      postureColor = tokens.warning; // ELEVATED = amber
     } else if (worseningCount > 0) {
       postureValue = "MODERATE";
-      postureColor = "#4A6FA5"; // MODERATE = slate
+      postureColor = tokens.slate; // MODERATE = slate
     }
 
     const mainContent = document.querySelector('.main-content');

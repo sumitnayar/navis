@@ -165,12 +165,19 @@ export class ObjectivesComponent {
     const unlinked = risks.filter(r => !r.objectiveIds || !r.objectiveIds.includes(obj.id));
     const exposure = this.calculateAggregateExposure(linked);
 
+    const tokens = {
+      safe: getComputedStyle(document.documentElement).getPropertyValue('--color-safe').trim() || '#16A34A',
+      warning: getComputedStyle(document.documentElement).getPropertyValue('--color-warning').trim() || '#D97706',
+      critical: getComputedStyle(document.documentElement).getPropertyValue('--color-critical').trim() || '#DC2626',
+      navy: getComputedStyle(document.documentElement).getPropertyValue('--color-navy').trim() || '#0F172A'
+    };
+
     const aggregateScore = Math.min(30, linked.reduce((sum, r) => sum + (r.residualScore || 0), 0));
     const appetiteLimit = 15;
     const appetiteLimitPct = (appetiteLimit / 30) * 100;
-    let barColor = '#1D9E75';
-    if (aggregateScore > 20) barColor = '#E24B4A';
-    else if (aggregateScore > 10) barColor = '#EF9F27';
+    let barColor = tokens.safe;
+    if (aggregateScore > 20) barColor = tokens.critical;
+    else if (aggregateScore > 10) barColor = tokens.warning;
 
     return `
       <div>
@@ -198,7 +205,7 @@ export class ObjectivesComponent {
         <div style="margin-bottom: 24px; position: relative;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Aggregate Exposure</span>
-            <span style="font-size: 12px; font-weight: 700; color: ${aggregateScore > appetiteLimit ? '#E24B4A' : '#0D1B2A'};">${aggregateScore} / 30</span>
+            <span style="font-size: 12px; font-weight: 700; color: ${aggregateScore > appetiteLimit ? tokens.critical : tokens.navy};">${aggregateScore} / 30</span>
           </div>
           <div style="width: 100%; height: 8px; background: rgba(13,27,42,0.08); border-radius: 4px; position: relative; margin-top: 18px; margin-bottom: 12px;">
             <!-- Appetite Limit Marker -->
