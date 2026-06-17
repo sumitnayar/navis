@@ -1,6 +1,14 @@
 // Navis Policy Template Service
 // Curated base templates, industry variants, requirement packs, and clause libraries.
 
+import { GENERAL_CLAUSES } from './clauses/generalClauses.js';
+import { PRIVACY_CLAUSES } from './clauses/privacyClauses.js';
+import { INFOSEC_CLAUSES } from './clauses/infosecClauses.js';
+import { RESILIENCE_CLAUSES } from './clauses/resilienceClauses.js';
+import { THIRD_PARTY_CLAUSES } from './clauses/thirdPartyClauses.js';
+import { AI_GOVERNANCE_CLAUSES } from './clauses/aiGovernanceClauses.js';
+import { DEFINITIONS_CLAUSES } from './clauses/definitionsClauses.js';
+import { PolicyDefinitionsService } from './policyDefinitionsService.js';
 export const POLICY_DOMAINS = {
   infosec: {
     name: "Information Security",
@@ -231,174 +239,13 @@ export const REQUIREMENT_PACKS = {
 };
 
 export const CLAUSE_LIBRARY = [
-  {
-    id: "cl-purpose-global",
-    name: "Standard Governance Purpose",
-    group: "Purpose",
-    frameworks: ["ISO 27001", "ISO 27701", "SOC 2", "GDPR", "DPDPA", "NIST CSF"],
-    jurisdiction: ["Global"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "This policy establishes the operational governance framework for managing information security, security monitoring, and privacy protection protocols at {{COMPANY_NAME}}. It serves to define our administrative and technical safeguards in alignment with global regulatory frameworks and client commitments.",
-    rationale: "Fulfills the basic compliance requirement of ISO 27001 A.5.1 and SOC 2 CC1.1 to establish and document authorized management intent."
-  },
-  {
-    id: "cl-scope-global",
-    name: "Global Scope Mandate",
-    group: "Scope",
-    frameworks: ["ISO 27001", "ISO 27701", "SOC 2", "GDPR", "DPDPA", "NIST CSF"],
-    jurisdiction: ["Global"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "This policy applies to all databases, application clusters, staging environments, networks, and physical workspaces owned, leased, or operated by {{COMPANY_NAME}}. It governs all full-time employees, contractors, third-party support partners, and sub-processors with access to corporate resources or customer PII.",
-    rationale: "Ensures boundaries of the ISMS and PIMS are clearly defined and compliant with ISO 27001 clause 4.3."
-  },
-  {
-    id: "cl-def-gdpr",
-    name: "GDPR Core Definitions",
-    group: "Definitions",
-    frameworks: ["GDPR", "ISO 27701"],
-    jurisdiction: ["EU"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "Under this policy, terms are aligned with GDPR specifications:\n- 'Data Subject' refers to any natural person residing in the EU whose personal data is collected.\n- 'Data Controller' refers to the entity that determines processing purposes (e.g. {{COMPANY_NAME}} as a Fiduciary).\n- 'Data Processor' refers to the entity processing data on behalf of the controller (e.g. {{COMPANY_NAME}} acting as a {{POSTURE}}).",
-    rationale: "Provides legal precision and conceptual mapping required for GDPR Article 4."
-  },
-  {
-    id: "cl-def-dpdpa",
-    name: "DPDPA Core Definitions",
-    group: "Definitions",
-    frameworks: ["DPDPA", "ISO 27701"],
-    jurisdiction: ["India"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "Definitions adhere to the Digital Personal Data Protection Act (DPDPA):\n- 'Data Principal' means the individual to whom the personal data relates.\n- 'Data Fiduciary' means any person who alone or in conjunction with others determines the purpose and means of personal data processing.\n- 'Data Processor' means any person who processes personal data on behalf of a Data Fiduciary.",
-    rationale: "Ensures structural compliance with the statutory terminology of DPDPA Section 2."
-  },
-  {
-    id: "cl-roles-generic",
-    name: "GRC Roles and Oversight",
-    group: "Roles and Responsibilities",
-    frameworks: ["ISO 27001", "ISO 27701", "SOC 2", "GDPR", "DPDPA"],
-    jurisdiction: ["Global"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Board-Ready",
-    text: "Operational oversight is delegated to specialized compliance actors:\n- The Chief Information Security Officer (CISO) owns technical logging, access control audits, and threat monitoring controls.\n- The Data Protection Officer (DPO) ({{DPO_OFFICER}}) supervises privacy impact evaluations and handles data subject access inquiries.\n- The Grievance Officer ({{GRIEVANCE_OFFICER}}) is designated to handle individual complaints and statutory queries.",
-    rationale: "Aligns organizational hierarchy with ISO 27001 A.5.3 (roles/responsibilities) and DPDPA/GDPR compliance expectations."
-  },
-  {
-    id: "cl-consent-gdpr-dpdpa",
-    name: "Consent Capture & Withdrawal",
-    group: "Consent",
-    frameworks: ["GDPR", "DPDPA"],
-    jurisdiction: ["EU", "India"],
-    industry: ["SaaS", "FinTech", "Healthcare"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "Consent to collect and process personal data must be freely given, specific, informed, and unconditional. Before any data capture occurs, users will receive a clear notice detailing data items collected and their right to withdraw consent. Withdrawal of consent can be executed easily at any time via account settings or emailing support. Processing will cease within 14 days of withdrawal.",
-    rationale: "Mandated by GDPR Article 7 and DPDPA Section 6, establishing the consent withdrawal standard."
-  },
-  {
-    id: "cl-dsar-standard",
-    name: "DSAR Request Protocol",
-    group: "DSAR",
-    frameworks: ["GDPR", "DPDPA", "ISO 27701"],
-    jurisdiction: ["Global"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Board-Ready",
-    text: "Data Principals and Subjects hold the right to request access, correction, porting, or complete deletion of their personal data. Requests must be verified for identity by the Privacy team. Complete data exports in a structured machine-readable format, or deletion confirmations, must be delivered to the applicant within 30 days of validation.",
-    rationale: "Satisfies GDPR Chapter III and DPDPA Section 11/12 data principal right provisions."
-  },
-  {
-    id: "cl-retention-secure",
-    name: "Data Retention Limits",
-    group: "Retention",
-    frameworks: ["GDPR", "DPDPA", "ISO 27701"],
-    jurisdiction: ["Global"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "Personal data processed by {{COMPANY_NAME}} is subject to retention limits based on the processing summary: '{{PROCESSING_PURPOSE}}'. Backups are recycled on a strict 30-day rotation. Upon contract termination or consent withdrawal, client databases and linked tables will be wiped using secure deletion schedules within 30 days.",
-    rationale: "Prevents regulatory liability by enforcing storage limitation criteria under GDPR Article 5(1)(e)."
-  },
-  {
-    id: "cl-incident-sla",
-    name: "Security Breach Notification SLA",
-    group: "Incident Response",
-    frameworks: ["ISO 27001", "SOC 2", "GDPR", "DPDPA"],
-    jurisdiction: ["Global"],
-    industry: ["SaaS", "FinTech"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "The Incident Response Team (IRT) will manage security threats. If a personal data breach is confirmed, {{COMPANY_NAME}} will notify supervisory authorities and affected individuals within 72 hours of detection. Root-cause analyses and post-incident reviews must be completed and logged within 5 business days of containment.",
-    rationale: "Fulfills the critical statutory breach reporting rules of GDPR Article 33 and DPDPA requirements."
-  },
-  {
-    id: "cl-vendor-due-diligence",
-    name: "Vendor Security Screening",
-    group: "Third Party Management",
-    frameworks: ["ISO 27001", "SOC 2", "NIST CSF", "GDPR", "DPDPA"],
-    jurisdiction: ["Global"],
-    industry: ["SaaS", "FinTech", "EdTech"],
-    version: "v1.0",
-    maturity: "Board-Ready",
-    text: "All third-party SaaS vendors, suppliers, and sub-processors with access to customer data or systems must undergo security screening. Vendors must present proof of annual SOC 2 Type II or ISO 27001 certification. Data Processing Addendums (DPAs) must specify breach reporting timelines of 24 hours.",
-    rationale: "Secures the supply chain in accordance with ISO 27001 Annex A.15 and GDPR Article 28."
-  },
-  {
-    id: "cl-crossborder-transfer",
-    name: "Cross-Border Data Transfers",
-    group: "Cross-Border Transfers",
-    frameworks: ["GDPR", "DPDPA", "ISO 27701"],
-    jurisdiction: ["EU", "India"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "Personal data transfers outside originating jurisdictions will occur only through approved adequacy tools or Standard Contractual Clauses (SCCs). To satisfy data residency demands, {{COMPANY_NAME}} leverages regional hosting zones on {{CLOUD_PROVIDER}} in India and the EU to isolate datasets.",
-    rationale: "Fulfills GDPR Chapter V restrictions and data localization expectations of local acts."
-  },
-  {
-    id: "cl-audit-supplier",
-    name: "Supplier Audit Rights",
-    group: "Audit Rights",
-    frameworks: ["SOC 2", "ISO 27001", "NIST CSF"],
-    jurisdiction: ["Global"],
-    industry: ["SaaS", "FinTech"],
-    version: "v1.0",
-    maturity: "Consultant-Grade",
-    text: "{{COMPANY_NAME}} maintains contract rights to execute annual audits of critical sub-processors. Audits review compliance certifications, security logs, and access management profiles. Sub-processors must resolve high-risk audit findings within 30 days of report distribution.",
-    rationale: "Maintains accountability across vendor-managed infrastructure platforms under SOC 2 CC9.2."
-  },
-  {
-    id: "cl-security-training",
-    name: "Mandatory Awareness Training",
-    group: "Training",
-    frameworks: ["ISO 27001", "SOC 2", "NIST CSF"],
-    jurisdiction: ["Global"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Standard",
-    text: "All personnel must complete security and data privacy awareness training upon hire and annually thereafter. Topics include password hygiene, phishing, data handling sensitivity, remote VPN controls, and incident reporting. Attendance logs and quiz completions are tracked and audited.",
-    rationale: "Directly fulfills the awareness mandates of ISO 27001 Annex A.7.2.2 and SOC 2 CC2.1."
-  },
-  {
-    id: "cl-review-frequency",
-    name: "Annual Policy Review Protocol",
-    group: "Review Frequency",
-    frameworks: ["ISO 27001", "ISO 27701", "SOC 2"],
-    jurisdiction: ["Global"],
-    industry: ["Global"],
-    version: "v1.0",
-    maturity: "Standard",
-    text: "This governance framework is subject to mandatory annual review. The CISO and DPO will inspect operational compliance, verify alignment with newer guidelines (including DPDPA and GDPR rules), and submit amendments to executive leadership for approval every 12 months.",
-    rationale: "Addresses ISO 27001 clause 8.1 and SOC 2 CC1.2 requiring periodic framework validation."
-  }
+  ...GENERAL_CLAUSES,
+  ...PRIVACY_CLAUSES,
+  ...INFOSEC_CLAUSES,
+  ...RESILIENCE_CLAUSES,
+  ...THIRD_PARTY_CLAUSES,
+  ...AI_GOVERNANCE_CLAUSES,
+  ...DEFINITIONS_CLAUSES
 ];
 
 export class PolicyTemplateService {
@@ -465,37 +312,27 @@ export class PolicyTemplateService {
     const employeeCount = profile.employeeCount || "100";
     const specialCategories = profile.specialCategories || "None";
 
-    // Format list of frameworks
     const fwsFormatted = (selectedFrameworks && selectedFrameworks.length > 0) 
       ? selectedFrameworks.join(", ") 
       : "Internal Governance";
 
-    // 1. Build Header Box
     let doc = `================================================================================
 DOCUMENT TITLE:   ${template.title}
-ORGANIZATION:     ${companyName} (${industry} sector)
-CLASSIFICATION:   Confidential - Internal Use Only
+DOCUMENT ID:      ${companyName.substring(0,3).toUpperCase()}-POL-${domainKey.substring(0,3).toUpperCase()}-001
 VERSION:          v1.0
 STATUS:           Draft (Pending Board Approval)
+CLASSIFICATION:   Confidential - Internal Use Only
+APPLICABLE FRAMEWORKS: ${fwsFormatted}
+JURISDICTIONS:    ${geography} (Origin: ${country})
+POLICY OWNER:     ${dpo}
+CONTROL OWNER:    CISO / DPO
+APPROVAL AUTHORITY: Board of Directors / Executive Committee
 EFFECTIVE DATE:   ${new Date().toLocaleDateString('en-GB')}
-TARGET FRAMEWORKS: ${fwsFormatted}
-JURISDICTION:     ${geography} (Origin: ${country})
-REVISION OWNER:   ${dpo}
+REVIEW FREQUENCY: Annual (12-month cycle)
 ================================================================================
 
 `;
 
-    // 2. Section 1: Purpose & Scope
-    doc += `## 1. PURPOSE & SCOPE\n\n`;
-    // Fetch and customize Purpose clause
-    const purposeClause = CLAUSE_LIBRARY.find(c => c.id === 'cl-purpose-global');
-    let purposeText = purposeClause ? purposeClause.text : "";
-    
-    // Fetch and customize Scope clause
-    const scopeClause = CLAUSE_LIBRARY.find(c => c.id === 'cl-scope-global');
-    let scopeText = scopeClause ? scopeClause.text : "";
-
-    // Perform replacements
     const replaceVars = (str) => {
       if (!str) return "";
       return str
@@ -512,82 +349,23 @@ REVISION OWNER:   ${dpo}
         .replace(/{{SPECIAL_CATEGORIES}}/g, specialCategories);
     };
 
-    doc += replaceVars(purposeText) + `\n\n` + replaceVars(scopeText) + `\n\n`;
+    const getClausesForSection = (secNum) => {
+      let matching = CLAUSE_LIBRARY.filter(c => c.section === secNum && (c.domain === domainKey || c.domain === 'general'));
+      return matching.slice(0, 3).map(c => replaceVars(c.text)).join('\n\n');
+    };
 
-    // 3. Section 2: Definitions
-    doc += `## 2. COMPLIANCE DEFINITIONS\n\n`;
-    let defsText = "";
-    if (selectedFrameworks.includes("DPDPA") || selectedFrameworks.includes("DPDP")) {
-      const dpdpDef = CLAUSE_LIBRARY.find(c => c.id === 'cl-def-dpdpa');
-      if (dpdpDef) defsText += dpdpDef.text + `\n\n`;
-    }
-    if (selectedFrameworks.includes("GDPR")) {
-      const gdprDef = CLAUSE_LIBRARY.find(c => c.id === 'cl-def-gdpr');
-      if (gdprDef) defsText += gdprDef.text + `\n\n`;
-    }
-    if (!defsText) {
-      defsText = `Definitions of terms under this policy align with standard ISO 27001:2022 and SOC 2 security framework models. Key terms include PII (Personally Identifiable Information), logical security keys, and admin access roles.`;
-    }
-    doc += replaceVars(defsText) + `\n`;
-
-    // 4. Section 3: Roles and Responsibilities
-    doc += `## 3. ROLES & GOVERNANCE OVERSIGHT\n\n`;
-    const rolesClause = CLAUSE_LIBRARY.find(c => c.id === 'cl-roles-generic');
-    let rolesText = rolesClause ? rolesClause.text : "";
-    doc += replaceVars(rolesText) + `\n\n`;
-
-    // 5. Section 4: Mapped Regulatory Controls (Dynamic based on selected frameworks)
-    doc += `## 4. REGULATORY CONTROLS & COMPLIANCE REQUIREMENTS\n\n`;
-    
-    // Identify which clause groups to pull based on domain/policy type and frameworks
-    const groupsToPull = [];
-    if (domainKey === 'privacy') {
-      groupsToPull.push('Consent', 'DSAR', 'Retention', 'Cross-Border Transfers');
-    } else if (domainKey === 'infosec') {
-      groupsToPull.push('Incident Response', 'Third Party Management', 'Training', 'Audit Rights');
-    } else {
-      groupsToPull.push('Incident Response', 'Third Party Management', 'Audit Rights', 'Training');
-    }
-
-    let controlsAddedCount = 0;
-    groupsToPull.forEach(groupName => {
-      // Find matching clauses for this group that map to selected frameworks
-      const matches = CLAUSE_LIBRARY.filter(c => {
-        if (c.group !== groupName) return false;
-        // If no framework filter, allow. Otherwise check intersection.
-        if (!c.frameworks || c.frameworks.length === 0) return true;
-        
-        return c.frameworks.some(fw => {
-          // Check DPDPA -> DPDP alias mapping
-          const fwKey = fw === 'DPDPA' ? 'DPDP' : fw;
-          return selectedFrameworks.includes(fw) || selectedFrameworks.includes(fwKey);
-        });
-      });
-
-      if (matches.length > 0) {
-        // Add the best match
-        const best = matches[0];
-        doc += `### 4.${++controlsAddedCount} ${best.name} (${best.maturity})\n`;
-        doc += `*Rationale:* ${best.rationale}\n\n`;
-        doc += replaceVars(best.text) + `\n\n`;
-      }
-    });
-
-    if (controlsAddedCount === 0) {
-      doc += `No specific regulatory control clauses matched the selected combination of frameworks. Default organizational privacy and security baselines are maintained in active logs.\n\n`;
-    }
-
-    // 6. Section 5: Administrative Protocols
-    doc += `## 5. ADMINISTRATIVE PROTOCOLS\n\n`;
-    const trainingClause = CLAUSE_LIBRARY.find(c => c.id === 'cl-security-training');
-    const reviewClause = CLAUSE_LIBRARY.find(c => c.id === 'cl-review-frequency');
-
-    if (trainingClause) {
-      doc += `### 5.1 Training & Human Awareness\n` + replaceVars(trainingClause.text) + `\n\n`;
-    }
-    if (reviewClause) {
-      doc += `### 5.2 Revision Controls & Review Frequencies\n` + replaceVars(reviewClause.text) + `\n`;
-    }
+    doc += `## 1. PURPOSE & OBJECTIVE\n\n${getClausesForSection(1) || 'To establish a governance framework.'}\n\n`;
+    doc += `## 2. SCOPE\n\n${getClausesForSection(2) || 'Applies globally to all systems.'}\n\n`;
+    doc += `## 3. APPLICABILITY\n\n${getClausesForSection(3) || 'Applies to all personnel.'}\n\n`;
+    doc += `## 4. DEFINITIONS\n\n${PolicyDefinitionsService.generateDefinitionsSection(selectedFrameworks, profile) || 'Standard industry definitions apply.'}\n\n`;
+    doc += `## 5. ROLES & RESPONSIBILITIES\n\n${getClausesForSection(5) || 'Defined by the executive committee.'}\n\n`;
+    doc += `## 6. POLICY REQUIREMENTS\n\n${getClausesForSection(6) || 'Strict adherence to selected compliance frameworks is required.'}\n\n`;
+    doc += `## 7. EXCEPTIONS\n\n${getClausesForSection(7) || 'Exceptions require formal approval.'}\n\n`;
+    doc += `## 8. NON-COMPLIANCE & ENFORCEMENT\n\n${getClausesForSection(8) || 'Violations result in disciplinary action.'}\n\n`;
+    doc += `## 9. MONITORING & COMPLIANCE\n\n${getClausesForSection(9) || 'Monitored continuously.'}\n\n`;
+    doc += `## 10. REVIEW & MAINTENANCE\n\n${getClausesForSection(10) || 'Reviewed annually.'}\n\n`;
+    doc += `## 11. RELATED DOCUMENTS\n\n${getClausesForSection(11) || 'Refer to the ISMS.'}\n\n`;
+    doc += `## 12. VERSION CONTROL\n\n${getClausesForSection(12) || 'Version 1.0.'}\n\n`;
 
     return doc;
   }

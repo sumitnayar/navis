@@ -1,0 +1,55 @@
+Verification Log for Policy Studio Maturity (Wave 2)
+====================================================
+
+1. Generate Policy draft: OK. Draft length: 701 characters.
+2. Save v1 baseline entry: OK.
+3. Run compliance observations scan: OK. Mapped Consent Withdrawal suggestion.
+4. Accept Consent Withdrawal: OK. Staged in proposed changes queue.
+5. Redline Review comparison: OK. Diff computed.
+6. Commit v2 ledger: OK. Summary: Integrated DPDPA Section 6 and GDPR Article 7 consent withdrawal obligations.
+7. Compare v1 vs v2 revision logs: OK.
+8. Rollback to v1 baseline: OK.
+9. Verify rollback creates new version entry: SUCCESS. v3 entry logged, ledger size: 3.
+
+Revision History Ledger JSON:
+[
+  {
+    "version": "v1",
+    "date": "2026-06-16T23:14:22.091136",
+    "editor": "CRO (Chief Risk Officer)",
+    "frameworks": [
+      "DPDPA",
+      "GDPR",
+      "ISO 27701"
+    ],
+    "summary": "Initial draft creation of Trackier PIMS Policy.",
+    "reason": "Initial Draft Creation",
+    "documentText": "================================================================================\nDOCUMENT TITLE:   PIMS Policy\nORGANIZATION:     Trackier (SaaS sector)\nCLASSIFICATION:   Confidential\nVERSION:          v1.0\nSTATUS:           Draft\nTARGET FRAMEWORKS: DPDPA, GDPR, ISO 27701\n================================================================================\n\n## 1. PURPOSE & SCOPE\nThis policy governs data protection controls at Trackier. It applies to all AWS systems.\n\n## 2. DEFINTIONS\n- Data Principal / Subject: individuals whose event logs are processed.\n- Data Fiduciary: Trackier acting as Fiduciary + Processor.\n\n## 3. ROLES & GOVERNANCE\n- DPO: Sumit Nayar is designated to handle privacy requests."
+  },
+  {
+    "version": "v2",
+    "date": "2026-06-16T23:14:22.091383",
+    "editor": "DPO / Privacy Officer (Sumit Nayar)",
+    "frameworks": [
+      "DPDPA",
+      "GDPR",
+      "ISO 27701"
+    ],
+    "summary": "Integrated DPDPA Section 6 and GDPR Article 7 consent withdrawal obligations.",
+    "reason": "DPDPA alignment",
+    "documentText": "================================================================================\nDOCUMENT TITLE:   PIMS Policy\nORGANIZATION:     Trackier (SaaS sector)\nCLASSIFICATION:   Confidential\nVERSION:          v1.0\nSTATUS:           Draft\nTARGET FRAMEWORKS: DPDPA, GDPR, ISO 27701\n================================================================================\n\n## 1. PURPOSE & SCOPE\nThis policy governs data protection controls at Trackier. It applies to all AWS systems.\n\n## 2. DEFINTIONS\n- Data Principal / Subject: individuals whose event logs are processed.\n- Data Fiduciary: Trackier acting as Fiduciary + Processor.\n\n## 3. ROLES & GOVERNANCE\n- DPO: Sumit Nayar is designated to handle privacy requests.\n\n[Proposed Addition - Missing explicit consent withdrawal protocol.]:\nConsent to collect and process personal data can be withdrawn by the user at any time. Withdrawal requests are processed, and subsequent processing ceased, within 14 business days."
+  },
+  {
+    "version": "v3",
+    "date": "2026-06-16T23:14:22.091415",
+    "editor": "CRO (Chief Risk Officer)",
+    "frameworks": [
+      "DPDPA",
+      "GDPR",
+      "ISO 27701"
+    ],
+    "summary": "Rollback to v1 baseline state.",
+    "reason": "Rollback to v1",
+    "documentText": "================================================================================\nDOCUMENT TITLE:   PIMS Policy\nORGANIZATION:     Trackier (SaaS sector)\nCLASSIFICATION:   Confidential\nVERSION:          v1.0\nSTATUS:           Draft\nTARGET FRAMEWORKS: DPDPA, GDPR, ISO 27701\n================================================================================\n\n## 1. PURPOSE & SCOPE\nThis policy governs data protection controls at Trackier. It applies to all AWS systems.\n\n## 2. DEFINTIONS\n- Data Principal / Subject: individuals whose event logs are processed.\n- Data Fiduciary: Trackier acting as Fiduciary + Processor.\n\n## 3. ROLES & GOVERNANCE\n- DPO: Sumit Nayar is designated to handle privacy requests."
+  }
+]

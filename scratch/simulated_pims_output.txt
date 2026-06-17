@@ -1,0 +1,66 @@
+================================================================================
+DOCUMENT TITLE:   PIMS Policy
+ORGANIZATION:     Trackier (SaaS sector)
+CLASSIFICATION:   Confidential - Internal Use Only
+VERSION:          v1.0
+STATUS:           Draft (Pending Board Approval)
+EFFECTIVE DATE:   16/06/2026
+TARGET FRAMEWORKS: DPDPA, GDPR, ISO 27701
+JURISDICTION:     India + EU (Origin: India)
+REVISION OWNER:   Sumit Nayar
+================================================================================
+
+## 1. PURPOSE & SCOPE
+
+This policy establishes the operational governance framework for managing information security, security monitoring, and privacy protection protocols at Trackier. It serves to define our administrative and technical safeguards in alignment with global regulatory frameworks and client commitments.
+
+This policy applies to all databases, application clusters, staging environments, networks, and physical workspaces owned, leased, or operated by Trackier. It governs all full-time employees, contractors, third-party support partners, and sub-processors with access to corporate resources or customer PII.
+
+## 2. COMPLIANCE DEFINITIONS
+
+Definitions adhere to the Digital Personal Data Protection Act (DPDPA):
+- 'Data Principal' means the individual to whom the personal data relates.
+- 'Data Fiduciary' means any person who alone or in conjunction with others determines the purpose and means of personal data processing.
+- 'Data Processor' means any person who processes personal data on behalf of a Data Fiduciary.
+
+Under this policy, terms are aligned with GDPR specifications:
+- 'Data Subject' refers to any natural person residing in the EU whose personal data is collected.
+- 'Data Controller' refers to the entity that determines processing purposes (e.g. Trackier as a Fiduciary).
+- 'Data Processor' refers to the entity processing data on behalf of the controller (e.g. Trackier acting as a Processor + Fiduciary).
+
+## 3. ROLES & GOVERNANCE OVERSIGHT
+
+Operational oversight is delegated to specialized compliance actors:
+- The Chief Information Security Officer (CISO) owns technical logging, access control audits, and threat monitoring controls.
+- The Data Protection Officer (DPO) (Sumit Nayar) supervises privacy impact evaluations and handles data subject access inquiries.
+- The Grievance Officer (Sumit Nayar) is designated to handle individual complaints and statutory queries.
+
+## 4. REGULATORY CONTROLS & COMPLIANCE REQUIREMENTS
+
+### 4.1 Consent Capture & Withdrawal (Consultant-Grade)
+*Rationale:* Mandated by GDPR Article 7 and DPDPA Section 6, establishing the consent withdrawal standard.
+
+Consent to collect and process personal data must be freely given, specific, informed, and unconditional. Before any data capture occurs, users will receive a clear notice detailing data items collected and their right to withdraw consent. Withdrawal of consent can be executed easily at any time via account settings or emailing support. Processing will cease within 14 days of withdrawal.
+
+### 4.2 DSAR Request Protocol (Consultant-Grade)
+*Rationale:* Satisfies GDPR Chapter III and DPDPA Section 11/12 data principal right provisions.
+
+Data Principals and Subjects hold the right to request access, correction, porting, or complete deletion of their personal data. Requests must be verified for identity by the Privacy team. Complete data exports in a structured machine-readable format, or deletion confirmations, must be delivered to the applicant within 30 days of validation.
+
+### 4.3 Data Retention Limits (Consultant-Grade)
+*Rationale:* Prevents regulatory liability by enforcing storage limitation criteria under GDPR Article 5(1)(e).
+
+Personal data processed by Trackier is subject to retention limits based on the processing summary: 'Enterprise SaaS tracking analytics and event attribution metadata operations'. Backups are recycled on a strict 30-day rotation. Upon contract termination or consent withdrawal, client databases and linked tables will be wiped using secure deletion schedules within 30 days.
+
+### 4.4 Cross-Border Data Transfers (Consultant-Grade)
+*Rationale:* Fulfills GDPR Chapter V restrictions and data localization expectations of local acts.
+
+Personal data transfers outside originating jurisdictions will occur only through approved adequacy tools or Standard Contractual Clauses (SCCs). To satisfy data residency demands, Trackier leverages regional hosting zones on AWS in India and the EU to isolate datasets.
+
+## 5. ADMINISTRATIVE PROTOCOLS
+
+### 5.1 Training & Human Awareness
+All personnel must complete security and data privacy awareness training upon hire and annually thereafter. Topics include password hygiene, phishing, data handling sensitivity, remote VPN controls, and incident reporting. Attendance logs and quiz completions are tracked and audited.
+
+### 5.2 Revision Controls & Review Frequencies
+This governance framework is subject to mandatory annual review. The CISO and DPO will inspect operational compliance, verify alignment with newer guidelines (including DPDPA and GDPR rules), and submit amendments to executive leadership for approval every 12 months.

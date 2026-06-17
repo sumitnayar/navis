@@ -9,13 +9,16 @@ import { VersionHistoryService } from '../services/versionHistoryService.js';
 import { ClauseIntelligenceService } from '../services/clauseIntelligenceService.js';
 import { FrameworkReferenceService } from '../services/frameworkReferenceService.js';
 import { OrganizationMemoryService } from '../services/organizationMemoryService.js';
+import { PolicyLanguageService } from '../services/policyLanguageService.js';
+import { PolicyCompletenessService } from '../services/policyCompletenessService.js';
+import { PolicyDefinitionsService } from '../services/policyDefinitionsService.js';
 
 export class PolicyStudioComponent {
   constructor(appState, onStateChange) {
     this.state = appState;
     this.onStateChange = onStateChange;
 
-    this.activeSubTab = 'generator'; // 'generator', 'intelligence', 'redline', 'upgrade', 'versions'
+    this.activeSubTab = 'generator'; // 'generator', 'intelligence', 'redline', 'upgrade', 'refinement', 'versions'
     
     // Generator Selections
     this.genDomain = 'privacy';
@@ -53,6 +56,7 @@ export class PolicyStudioComponent {
 
     this.isGenerating = false;
     this.genResultText = '';
+    this.completenessResult = null;
     this.genTitle = 'PIMS Policy';
 
     // Upgrade Wizard / Gap Analysis State
@@ -67,6 +71,13 @@ export class PolicyStudioComponent {
     this.itemDecisions = {}; // clauseId -> decision
     this.editedClauses = {}; // clauseId -> edited text
     this.expandedClauseId = null;
+
+    // Language Refinement State (Wave 3.5)
+    this.isRefining = false;
+    this.refinementSuggestions = [];
+    this.refinementProfile = 'big4';
+    this.refinementCategories = Object.keys(PolicyLanguageService.CATEGORIES);
+    this.dismissedRefinements = new Set();
 
     // Staging / Redline Review State
     this.redlineMode = 'inline'; // 'inline' or 'sbs'
@@ -173,7 +184,7 @@ export class PolicyStudioComponent {
       <div class="page-header">
         <div class="page-title-wrap">
           <span class="profile-role-badge">Governance Control Desk</span>
-          <h1>Policy Studio</h1>
+            <h1 class="page-title">Policy Studio</h1>
           <p class="page-subtitle">Generate, upgrade, and govern policy documents.</p>
         </div>
       </div>
@@ -192,6 +203,9 @@ export class PolicyStudioComponent {
         <button class="subtab-btn ${this.activeSubTab === 'upgrade' ? 'active' : ''}" data-subtab="upgrade" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'upgrade' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'upgrade' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
           Policy Upgrade
         </button>
+        <button class="subtab-btn ${this.activeSubTab === 'refinement' ? 'active' : ''}" data-subtab="refinement" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'refinement' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'refinement' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
+          Language Refinement
+        </button>
         <button class="subtab-btn ${this.activeSubTab === 'versions' ? 'active' : ''}" data-subtab="versions" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'versions' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'versions' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
           Version History
         </button>
@@ -203,19 +217,22 @@ export class PolicyStudioComponent {
     `;
 
     const bodyContainer = container.querySelector('#tab-body-container');
-    this.renderSubTabContent(bodyContainer);
+    try {
+      this.renderSubTabContent(bodyContainer);
+      this.bindEvents(container);
+    } catch (renderError) {
+      alert("RUNTIME ERROR in PolicyStudio: " + renderError.message + "\n" + renderError.stack);
+      console.error(renderError);
+    }
   }
 
   // Tab switch routing
   async selectTab(tabKey, container) {
     this.activeSubTab = tabKey;
-    
-    const bodyContainer = container.querySelector('#tab-body-container');
-    if (!bodyContainer) return;
 
     if (tabKey === 'redline') {
       this.isRedlineLoading = true;
-      this.renderSubTabContent(bodyContainer);
+      this.render(container);
       
       try {
         this.baselineText = await this.getBaselineText(this.selectedDocId);
@@ -223,12 +240,10 @@ export class PolicyStudioComponent {
         console.error("Failed to load baseline:", err);
       } finally {
         this.isRedlineLoading = false;
-        this.renderSubTabContent(bodyContainer);
-        this.bindEvents(container);
+        this.render(container);
       }
     } else {
-      this.renderSubTabContent(bodyContainer);
-      this.bindEvents(container);
+      this.render(container);
     }
   }
 
@@ -284,6 +299,8 @@ export class PolicyStudioComponent {
       }
     } else if (this.activeSubTab === 'upgrade') {
       bodyHtml = this.renderUpgradeTab();
+    } else if (this.activeSubTab === 'refinement') {
+      bodyHtml = this.renderRefinementTab();
     } else {
       bodyHtml = this.renderVersionsTab();
     }
@@ -546,7 +563,16 @@ export class PolicyStudioComponent {
                   Draft Preview: <span style="color:var(--text-primary);font-weight:700;">${this.genTitle}</span>
                 </h4>
                 ${this.genResultText ? `
-                  <button class="btn btn-secondary btn-small" id="btn-save-draft-to-vault" style="font-size:10px;">Save Draft to Vault</button>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <button class="btn btn-secondary btn-small" id="btn-download-draft" style="font-size:10px;display:flex;align-items:center;">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:12px;height:12px;margin-right:4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                      </svg>
+                      Download (.md)
+                    </button>
+                    <button class="btn btn-secondary btn-small" id="btn-refine-draft" style="font-size:10px;border-color:var(--color-indigo);color:var(--color-indigo);">Refine Language</button>
+                    <button class="btn btn-secondary btn-small" id="btn-save-draft-to-vault" style="font-size:10px;">Save Draft to Vault</button>
+                  </div>
                 ` : ''}
               </div>
 
@@ -567,9 +593,100 @@ export class PolicyStudioComponent {
                   </div>
                 `}
               </div>
+
+              ${this.genResultText && this.completenessResult ? this._renderCompletenessPanel() : ''}
+
             </div>
 
           </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  _renderCompletenessPanel() {
+    if (!this.completenessResult) return '';
+
+    const { grade, score, summary, sectionsFound, missingSections, issues } = this.completenessResult;
+
+    // Badge styling based on grade
+    let badgeColor = 'var(--text-muted)';
+    let badgeBg = 'var(--bg-tertiary)';
+    if (grade === 'A' || grade === 'B') { badgeColor = 'var(--color-emerald)'; badgeBg = 'rgba(16, 185, 129, 0.1)'; }
+    if (grade === 'C') { badgeColor = 'var(--color-amber)'; badgeBg = 'rgba(245, 158, 11, 0.1)'; }
+    if (grade === 'D' || grade === 'F') { badgeColor = 'var(--color-rose)'; badgeBg = 'rgba(244, 63, 94, 0.1)'; }
+
+    // Section Checklist
+    const allSections = [
+      'Purpose & Objective', 'Scope', 'Applicability', 'Definitions',
+      'Roles & Responsibilities', 'Policy Requirements', 'Exceptions',
+      'Non-compliance & Enforcement', 'Monitoring & Compliance',
+      'Review & Maintenance', 'Related Documents', 'Version Control'
+    ];
+
+    const checklistHtml = allSections.map(sec => {
+      const isFound = sectionsFound.includes(sec);
+      return `
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:${isFound ? 'var(--text-primary)' : 'var(--text-muted)'};margin-bottom:4px;">
+          ${isFound 
+            ? `<svg viewBox="0 0 20 20" fill="var(--color-emerald)" style="width:14px;height:14px;"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>` 
+            : `<svg viewBox="0 0 20 20" fill="var(--color-rose)" style="width:14px;height:14px;"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`
+          }
+          ${sec}
+        </div>
+      `;
+    }).join('');
+
+    // Findings HTML
+    const findingsHtml = Object.entries(issues).map(([severity, severitiesIssues]) => {
+      if (severitiesIssues.length === 0) return '';
+      let iconColor = 'var(--color-amber)';
+      if (severity === 'Critical') iconColor = 'var(--color-rose)';
+      if (severity === 'Moderate') iconColor = 'var(--color-indigo)';
+
+      return `
+        <div style="margin-top:12px;">
+          <strong style="font-size:11px;color:${iconColor};">${severity} Findings (${severitiesIssues.length})</strong>
+          <ul style="margin:4px 0 0 0;padding-left:16px;font-size:11px;color:var(--text-secondary);">
+            ${severitiesIssues.map(iss => `<li style="margin-bottom:2px;">${iss}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div style="margin-top:16px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:16px;">
+        
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <h4 style="font-size:13px;margin:0 0 4px 0;color:var(--text-primary);">Policy Completeness Assessment</h4>
+            <p style="font-size:11px;color:var(--text-secondary);margin:0;">${summary}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;">
+            <div style="background:${badgeBg};color:${badgeColor};padding:4px 10px;border-radius:12px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">
+              Grade: ${grade}
+              <span style="font-size:11px;font-weight:500;opacity:0.8;">(${score}/100)</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;border-top:1px solid var(--border-color);padding-top:16px;">
+          
+          <!-- Sections Checklist -->
+          <div>
+            <h5 style="font-size:11px;text-transform:uppercase;color:var(--text-muted);margin:0 0 8px 0;letter-spacing:0.5px;">12-Section Governance Model</h5>
+            <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:12px;">
+              ${checklistHtml}
+            </div>
+          </div>
+
+          <!-- Findings -->
+          <div>
+            <h5 style="font-size:11px;text-transform:uppercase;color:var(--text-muted);margin:0 0 8px 0;letter-spacing:0.5px;">Completeness Findings</h5>
+            ${findingsHtml || '<div style="font-size:11px;color:var(--color-emerald);margin-top:12px;">No completeness findings. Document meets all structural requirements.</div>'}
+          </div>
+
         </div>
 
       </div>
@@ -1153,8 +1270,297 @@ export class PolicyStudioComponent {
     `;
   }
 
+  // ─── TAB 6: LANGUAGE REFINEMENT (Wave 3.5) ─────────────────────────────
+  renderRefinementTab() {
+    const vaultDocs = this.state.vaultDocs || [];
+    const profiles = PolicyLanguageService.getProfiles();
+    const categories = PolicyLanguageService.getCategories();
+    const activeProfile = PolicyLanguageService.PROFILES[this.refinementProfile] || PolicyLanguageService.PROFILES['big4'];
+
+    // Filter out dismissed suggestions
+    const activeSuggestions = this.refinementSuggestions.filter(s => !this.dismissedRefinements.has(s.id));
+    const stats = PolicyLanguageService.getStatistics(activeSuggestions);
+
+    const severityColors = {
+      'Strongly Recommended': { bg: '#FDE8E8', fg: '#9B1C1C', border: '#F8B4B4' },
+      'Recommended': { bg: '#FEF3C7', fg: '#92400E', border: '#FDE68A' },
+      'Optional': { bg: '#E0E7FF', fg: '#3730A3', border: '#C7D2FE' }
+    };
+
+    return `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+
+        <!-- LEFT: CONFIGURATION PANEL -->
+        <div class="details-panel" style="flex: 1 1 280px; max-width: 320px;">
+          <div class="glass-panel">
+            <h3 class="dashboard-card-title">Refinement Configuration</h3>
+            <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:16px;">
+              Select a policy document and configure language refinement parameters.
+            </p>
+
+            <!-- DOCUMENT SELECTOR -->
+            <div class="form-group">
+              <label>Source Document</label>
+              <select class="form-control" id="refine-doc-select" style="font-size:11px;">
+                <option value="">— Select Policy —</option>
+                ${vaultDocs.map(d => `
+                  <option value="${d.id}" ${this.selectedDocId === d.id ? 'selected' : ''}>
+                    ${d.documentName || d.documentType || d.id}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+
+            <!-- LANGUAGE PROFILE SELECTOR -->
+            <div class="form-group" style="margin-top:12px;">
+              <label>Language Profile</label>
+              <select class="form-control" id="refine-profile-select" style="font-size:11px;">
+                ${profiles.map(p => `
+                  <option value="${p.id}" ${this.refinementProfile === p.id ? 'selected' : ''}>
+                    ${p.name}
+                  </option>
+                `).join('')}
+              </select>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:4px;line-height:1.3;">
+                ${activeProfile.description}
+              </div>
+            </div>
+
+            <!-- REFINEMENT CATEGORIES CHECKBOXES -->
+            <div class="form-group" style="margin-top:14px;">
+              <label>Refinement Scope</label>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+                ${categories.map(cat => `
+                  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-primary);cursor:pointer;">
+                    <input type="checkbox" class="refine-cat-checkbox" value="${cat.id}"
+                      ${this.refinementCategories.includes(cat.id) ? 'checked' : ''} />
+                    <span style="width:8px;height:8px;border-radius:50%;background:${cat.color};flex-shrink:0;"></span>
+                    ${cat.label}
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- ORG MEMORY STATUS -->
+            <div style="margin-top:14px;padding:8px 10px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--color-warning);flex-shrink:0;"></span>
+              Org Memory: Initialized (inactive — future wave)
+            </div>
+
+            <!-- ANALYZE BUTTON -->
+            <div style="margin-top:16px;">
+              <button class="btn btn-primary" id="btn-run-refinement" style="width:100%;justify-content:center;height:36px;" ${this.isRefining ? 'disabled' : ''}>
+                ${this.isRefining ? 'Analyzing Document...' : 'Analyze & Suggest Refinements'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: RESULTS PANEL -->
+        <div class="details-panel" style="flex: 2 1 500px;">
+          <div class="glass-panel" style="min-height:580px;">
+            <h3 class="dashboard-card-title">Language Refinement Results</h3>
+
+            ${this.isRefining ? `
+              <div style="text-align:center;padding:120px 0;color:var(--text-muted);">
+                <svg class="spinner" viewBox="0 0 50 50" style="width:36px;height:36px;margin:0 auto 12px;animation:spin 1s linear infinite;">
+                  <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke="var(--color-indigo)"></circle>
+                </svg>
+                Scanning policy language patterns...
+              </div>
+            ` : activeSuggestions.length === 0 && this.refinementSuggestions.length === 0 ? `
+              <div style="text-align:center;padding:100px 0;color:var(--text-muted);">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" style="width:40px;height:40px;margin:0 auto 12px;opacity:0.3;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
+                </svg>
+                Select a policy document and click "Analyze & Suggest Refinements" to scan for language improvements.
+              </div>
+            ` : `
+              <!-- SUMMARY BANNER -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+                <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:10px;text-align:center;">
+                  <div style="font-size:20px;font-weight:800;color:var(--color-indigo);">${activeSuggestions.length}</div>
+                  <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total</div>
+                </div>
+                <div style="background:${severityColors['Strongly Recommended'].bg};border:1px solid ${severityColors['Strongly Recommended'].border};border-radius:6px;padding:10px;text-align:center;">
+                  <div style="font-size:20px;font-weight:800;color:${severityColors['Strongly Recommended'].fg};">${stats.bySeverity['Strongly Recommended'] || 0}</div>
+                  <div style="font-size:9px;color:${severityColors['Strongly Recommended'].fg};text-transform:uppercase;letter-spacing:0.5px;">Strongly Rec.</div>
+                </div>
+                <div style="background:${severityColors['Recommended'].bg};border:1px solid ${severityColors['Recommended'].border};border-radius:6px;padding:10px;text-align:center;">
+                  <div style="font-size:20px;font-weight:800;color:${severityColors['Recommended'].fg};">${stats.bySeverity['Recommended'] || 0}</div>
+                  <div style="font-size:9px;color:${severityColors['Recommended'].fg};text-transform:uppercase;letter-spacing:0.5px;">Recommended</div>
+                </div>
+                <div style="background:${severityColors['Optional'].bg};border:1px solid ${severityColors['Optional'].border};border-radius:6px;padding:10px;text-align:center;">
+                  <div style="font-size:20px;font-weight:800;color:${severityColors['Optional'].fg};">${stats.bySeverity['Optional'] || 0}</div>
+                  <div style="font-size:9px;color:${severityColors['Optional'].fg};text-transform:uppercase;letter-spacing:0.5px;">Optional</div>
+                </div>
+              </div>
+
+              <!-- BULK ACTIONS -->
+              <div style="display:flex;gap:8px;margin-bottom:14px;justify-content:flex-end;">
+                <button class="btn btn-secondary btn-small" id="btn-accept-all-refinements" style="font-size:10px;">Accept All</button>
+                <button class="btn btn-secondary btn-small" id="btn-dismiss-all-refinements" style="font-size:10px;border-color:var(--color-danger);color:var(--color-danger);">Dismiss All</button>
+              </div>
+
+              <!-- REFINEMENT CARDS -->
+              <div style="display:flex;flex-direction:column;gap:10px;max-height:440px;overflow-y:auto;padding-right:4px;">
+                ${activeSuggestions.map(s => {
+                  const catMeta = PolicyLanguageService.CATEGORIES[s.category] || {};
+                  const sevStyle = severityColors[s.severity] || severityColors['Optional'];
+                  return `
+                    <div class="glass-panel refinement-card" data-ref-id="${s.id}" style="padding:14px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:8px;">
+                      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                          <span style="background:${catMeta.color || '#718096'};color:#fff;font-size:9px;padding:2px 8px;border-radius:999px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">
+                            ${catMeta.label || s.category}
+                          </span>
+                          <span style="background:${sevStyle.bg};color:${sevStyle.fg};border:1px solid ${sevStyle.border};font-size:9px;padding:2px 8px;border-radius:999px;font-weight:600;">
+                            ${s.severity}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style="margin-bottom:8px;">
+                        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">Original</div>
+                        <div style="background:#FDE8E8;color:#9B1C1C;padding:6px 10px;border-radius:4px;font-size:11px;line-height:1.5;text-decoration:line-through;font-family:var(--font-body);">
+                          ${s.original}
+                        </div>
+                      </div>
+
+                      <div style="margin-bottom:8px;">
+                        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;">Proposed</div>
+                        <div style="background:#DEF7EC;color:#03543F;padding:6px 10px;border-radius:4px;font-size:11px;line-height:1.5;font-family:var(--font-body);">
+                          ${s.replacement}
+                        </div>
+                      </div>
+
+                      <div style="font-size:10px;color:var(--text-secondary);line-height:1.4;margin-bottom:10px;font-style:italic;">
+                        ${s.rationale}
+                      </div>
+
+                      <div style="display:flex;gap:6px;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:8px;">
+                        <button class="btn btn-secondary btn-small btn-accept-refinement" data-ref-id="${s.id}" style="font-size:9px;padding:3px 10px;height:24px;">Accept</button>
+                        <button class="btn btn-secondary btn-small btn-edit-refinement" data-ref-id="${s.id}" style="font-size:9px;padding:3px 10px;height:24px;">Edit</button>
+                        <button class="btn btn-secondary btn-small btn-dismiss-refinement" data-ref-id="${s.id}" style="font-size:9px;padding:3px 10px;height:24px;border-color:var(--color-danger);color:var(--color-danger);">Dismiss</button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+
+              ${activeSuggestions.length === 0 && this.refinementSuggestions.length > 0 ? `
+                <div style="text-align:center;padding:40px 0;color:var(--text-muted);font-size:12px;">
+                  All refinement suggestions have been processed. Review staged changes in the <strong>Redline Review</strong> tab.
+                </div>
+              ` : ''}
+            `}
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
   // ─── EVENT BINDING ───────────────────────────────────────────────────────
   bindEvents(container) {
+    if (!this._eventsBound) {
+      this._eventsBound = true;
+      
+      container.addEventListener('click', async (e) => {
+        // Handle View Details
+        const viewDetailsBtn = e.target.closest('.btn-view-clause-details');
+        if (viewDetailsBtn) {
+          e.stopPropagation();
+          const cid = viewDetailsBtn.dataset.clauseId;
+          const lib = PolicyTemplateService.getClauseLibrary();
+          const clause = lib.find(c => c.id === cid);
+          if (!clause) return;
+
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop';
+          backdrop.innerHTML = `
+            <div class="modal-container" style="max-width: 540px;">
+              <button class="modal-close-btn" id="btn-close-clause-modal">&times;</button>
+              <div class="modal-content">
+                <span class="profile-role-badge" style="text-transform: uppercase;">${clause.group}</span>
+                <h2 class="modal-heading" style="margin-top:6px;font-size:16px;">${clause.name}</h2>
+                
+                <div style="margin: 12px 0; font-size:11px; color:var(--text-secondary); line-height:1.45;">
+                  <div style="margin-bottom:4px;"><strong>Draft Strength (Maturity):</strong> <span class="status-badge within" style="font-size:9px;padding:2px 6px;">${clause.maturity || 'Consultant-Grade'}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Frameworks Mapped:</strong> <span>${clause.frameworks.join(', ')}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Jurisdiction:</strong> <span>${clause.jurisdiction ? clause.jurisdiction.join(', ') : 'Global'}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Industry Fit:</strong> <span>${clause.industry ? clause.industry.join(', ') : 'Global'}</span></div>
+                  <div style="margin-bottom:4px;"><strong>Clause Version:</strong> <span>${clause.version || 'v1.0'}</span></div>
+                </div>
+
+                <div style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;padding:12px;font-family:var(--font-body);font-size:11px;line-height:1.5;white-space:pre-wrap;color:var(--text-primary);margin-bottom:12px;">
+                  ${clause.text}
+                </div>
+                
+                ${clause.guidance ? `
+                  <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;font-size:10px;color:var(--text-secondary);border-left:3px solid var(--primary-color);">
+                    <strong>Implementation Guidance:</strong><br/>
+                    ${clause.guidance}
+                  </div>
+                ` : ''}
+              </div>
+              <div class="modal-footer" style="padding:16px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:12px;">
+                <button class="btn btn-secondary" id="btn-modal-close">Close</button>
+                <button class="btn btn-primary" id="btn-modal-use-clause">Use Clause</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(backdrop);
+
+          const close = () => backdrop.remove();
+          backdrop.querySelector('#btn-close-clause-modal').addEventListener('click', close);
+          backdrop.querySelector('#btn-modal-close').addEventListener('click', close);
+          backdrop.querySelector('#btn-modal-use-clause').addEventListener('click', () => {
+            this.genPrompt = (this.genPrompt + `\nEnsure we include the following clause requirement: "${clause.name}". `).trim();
+            this.render(container);
+            close();
+          });
+          return;
+        }
+
+        // Handle Generate Policy
+        const generateBtn = e.target.closest('#btn-generate-policy');
+        if (generateBtn) {
+          if (this.isGenerating) return;
+          this.isGenerating = true;
+          this.renderSubTabContent(container.querySelector('#tab-body-container'));
+          
+          try {
+            this.genResultText = '';
+            
+            let systemContext = `You are a Big 4 management consultant drafting a board-quality Information Security Policy.\n`;
+            systemContext += `Domain: ${this.genDomain}, Template: ${this.genTemplate}\n`;
+            systemContext += `Target Frameworks: ${this.selectedFrameworks.join(', ')}\n`;
+            systemContext += `Company Profile: ${JSON.stringify(this.genProfile)}\n`;
+            
+            let promptText = `Please draft a comprehensive ${this.genTitle}.\n`;
+            if (this.genPrompt) {
+              promptText += `Custom Instructions from user:\n${this.genPrompt}\n`;
+            }
+            
+            promptText += `Output strictly in Markdown format, using professional corporate language.`;
+            
+            const markdownResponse = await AIService.queryGemini(promptText, systemContext);
+            this.genResultText = markdownResponse;
+            this.activeSubTab = 'redline';
+          } catch (err) {
+            console.error("Drafting failed:", err);
+            this.genResultText = `Drafting execution failed. Fallback simulated output:\n\n` + PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
+            this.activeSubTab = 'redline';
+          } finally {
+            this.isGenerating = false;
+            this.render(container);
+          }
+          return;
+        }
+      });
+    }
+
     // Subtab Strip Buttons
     container.querySelectorAll('.subtab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1219,6 +1625,7 @@ export class PolicyStudioComponent {
       container.querySelectorAll('.btn-view-clause-details').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
+          alert('View details clicked! clauseId: ' + btn.dataset.clauseId);
           const cid = btn.dataset.clauseId;
           const lib = PolicyTemplateService.getClauseLibrary();
           const clause = lib.find(c => c.id === cid);
@@ -1274,6 +1681,7 @@ export class PolicyStudioComponent {
 
       // Click Generate Policy
       container.querySelector('#btn-generate-policy')?.addEventListener('click', async () => {
+        alert('Generate Policy clicked!');
         this.isGenerating = true;
         this.renderSubTabContent(container.querySelector('#tab-body-container'));
 
@@ -1281,30 +1689,74 @@ export class PolicyStudioComponent {
           const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
           
           if (apiKey || this.state.serverGeminiConfigured) {
-            const systemPrompt = `You are a consultant-grade GRC policy intelligence assistant.
-Generate a professional, board-ready draft for the policy '${this.genTitle}' under the domain of '${domains[this.genDomain]?.name}'.
-The policy must explicitly align with the following selected compliance frameworks: ${this.selectedFrameworks.join(', ') || 'General Best Practices'}.
+            const systemPrompt = `You are an institutional-quality governance document author operating at the standard of a Big 4 consulting firm (KPMG, PwC, Deloitte, EY). Your output must be indistinguishable from a document produced by an experienced governance consulting team.
 
-Company Profile Context:
-- Company Name: ${this.genProfile.companyName}
-- Industry: ${this.genProfile.industry}
-- Country of Origin: ${this.genProfile.country}
+Generate a complete, board-ready governance document for: '${this.genTitle}' under the domain of '${domains[this.genDomain]?.name}'.
+
+The document must align with the following compliance frameworks: ${this.selectedFrameworks.join(', ') || 'General Best Practices'}.
+
+## COMPANY CONTEXT (Mandatory — use these values throughout; never use generic placeholders)
+- Organization Name: ${this.genProfile.companyName}
+- Industry Sector: ${this.genProfile.industry}
+- Headquarters Jurisdiction: ${this.genProfile.country}
 - Customer Geographies: ${this.genProfile.customerGeography}
 - Employee Count: ${this.genProfile.employeeCount}
 - Business Model: ${this.genProfile.b2bB2c}
 - Controller/Processor Posture: ${this.genProfile.controllerProcessor}
 - Primary Cloud Infrastructure: ${this.genProfile.cloudProvider}
-- Data Protection Officer / Privacy Officer: ${this.genProfile.dpoOfficer}
+- Data Protection Officer: ${this.genProfile.dpoOfficer}
 - Designated Grievance Officer: ${this.genProfile.grievanceOfficer}
-- Core Personal Data Processing Purpose: ${this.genProfile.processingPurpose}
-- Special Categories of Data Handled: ${this.genProfile.specialCategories}
+- Core Processing Purpose: ${this.genProfile.processingPurpose}
+- Special Categories of Data: ${this.genProfile.specialCategories}
 
-Make sure that this company context and selected frameworks are woven deeply into the language of the policy clauses. Do not use generic placeholders.
+## MANDATORY 12-SECTION GOVERNANCE STRUCTURE
+The document MUST contain ALL of the following sections, numbered sequentially:
 
-Use the following specific drafting directives:
+1. PURPOSE & OBJECTIVE — Define why this policy exists and what it achieves.
+2. SCOPE — Define systems, processes, data, and environments governed.
+3. APPLICABILITY — Specify employees, contractors, third parties, processors, sub-processors.
+4. DEFINITIONS — Include precise regulatory definitions for all key terms (Personal Data, Processing, Data Subject, Controller, Processor, Consent, Incident, Breach, etc.) with regulatory article references.
+5. ROLES & RESPONSIBILITIES — Assign Policy Owner, Control Owner, Review Owner, DPO, CISO, Grievance Officer, Department Heads. Include Approval Authority.
+6. POLICY REQUIREMENTS — The substantive regulatory and operational requirements. Be specific, actionable, and cite framework controls.
+7. EXCEPTIONS — Define exception request process, risk acceptance criteria, temporary exemption protocol, documentation requirements.
+8. NON-COMPLIANCE & ENFORCEMENT — Specify disciplinary escalation matrix, regulatory reporting obligations, contractual enforcement.
+9. MONITORING & COMPLIANCE — Define internal audit procedures, KPIs, compliance verification methods, self-assessment programs.
+10. REVIEW & MAINTENANCE — Specify annual/semi-annual review protocol, amendment process, stakeholder consultation, continuous improvement.
+11. RELATED DOCUMENTS — Cross-reference: Access Control Policy, Incident Response Policy, Data Retention Policy, Vendor Risk Policy, BCP/DR Policy, Privacy Policy.
+12. VERSION CONTROL — Include Document ID, version number, status, effective date, review date, change log.
+
+## METADATA BLOCK (Must appear at the top of the document)
+Document Title: [Full title]
+Document ID: [Organization abbreviation]-POL-[domain code]-[number]
+Version: v1.0
+Status: Draft (Pending Board Approval)
+Classification: Confidential — Internal Use Only
+Applicable Frameworks: [List selected frameworks]
+Jurisdictions: [Customer geographies]
+Policy Owner: [Specify from company context]
+Control Owner: [CISO or DPO based on domain]
+Approval Authority: Board of Directors / Executive Committee
+Effective Date: [Use current date]
+Review Frequency: Annual (12-month cycle)
+
+## LANGUAGE STANDARDS (Big 4 Tone — Mandatory)
+- Use ONLY: shall, must, required, responsible, accountable
+- NEVER use: should, may, attempt to, where possible, try to, is expected to
+- Write in third-person institutional voice ("The Organization shall...")
+- No first-person ("we", "our") — use the organization name or "The Organization"
+- Every requirement must be specific and enforceable
+
+## CRITICAL RULES
+- ZERO unresolved placeholders: No {{COMPANY_NAME}}, {{DPO}}, {{COUNTRY}}, etc.
+- Every reference to the organization, people, systems, and jurisdictions must use the actual values from the Company Context above.
+- Include specific regulatory article citations (e.g., "GDPR Article 7", "ISO 27001 A.9.1", "DPDPA Section 6").
+- Cross-reference related policies explicitly ("Related access requirements are defined in the Access Control Policy.").
+- Include non-compliance consequences with disciplinary escalation.
+
+## CUSTOM DIRECTIVES
 ${this.genPrompt || 'None provided.'}
 
-Output ONLY the complete policy draft document. Do not add conversational introductions or conversational conclusions. Use clear headings.`;
+Output ONLY the complete governance document. No conversational introductions. No conversational conclusions.`;
             
             const liveResult = await AIService.queryGemini(systemPrompt, apiKey);
             this.genResultText = liveResult || PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
@@ -1318,6 +1770,17 @@ Output ONLY the complete policy draft document. Do not add conversational introd
           this.genResultText = `Drafting execution failed. Fallback simulated output:\n\n` + PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
         } finally {
           this.isGenerating = false;
+
+          // Auto-run completeness evaluation (Wave 3.6)
+          if (this.genResultText) {
+            try {
+              this.completenessResult = PolicyCompletenessService.evaluateCompleteness(this.genResultText);
+            } catch (evalErr) {
+              console.error('Completeness evaluation failed:', evalErr);
+              this.completenessResult = null;
+            }
+          }
+
           this.renderSubTabContent(container.querySelector('#tab-body-container'));
           this.bindEvents(container);
         }
@@ -1372,6 +1835,46 @@ Output ONLY the complete policy draft document. Do not add conversational introd
         this.selectedDocId = docId;
         this.activeSubTab = 'intelligence';
         this.render(container);
+      });
+
+      // Download draft as Markdown
+      container.querySelector('#btn-download-draft')?.addEventListener('click', () => {
+        if (!this.genResultText) return;
+        const blob = new Blob([this.genResultText], { type: 'text/markdown;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${this.genTitle.replace(/\\s+/g, '_')}_Draft.md`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      // Refine Language — captures current draft and switches to refinement tab
+      container.querySelector('#btn-refine-draft')?.addEventListener('click', () => {
+        if (!this.genResultText) return;
+        this.isRefining = true;
+        this.refinementSuggestions = [];
+        this.dismissedRefinements = new Set();
+        this.activeSubTab = 'refinement';
+        this.renderSubTabContent(container.querySelector('#tab-body-container'));
+        this.bindEvents(container);
+
+        // Run refinement analysis
+        setTimeout(() => {
+          try {
+            this.refinementSuggestions = PolicyLanguageService.analyzeDocument(this.genResultText, {
+              categories: this.refinementCategories,
+              profile: this.refinementProfile
+            });
+          } catch (err) {
+            console.error('Language refinement analysis failed:', err);
+          } finally {
+            this.isRefining = false;
+            this.renderSubTabContent(container.querySelector('#tab-body-container'));
+            this.bindEvents(container);
+          }
+        }, 600);
       });
     }
 
@@ -1861,6 +2364,161 @@ Output ONLY the complete policy draft document. Do not add conversational introd
           this.removeProposedChange(this.selectedDocId, changeId);
           this.render(container);
         });
+      });
+    }
+
+    // ─── TAB 6: LANGUAGE REFINEMENT EVENTS ──────────────────────────────────
+    if (this.activeSubTab === 'refinement') {
+      const refDocSelect = container.querySelector('#refine-doc-select');
+      const refProfileSelect = container.querySelector('#refine-profile-select');
+
+      refDocSelect?.addEventListener('change', () => {
+        this.selectedDocId = refDocSelect.value;
+        this.refinementSuggestions = [];
+        this.dismissedRefinements = new Set();
+        this.render(container);
+      });
+
+      refProfileSelect?.addEventListener('change', () => {
+        this.refinementProfile = refProfileSelect.value;
+        this.render(container);
+      });
+
+      container.querySelectorAll('.refine-cat-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const checked = Array.from(container.querySelectorAll('.refine-cat-checkbox:checked')).map(el => el.value);
+          this.refinementCategories = checked;
+          this.render(container);
+        });
+      });
+
+      // Run Refinement Analysis
+      container.querySelector('#btn-run-refinement')?.addEventListener('click', async () => {
+        const docId = this.selectedDocId;
+        if (!docId) {
+          alert('Please select a policy document first.');
+          return;
+        }
+
+        this.isRefining = true;
+        this.refinementSuggestions = [];
+        this.dismissedRefinements = new Set();
+        this.renderSubTabContent(container.querySelector('#tab-body-container'));
+
+        try {
+          const policies = await StorageService.getPolicyDocuments();
+          const policyDoc = policies.find(p => p.id === docId);
+          const vaultDocs = this.state.vaultDocs || [];
+          const activeDoc = vaultDocs.find(d => d.id === docId);
+          const text = policyDoc?.extracted_text || activeDoc?.documentSummary || '';
+
+          if (!text) {
+            alert('No document text found for analysis.');
+            return;
+          }
+
+          // Simulate brief processing delay for UX
+          await new Promise(r => setTimeout(r, 800));
+
+          this.refinementSuggestions = PolicyLanguageService.analyzeDocument(text, {
+            categories: this.refinementCategories,
+            profile: this.refinementProfile
+          });
+        } catch (err) {
+          console.error('Language refinement analysis failed:', err);
+          alert('Language refinement analysis failed.');
+        } finally {
+          this.isRefining = false;
+          this.renderSubTabContent(container.querySelector('#tab-body-container'));
+          this.bindEvents(container);
+        }
+      });
+
+      // Accept Individual Refinement — stages to Proposed Changes Queue ONLY
+      container.querySelectorAll('.btn-accept-refinement').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const refId = btn.dataset.refId;
+          const docId = this.selectedDocId;
+          const suggestion = this.refinementSuggestions.find(s => s.id === refId);
+          if (!suggestion || !docId) return;
+
+          const catMeta = PolicyLanguageService.CATEGORIES[suggestion.category] || {};
+          this.addProposedChange(docId, {
+            id: `lang-${refId}`,
+            name: `Language Refinement: ${catMeta.label || suggestion.category}`,
+            text: `Replace "${suggestion.original}" with "${suggestion.replacement}"`,
+            rationale: suggestion.rationale,
+            frameworks: [],
+            source: 'Language Refinement (Wave 3.5)'
+          });
+
+          this.dismissedRefinements.add(refId);
+          this.renderSubTabContent(container.querySelector('#tab-body-container'));
+          this.bindEvents(container);
+        });
+      });
+
+      // Edit Refinement — opens modal to modify replacement text
+      container.querySelectorAll('.btn-edit-refinement').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const refId = btn.dataset.refId;
+          const suggestion = this.refinementSuggestions.find(s => s.id === refId);
+          if (!suggestion) return;
+
+          const newText = prompt('Edit the proposed replacement text:', suggestion.replacement);
+          if (newText !== null && newText.trim() !== '') {
+            suggestion.replacement = newText.trim();
+            this.renderSubTabContent(container.querySelector('#tab-body-container'));
+            this.bindEvents(container);
+          }
+        });
+      });
+
+      // Dismiss Individual Refinement
+      container.querySelectorAll('.btn-dismiss-refinement').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const refId = btn.dataset.refId;
+          this.dismissedRefinements.add(refId);
+          this.renderSubTabContent(container.querySelector('#tab-body-container'));
+          this.bindEvents(container);
+        });
+      });
+
+      // Accept All — stages ALL undismissed refinements to Proposed Changes Queue ONLY
+      container.querySelector('#btn-accept-all-refinements')?.addEventListener('click', () => {
+        const docId = this.selectedDocId;
+        if (!docId) return;
+
+        const active = this.refinementSuggestions.filter(s => !this.dismissedRefinements.has(s.id));
+        if (active.length === 0) return;
+
+        active.forEach(suggestion => {
+          const catMeta = PolicyLanguageService.CATEGORIES[suggestion.category] || {};
+          this.addProposedChange(docId, {
+            id: `lang-${suggestion.id}`,
+            name: `Language Refinement: ${catMeta.label || suggestion.category}`,
+            text: `Replace "${suggestion.original}" with "${suggestion.replacement}"`,
+            rationale: suggestion.rationale,
+            frameworks: [],
+            source: 'Language Refinement (Wave 3.5)'
+          });
+          this.dismissedRefinements.add(suggestion.id);
+        });
+
+        alert(`${active.length} refinement(s) staged to the Proposed Changes queue. Review changes in the Redline Review tab.`);
+        this.renderSubTabContent(container.querySelector('#tab-body-container'));
+        this.bindEvents(container);
+      });
+
+      // Dismiss All
+      container.querySelector('#btn-dismiss-all-refinements')?.addEventListener('click', () => {
+        const active = this.refinementSuggestions.filter(s => !this.dismissedRefinements.has(s.id));
+        active.forEach(s => this.dismissedRefinements.add(s.id));
+        this.renderSubTabContent(container.querySelector('#tab-body-container'));
+        this.bindEvents(container);
       });
     }
 

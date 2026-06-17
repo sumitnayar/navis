@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Navis mark</title>
+  <desc id="desc">Navis gradient N app icon</desc>
+  <defs>
+    <linearGradient id="navis-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D64261"/>
+      <stop offset="62%" stop-color="#087F88"/>
+      <stop offset="100%" stop-color="#11B8B2"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="url(#navis-gradient)"/>
+  <text x="256" y="346" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="270" font-weight="800" text-anchor="middle">N</text>
+</svg>
