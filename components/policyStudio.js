@@ -608,7 +608,21 @@ export class PolicyStudioComponent {
   _renderCompletenessPanel() {
     if (!this.completenessResult) return '';
 
-    const { grade, score, summary, sectionsFound, missingSections, issues } = this.completenessResult;
+    const { governanceQuality, totalSections, presentSections, findings } = this.completenessResult;
+
+    // Map to expected variables
+    let grade = 'F';
+    if (governanceQuality === 'Institutional Grade') grade = 'A';
+    else if (governanceQuality === 'Standard Grade') grade = 'C';
+    
+    const score = Math.round((presentSections / totalSections) * 100);
+    const summary = `${governanceQuality} Document`;
+    const sectionsFound = findings.filter(f => f.status !== 'Missing').map(f => f.section);
+    
+    const issues = {
+      Critical: findings.filter(f => f.status === 'Missing' && f.severity === 'Critical').map(f => f.detail),
+      Moderate: findings.filter(f => f.status === 'Missing' && f.severity === 'Important').map(f => f.detail)
+    };
 
     // Badge styling based on grade
     let badgeColor = 'var(--text-muted)';
@@ -1687,6 +1701,7 @@ export class PolicyStudioComponent {
           const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
           
           if (apiKey || this.state.serverGeminiConfigured) {
+            const domains = PolicyTemplateService.getDomains();
             const systemPrompt = `You are an institutional-quality governance document author operating at the standard of a Big 4 consulting firm (KPMG, PwC, Deloitte, EY). Your output must be indistinguishable from a document produced by an experienced governance consulting team.
 
 Generate a complete, board-ready governance document for: '${this.genTitle}' under the domain of '${domains[this.genDomain]?.name}'.
