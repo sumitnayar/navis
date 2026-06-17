@@ -97,22 +97,26 @@ export class IntelligencePolicyComponent {
   // ─── DATA LOADING ─────────────────────────────────────────────────────────
   async loadData() {
     try {
-      this.changeQueue = await StorageService.getChangeQueue();
+      const q = await StorageService.getChangeQueue();
+      this.changeQueue = Array.isArray(q) ? q : [];
     } catch (e) {
       this.changeQueue = [];
     }
     try {
-      this.vaultEntries = await StorageService.getDocumentVault();
+      const v = await StorageService.getDocumentVault();
+      this.vaultEntries = Array.isArray(v) ? v : [];
     } catch (e) {
       this.vaultEntries = [];
     }
     try {
-      this.policyDocs = await StorageService.getPolicyDocuments();
+      const p = await StorageService.getPolicyDocuments();
+      this.policyDocs = Array.isArray(p) ? p : [];
     } catch (e) {
       this.policyDocs = [];
     }
     try {
-      this.policyChunks = await StorageService.getPolicyChunks();
+      const c = await StorageService.getPolicyChunks();
+      this.policyChunks = Array.isArray(c) ? c : [];
     } catch (e) {
       this.policyChunks = [];
     }

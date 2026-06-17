@@ -184,13 +184,17 @@ export class AIService {
       let response;
       let isServerBridge = true;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         response = await fetch('/api/gemini', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ prompt })
+          body: JSON.stringify({ prompt }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const result = await response.json();
@@ -237,6 +241,8 @@ export class AIService {
 
       // 2. Direct Browser Fallback (if client key is provided and server route was missing/keyless)
       if (!isServerBridge) {
+        const directController = new AbortController();
+        const directTimeoutId = setTimeout(() => directController.abort(), 30000);
         const directResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
@@ -246,8 +252,10 @@ export class AIService {
             contents: [{
               parts: [{ text: prompt }]
             }]
-          })
+          }),
+          signal: directController.signal
         });
+        clearTimeout(directTimeoutId);
 
         if (!directResponse.ok) {
           const err = await directResponse.json().catch(() => ({}));
