@@ -1800,12 +1800,7 @@ Output ONLY the complete governance document. No conversational introductions. N
             
             const liveResult = await AIService.queryGemini(systemPrompt, apiKey);
             this.genResultText = liveResult || PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
-          } else {
-            // Simulated generator fallback
-            await new Promise(r => setTimeout(r, 1500));
-            this.genResultText = PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
-          }
-        } catch (err) {
+          } catch (err) {
           console.error("Drafting failed:", err);
           this.genResultText = PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
         } finally {
