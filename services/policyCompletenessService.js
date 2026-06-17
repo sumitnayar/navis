@@ -22,14 +22,22 @@ export class PolicyCompletenessService {
   static GOVERNANCE_SECTIONS = [
     {
       number: 1,
-      name: 'Purpose & Objective',
+      name: 'Objective',
       severity: 'Critical',
-      headingPatterns: [/purpose/i, /objective/i],
-      keywordPatterns: [/\bpurpose\b/i, /\bobjective\b/i, /\bestablish\w*\b.*\bframework\b/i],
-      description: 'Defines why this policy exists and what it intends to achieve.'
+      headingPatterns: [/objective/i],
+      keywordPatterns: [/\bobjective\b/i, /\bestablish\w*\b.*\bframework\b/i],
+      description: 'Defines what this policy achieves.'
     },
     {
       number: 2,
+      name: 'Purpose',
+      severity: 'Critical',
+      headingPatterns: [/purpose/i],
+      keywordPatterns: [/\bpurpose\b/i, /\bmitigate\b/i, /\brisks?\b/i],
+      description: 'Explains why this policy exists and the risks it mitigates.'
+    },
+    {
+      number: 3,
       name: 'Scope',
       severity: 'Critical',
       headingPatterns: [/scope/i],
@@ -37,7 +45,15 @@ export class PolicyCompletenessService {
       description: 'Defines the systems, processes, and environments governed by this policy.'
     },
     {
-      number: 3,
+      number: 4,
+      name: 'Policy Hierarchy',
+      severity: 'Important',
+      headingPatterns: [/policy\s+hierarchy/i, /document\s+hierarchy/i],
+      keywordPatterns: [/\bhierarchy\b/i, /\bparent\s+document\b/i, /\bsupersedes\b/i, /\blevel\s+1\b/i],
+      description: 'Specifies how this document relates to other standards and procedures.'
+    },
+    {
+      number: 5,
       name: 'Applicability',
       severity: 'Important',
       headingPatterns: [/applicability/i, /applicable\s+to/i],
@@ -45,7 +61,7 @@ export class PolicyCompletenessService {
       description: 'Identifies the personnel, entities, and parties subject to this policy.'
     },
     {
-      number: 4,
+      number: 6,
       name: 'Definitions',
       severity: 'Critical',
       headingPatterns: [/definitions?/i, /glossary/i, /terminology/i],
@@ -53,7 +69,7 @@ export class PolicyCompletenessService {
       description: 'Provides precise definitions of key terms used throughout the policy.'
     },
     {
-      number: 5,
+      number: 7,
       name: 'Roles & Responsibilities',
       severity: 'Critical',
       headingPatterns: [/roles?\s*(and|&)\s*responsibilities/i, /governance\s+oversight/i, /accountability/i],
@@ -61,7 +77,7 @@ export class PolicyCompletenessService {
       description: 'Assigns ownership, accountability, and operational responsibilities.'
     },
     {
-      number: 6,
+      number: 8,
       name: 'Policy Requirements',
       severity: 'Important',
       headingPatterns: [/policy\s+requirements?/i, /regulatory\s+controls?/i, /requirements?/i, /controls?\s*(and|&)\s*compliance/i],
@@ -69,7 +85,7 @@ export class PolicyCompletenessService {
       description: 'Contains the substantive regulatory and operational requirements of the policy.'
     },
     {
-      number: 7,
+      number: 9,
       name: 'Exceptions',
       severity: 'Important',
       headingPatterns: [/exceptions?/i, /exemptions?/i, /waivers?/i],
@@ -77,7 +93,7 @@ export class PolicyCompletenessService {
       description: 'Defines the process for requesting and approving exceptions to policy requirements.'
     },
     {
-      number: 8,
+      number: 10,
       name: 'Non-compliance & Enforcement',
       severity: 'Important',
       headingPatterns: [/non.?compliance/i, /enforcement/i, /disciplin/i, /violations?/i],
@@ -85,7 +101,7 @@ export class PolicyCompletenessService {
       description: 'Specifies consequences for policy violations and enforcement mechanisms.'
     },
     {
-      number: 9,
+      number: 11,
       name: 'Monitoring & Compliance',
       severity: 'Important',
       headingPatterns: [/monitoring/i, /compliance\s+verif/i, /audit/i],
@@ -93,28 +109,12 @@ export class PolicyCompletenessService {
       description: 'Describes how compliance with this policy is monitored, measured, and verified.'
     },
     {
-      number: 10,
+      number: 12,
       name: 'Review & Maintenance',
       severity: 'Critical',
       headingPatterns: [/review\s*(and|&)\s*maintenance/i, /review\s+frequency/i, /revision/i, /policy\s+review/i],
       keywordPatterns: [/\bannual\s+review\b/i, /\breview\s+frequency\b/i, /\bamendment/i, /\brevision/i, /\b12\s+months?\b/i],
       description: 'Establishes the cadence and process for reviewing and updating this policy.'
-    },
-    {
-      number: 11,
-      name: 'Related Documents',
-      severity: 'Advisory',
-      headingPatterns: [/related\s+documents?/i, /cross.?reference/i, /associated\s+policies/i, /supporting\s+documents?/i],
-      keywordPatterns: [/\baccess\s+control\s+policy\b/i, /\bincident\s+response\s+policy\b/i, /\bretention\s+policy\b/i, /\bvendor\s+risk\b/i, /\bBCP\b/i, /\bdisaster\s+recovery\b/i],
-      description: 'Cross-references other governance documents within the policy framework.'
-    },
-    {
-      number: 12,
-      name: 'Version Control',
-      severity: 'Advisory',
-      headingPatterns: [/version\s+control/i, /document\s+history/i, /change\s+log/i, /revision\s+history/i],
-      keywordPatterns: [/\bversion\b/i, /\bstatus\b/i, /\bdraft\b/i, /\beffective\s+date\b/i, /\bapproved\b/i],
-      description: 'Tracks document versioning, approval history, and change records.'
     }
   ];
 
@@ -145,36 +145,44 @@ export class PolicyCompletenessService {
       detail: 'Policy must identify the authority responsible for approving the document.'
     },
     {
-      id: 'effective-date',
-      name: 'Effective Date',
-      severity: 'Advisory',
-      patterns: [/\beffective\s+date\b/i, /\beffective\s+from\b/i, /\beffective:\s*/i],
-      minMatches: 1,
-      detail: 'Policy must specify an effective date or implementation date.'
-    },
-    {
-      id: 'enforcement',
-      name: 'Enforcement Provisions',
+      id: 'appendix-a',
+      name: 'Appendix A: Related Governance Documents',
       severity: 'Important',
-      patterns: [/\benforcement\b/i, /\bdisciplinary\b/i, /\bnon.?compliance\b/i, /\bviolation\b/i, /\bconsequences?\b/i, /\btermination\b/i],
+      patterns: [/APPENDIX A/i, /RELATED GOVERNANCE DOCUMENTS/i],
       minMatches: 1,
-      detail: 'Policy must include enforcement consequences for non-compliance.'
+      detail: 'Policy must include an Appendix for cross-referenced documents.'
     },
     {
-      id: 'dpo-reference',
-      name: 'DPO / Privacy Officer Reference',
+      id: 'appendix-b',
+      name: 'Appendix B: Version Control',
       severity: 'Important',
-      patterns: [/\bDPO\b/, /\bdata\s+protection\s+officer\b/i, /\bprivacy\s+officer\b/i, /\bprivacy\s+team\b/i, /\bgrievance\s+officer\b/i],
+      patterns: [/APPENDIX B/i, /VERSION CONTROL/i],
       minMatches: 1,
-      detail: 'Policy must reference a DPO, Privacy Officer, or equivalent privacy oversight role.'
+      detail: 'Policy must include a version control log in the appendices.'
     },
     {
-      id: 'cross-references',
-      name: 'Cross-references to Related Policies',
-      severity: 'Advisory',
-      patterns: [/\baccess\s+control\s+policy\b/i, /\bincident\s+response\s+policy\b/i, /\bdata\s+retention\s+policy\b/i, /\bvendor\s+risk\b.*\bpolicy\b/i, /\bbusiness\s+continuity\b/i, /\bdisaster\s+recovery\b/i, /\bprivacy\s+policy\b/i],
-      minMatches: 2,
-      detail: 'Policy must cross-reference at least two related governance documents.'
+      id: 'appendix-c',
+      name: 'Appendix C: Framework Mapping',
+      severity: 'Important',
+      patterns: [/APPENDIX C/i, /FRAMEWORK MAPPING/i],
+      minMatches: 1,
+      detail: 'Policy must include a framework control mapping appendix.'
+    },
+    {
+      id: 'appendix-d',
+      name: 'Appendix D: RACI Matrix',
+      severity: 'Important',
+      patterns: [/APPENDIX D/i, /RACI MATRIX/i],
+      minMatches: 1,
+      detail: 'Policy must include a RACI matrix appendix.'
+    },
+    {
+      id: 'appendix-e',
+      name: 'Appendix E: Acronyms & Definitions',
+      severity: 'Important',
+      patterns: [/APPENDIX E/i, /ACRONYMS/i],
+      minMatches: 1,
+      detail: 'Policy must include an acronyms appendix.'
     },
     {
       id: 'unresolved-placeholders',

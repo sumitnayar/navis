@@ -17,7 +17,7 @@ import { SettingsComponent } from './components/settings.js';
 import { BoardQAComponent } from './components/boardQA.js';
 import { IntelligencePolicyComponent } from './components/intelligencePolicy.js';
 import { BoardPackComponent } from './components/boardPack.js';
-import { PolicyStudioComponent } from './components/policyStudio.js?v=4';
+import { PolicyStudioComponent } from './components/policyStudio.js?v=5';
 import { PublicWebsite } from './components/publicWebsite.js';
 
 const TAB_ROUTES = {

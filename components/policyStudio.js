@@ -12,6 +12,7 @@ import { OrganizationMemoryService } from '../services/organizationMemoryService
 import { PolicyLanguageService } from '../services/policyLanguageService.js';
 import { PolicyCompletenessService } from '../services/policyCompletenessService.js';
 import { PolicyDefinitionsService } from '../services/policyDefinitionsService.js';
+import { OrganizationContextService } from '../services/organizationContextService.js';
 
 export class PolicyStudioComponent {
   constructor(appState, onStateChange) {
@@ -413,7 +414,7 @@ export class PolicyStudioComponent {
 
           <!-- COMPANY PROFILE BOX -->
           <div class="glass-panel" style="margin-top:16px;">
-            <h3 class="dashboard-card-title">Company Profile</h3>
+            <h3 class="dashboard-card-title">Organization Context</h3>
             
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
@@ -421,77 +422,83 @@ export class PolicyStudioComponent {
                 <input type="text" class="form-control profile-field" data-key="companyName" value="${this.genProfile.companyName || ''}" />
               </div>
               <div class="form-group">
-                <label>Industry</label>
-                <select class="form-control profile-field" data-key="industry">
-                  <option value="SaaS" ${this.genProfile.industry === 'SaaS' ? 'selected' : ''}>SaaS</option>
-                  <option value="FinTech" ${this.genProfile.industry === 'FinTech' ? 'selected' : ''}>FinTech</option>
-                  <option value="Healthcare" ${this.genProfile.industry === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
-                  <option value="EdTech" ${this.genProfile.industry === 'EdTech' ? 'selected' : ''}>EdTech</option>
-                  <option value="Manufacturing" ${this.genProfile.industry === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
+                <label>Processing Role</label>
+                <select class="form-control profile-field" data-key="processingRole">
+                  <option value="Data Controller" ${this.genProfile.processingRole === 'Data Controller' ? 'selected' : ''}>Data Controller</option>
+                  <option value="Data Processor" ${this.genProfile.processingRole === 'Data Processor' ? 'selected' : ''}>Data Processor</option>
+                  <option value="Joint Controller" ${this.genProfile.processingRole === 'Joint Controller' ? 'selected' : ''}>Joint Controller</option>
+                  <option value="Processor & Controller" ${this.genProfile.processingRole === 'Processor & Controller' ? 'selected' : ''}>Processor & Controller</option>
                 </select>
               </div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
-                <label>Origin Country</label>
-                <input type="text" class="form-control profile-field" data-key="country" value="${this.genProfile.country || ''}" />
+                <label>Business Model</label>
+                <select class="form-control profile-field" data-key="b2bB2c">
+                  <option value="B2B" ${this.genProfile.b2bB2c === 'B2B' ? 'selected' : ''}>B2B</option>
+                  <option value="B2C" ${this.genProfile.b2bB2c === 'B2C' ? 'selected' : ''}>B2C</option>
+                  <option value="Marketplace" ${this.genProfile.b2bB2c === 'Marketplace' ? 'selected' : ''}>Marketplace</option>
+                  <option value="Hybrid" ${this.genProfile.b2bB2c === 'Hybrid' ? 'selected' : ''}>Hybrid</option>
+                </select>
               </div>
               <div class="form-group">
                 <label>Customer Geographies</label>
-                <input type="text" class="form-control profile-field" data-key="customerGeography" value="${this.genProfile.customerGeography || ''}" />
+                <input type="text" class="form-control profile-field" data-key="customerGeography" placeholder="e.g. India, EU, USA" value="${this.genProfile.customerGeography || ''}" />
               </div>
             </div>
             
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
-                <label>Cloud Provider</label>
-                <input type="text" class="form-control profile-field" data-key="cloudProvider" value="${this.genProfile.cloudProvider || ''}" />
+                <label>Data Subjects</label>
+                <input type="text" class="form-control profile-field" data-key="dataSubjects" placeholder="e.g. Customers, Employees" value="${this.genProfile.dataSubjects || ''}" />
               </div>
               <div class="form-group">
-                <label>Employees</label>
-                <input type="number" class="form-control profile-field" data-key="employeeCount" value="${this.genProfile.employeeCount || ''}" />
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Model (B2B/B2C)</label>
-                <select class="form-control profile-field" data-key="b2bB2c">
-                  <option value="B2B" ${this.genProfile.b2bB2c === 'B2B' ? 'selected' : ''}>B2B</option>
-                  <option value="B2C" ${this.genProfile.b2bB2c === 'B2C' ? 'selected' : ''}>B2C</option>
-                  <option value="Both" ${this.genProfile.b2bB2c === 'Both' ? 'selected' : ''}>Both</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Posture</label>
-                <select class="form-control profile-field" data-key="controllerProcessor">
-                  <option value="Processor" ${this.genProfile.controllerProcessor === 'Processor' ? 'selected' : ''}>Processor</option>
-                  <option value="Fiduciary" ${this.genProfile.controllerProcessor === 'Fiduciary' ? 'selected' : ''}>Fiduciary</option>
-                  <option value="Processor + Fiduciary" ${this.genProfile.controllerProcessor === 'Processor + Fiduciary' ? 'selected' : ''}>Processor + Fiduciary</option>
-                </select>
+                <label>Special Categories</label>
+                <input type="text" class="form-control profile-field" data-key="specialCategories" placeholder="e.g. Health Data, Financial" value="${this.genProfile.specialCategories || ''}" />
               </div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-group">
-                <label>DPO / Privacy Officer</label>
+                <label>Technology Stack</label>
+                <input type="text" class="form-control profile-field" data-key="cloudProvider" placeholder="e.g. AWS, Azure, GCP" value="${this.genProfile.cloudProvider || ''}" />
+              </div>
+              <div class="form-group">
+                <label>Hosting Region</label>
+                <input type="text" class="form-control profile-field" data-key="hostingRegion" placeholder="e.g. ap-south-1" value="${this.genProfile.hostingRegion || ''}" />
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Subprocessors</label>
+                <input type="text" class="form-control profile-field" data-key="subprocessors" placeholder="e.g. Stripe, Twilio" value="${this.genProfile.subprocessors || ''}" />
+              </div>
+              <div class="form-group">
+                <label>Intl. Transfers</label>
+                <input type="text" class="form-control profile-field" data-key="internationalTransfers" placeholder="e.g. SCCs, BCRs" value="${this.genProfile.internationalTransfers || ''}" />
+              </div>
+            </div>
+
+            <h4 style="margin-top:12px; margin-bottom:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase;">Governance Roles</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>DPO Name</label>
                 <input type="text" class="form-control profile-field" data-key="dpoOfficer" value="${this.genProfile.dpoOfficer || ''}" />
               </div>
               <div class="form-group">
-                <label>Grievance Officer</label>
+                <label>Grievance Officer Name</label>
                 <input type="text" class="form-control profile-field" data-key="grievanceOfficer" value="${this.genProfile.grievanceOfficer || ''}" />
               </div>
-            </div>
-
-            <div class="form-group">
-              <label>Processing Purpose Summary</label>
-              <textarea class="form-control profile-field" data-key="processingPurpose" rows="2" style="font-size:11px;">${this.genProfile.processingPurpose || ''}</textarea>
-            </div>
-
-            <div class="form-group">
-              <label>Special Categories of Data</label>
-              <input type="text" class="form-control profile-field" data-key="specialCategories" value="${this.genProfile.specialCategories || ''}" />
+              <div class="form-group">
+                <label>CISO Name</label>
+                <input type="text" class="form-control profile-field" data-key="cisoOfficer" value="${this.genProfile.cisoOfficer || ''}" />
+              </div>
+              <div class="form-group">
+                <label>CRO Name</label>
+                <input type="text" class="form-control profile-field" data-key="croOfficer" value="${this.genProfile.croOfficer || ''}" />
+              </div>
             </div>
           </div>
 
@@ -1700,71 +1707,91 @@ export class PolicyStudioComponent {
         try {
           const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
           
-          if (apiKey || this.state.serverGeminiConfigured) {
-            const domains = PolicyTemplateService.getDomains();
-            const systemPrompt = `You are an institutional-quality governance document author operating at the standard of a Big 4 consulting firm (KPMG, PwC, Deloitte, EY). Your output must be indistinguishable from a document produced by an experienced governance consulting team.
+          const domains = PolicyTemplateService.getDomains();
+          const contextNarrative = OrganizationContextService.generateNarrative(this.genProfile, this.selectedFrameworks);
+          
+          const systemPrompt = `You are an institutional-quality governance document author operating at the standard of a Big 4 consulting firm (KPMG, PwC, Deloitte, EY). Your output must be indistinguishable from a document produced by an experienced governance consulting team.
 
 Generate a complete, board-ready governance document for: '${this.genTitle}' under the domain of '${domains[this.genDomain]?.name}'.
 
 The document must align with the following compliance frameworks: ${this.selectedFrameworks.join(', ') || 'General Best Practices'}.
 
 ## COMPANY CONTEXT (Mandatory — use these values throughout; never use generic placeholders)
+${contextNarrative}
+
 - Organization Name: ${this.genProfile.companyName}
 - Industry Sector: ${this.genProfile.industry}
 - Headquarters Jurisdiction: ${this.genProfile.country}
 - Customer Geographies: ${this.genProfile.customerGeography}
 - Employee Count: ${this.genProfile.employeeCount}
 - Business Model: ${this.genProfile.b2bB2c}
-- Controller/Processor Posture: ${this.genProfile.controllerProcessor}
-- Primary Cloud Infrastructure: ${this.genProfile.cloudProvider}
-- Data Protection Officer: ${this.genProfile.dpoOfficer}
-- Designated Grievance Officer: ${this.genProfile.grievanceOfficer}
-- Core Processing Purpose: ${this.genProfile.processingPurpose}
+- Processing Role: ${this.genProfile.processingRole}
+- Posture: ${this.genProfile.controllerProcessor}
+- Data Subjects: ${this.genProfile.dataSubjects}
 - Special Categories of Data: ${this.genProfile.specialCategories}
+- Primary Cloud Infrastructure: ${this.genProfile.cloudProvider}
+- Hosting Region: ${this.genProfile.hostingRegion}
+- Subprocessors: ${this.genProfile.subprocessors}
+- International Transfers: ${this.genProfile.internationalTransfers}
+- Data Protection Officer (DPO): ${this.genProfile.dpoOfficer}
+- Designated Grievance Officer: ${this.genProfile.grievanceOfficer}
+- CISO: ${this.genProfile.cisoOfficer}
+- CRO: ${this.genProfile.croOfficer}
+- Core Processing Purpose: ${this.genProfile.processingPurpose}
 
 ## MANDATORY 12-SECTION GOVERNANCE STRUCTURE
 The document MUST contain ALL of the following sections, numbered sequentially:
 
-1. PURPOSE & OBJECTIVE — Define why this policy exists and what it achieves.
-2. SCOPE — Define systems, processes, data, and environments governed.
-3. APPLICABILITY — Specify employees, contractors, third parties, processors, sub-processors.
-4. DEFINITIONS — Include precise regulatory definitions for all key terms (Personal Data, Processing, Data Subject, Controller, Processor, Consent, Incident, Breach, etc.) with regulatory article references.
-5. ROLES & RESPONSIBILITIES — Assign Policy Owner, Control Owner, Review Owner, DPO, CISO, Grievance Officer, Department Heads. Include Approval Authority.
-6. POLICY REQUIREMENTS — The substantive regulatory and operational requirements. Be specific, actionable, and cite framework controls.
-7. EXCEPTIONS — Define exception request process, risk acceptance criteria, temporary exemption protocol, documentation requirements.
-8. NON-COMPLIANCE & ENFORCEMENT — Specify disciplinary escalation matrix, regulatory reporting obligations, contractual enforcement.
-9. MONITORING & COMPLIANCE — Define internal audit procedures, KPIs, compliance verification methods, self-assessment programs.
-10. REVIEW & MAINTENANCE — Specify annual/semi-annual review protocol, amendment process, stakeholder consultation, continuous improvement.
-11. RELATED DOCUMENTS — Cross-reference: Access Control Policy, Incident Response Policy, Data Retention Policy, Vendor Risk Policy, BCP/DR Policy, Privacy Policy.
-12. VERSION CONTROL — Include Document ID, version number, status, effective date, review date, change log.
+1. OBJECTIVE — Define what this policy achieves.
+2. PURPOSE — Explain why this policy exists and the risks it mitigates.
+3. SCOPE — Define systems, processes, data, and environments governed.
+4. POLICY HIERARCHY — Specify how this document relates to other standards and procedures.
+5. APPLICABILITY — Specify employees, contractors, third parties, processors, sub-processors.
+6. DEFINITIONS — Include precise regulatory definitions for all key terms (Personal Data, Processing, Data Subject, Controller, Processor, Consent, Incident, Breach, etc.) with regulatory article references.
+7. ROLES & RESPONSIBILITIES — Assign Policy Owner, Control Owner, Review Owner, DPO, CISO, Grievance Officer, Department Heads. Include Approval Authority.
+8. POLICY REQUIREMENTS — The substantive regulatory and operational requirements. Be specific, actionable, and cite framework controls.
+9. EXCEPTIONS — Define exception request process, risk acceptance criteria, temporary exemption protocol, documentation requirements.
+10. NON-COMPLIANCE & ENFORCEMENT — Specify disciplinary escalation matrix, regulatory reporting obligations, contractual enforcement.
+11. MONITORING & COMPLIANCE — Define internal audit procedures, KPIs, compliance verification methods, self-assessment programs.
+12. REVIEW & MAINTENANCE — Specify annual/semi-annual review protocol, amendment process, stakeholder consultation, continuous improvement.
 
-## METADATA BLOCK (Must appear at the top of the document)
-Document Title: [Full title]
-Document ID: [Organization abbreviation]-POL-[domain code]-[number]
-Version: v1.0
-Status: Draft (Pending Board Approval)
-Classification: Confidential — Internal Use Only
-Applicable Frameworks: [List selected frameworks]
-Jurisdictions: [Customer geographies]
-Policy Owner: [Specify from company context]
-Control Owner: [CISO or DPO based on domain]
-Approval Authority: Board of Directors / Executive Committee
-Effective Date: [Use current date]
-Review Frequency: Annual (12-month cycle)
+## MANDATORY APPENDICES
+You must include the following appendices at the end of the document:
+- APPENDIX A — RELATED GOVERNANCE DOCUMENTS
+- APPENDIX B — VERSION CONTROL
+- APPENDIX C — FRAMEWORK MAPPING
+- APPENDIX D — RACI MATRIX
+- APPENDIX E — ACRONYMS & DEFINITIONS
+
+## METADATA BLOCK (Must appear at the top of the document as a Markdown Table)
+| Property | Value |
+| --- | --- |
+| Document Title | [Full title] |
+| Document ID | [Organization abbreviation]-POL-[domain code]-[number] |
+| Version | v1.0 |
+| Status | Draft (Pending Board Approval) |
+| Classification | Confidential — Internal Use Only |
+| Applicable Frameworks | [List selected frameworks] |
+| Jurisdictions | [Customer geographies] |
+| Policy Owner | [Specify from company context] |
+| Control Owner | [CISO or DPO based on domain] |
+| Approval Authority | Board of Directors / Executive Committee |
+| Effective Date | [Use current date] |
+| Review Frequency | Annual (12-month cycle) |
 
 ## LANGUAGE STANDARDS (Big 4 Tone — Mandatory)
 - Use ONLY: shall, must, required, responsible, accountable
 - NEVER use: should, may, attempt to, where possible, try to, is expected to
-- Write in third-person institutional voice ("The Organization shall...")
+- Write in third-person institutional voice ("The Organization shall...", "The Data Protection Officer shall...")
 - No first-person ("we", "our") — use the organization name or "The Organization"
-- Every requirement must be specific and enforceable
+- Randomize sentence starters to avoid repetitive "The Organization shall" structures.
 
 ## CRITICAL RULES
 - ZERO unresolved placeholders: No {{COMPANY_NAME}}, {{DPO}}, {{COUNTRY}}, etc.
 - Every reference to the organization, people, systems, and jurisdictions must use the actual values from the Company Context above.
-- Include specific regulatory article citations (e.g., "GDPR Article 7", "ISO 27001 A.9.1", "DPDPA Section 6").
-- Cross-reference related policies explicitly ("Related access requirements are defined in the Access Control Policy.").
-- Include non-compliance consequences with disciplinary escalation.
+- Ensure the Governance Roles provided in the context are mentioned by name and role where appropriate.
+- Include specific regulatory article citations.
+- Include non-compliance consequences.
 
 ## CUSTOM DIRECTIVES
 ${this.genPrompt || 'None provided.'}
@@ -1780,7 +1807,7 @@ Output ONLY the complete governance document. No conversational introductions. N
           }
         } catch (err) {
           console.error("Drafting failed:", err);
-          this.genResultText = `Drafting execution failed. Fallback simulated output:\n\n` + PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
+          this.genResultText = PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
         } finally {
           this.isGenerating = false;
 

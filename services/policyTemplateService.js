@@ -9,6 +9,13 @@ import { THIRD_PARTY_CLAUSES } from './clauses/thirdPartyClauses.js';
 import { AI_GOVERNANCE_CLAUSES } from './clauses/aiGovernanceClauses.js';
 import { DEFINITIONS_CLAUSES } from './clauses/definitionsClauses.js';
 import { PolicyDefinitionsService } from './policyDefinitionsService.js';
+import { SentenceVariationService } from './sentenceVariationService.js';
+import { RaciMatrixService } from './raciMatrixService.js';
+import { FrameworkMappingAppendixService } from './frameworkMappingAppendixService.js';
+import { AcronymService } from './acronymService.js';
+import { CrossReferenceService } from './crossReferenceService.js';
+import { OrganizationContextService } from './organizationContextService.js';
+
 export const POLICY_DOMAINS = {
   infosec: {
     name: "Information Security",
@@ -311,39 +318,48 @@ export class PolicyTemplateService {
     const purpose = profile.processingPurpose || "Enterprise business operations and service delivery";
     const employeeCount = profile.employeeCount || "100";
     const specialCategories = profile.specialCategories || "None";
+    const role = profile.processingRole || "Data Processor";
+    const b2bB2c = profile.b2bB2c || "B2B";
+    const dataSubjects = profile.dataSubjects || "Customers";
+    const hostingRegion = profile.hostingRegion || "Global";
+    const subprocessors = profile.subprocessors || "Standard providers";
+    const transfers = profile.internationalTransfers || "Standard Contractual Clauses";
+    const ciso = profile.cisoOfficer || "Chief Information Security Officer";
+    const cro = profile.croOfficer || "Chief Risk Officer";
 
     const fwsFormatted = (selectedFrameworks && selectedFrameworks.length > 0) 
       ? selectedFrameworks.join(", ") 
       : "Internal Governance";
 
-    let doc = `================================================================================
-DOCUMENT TITLE:   ${template.title}
-DOCUMENT ID:      ${companyName.substring(0,3).toUpperCase()}-POL-${domainKey.substring(0,3).toUpperCase()}-001
-VERSION:          v1.0
-STATUS:           Draft (Pending Board Approval)
-CLASSIFICATION:   Confidential - Internal Use Only
-APPLICABLE FRAMEWORKS: ${fwsFormatted}
-JURISDICTIONS:    ${geography} (Origin: ${country})
-POLICY OWNER:     ${dpo}
-CONTROL OWNER:    CISO / DPO
-APPROVAL AUTHORITY: Board of Directors / Executive Committee
-EFFECTIVE DATE:   ${new Date().toLocaleDateString('en-GB')}
-REVIEW FREQUENCY: Annual (12-month cycle)
-================================================================================
+    let doc = `| Property | Value |
+| --- | --- |
+| Document Title | ${template.title} |
+| Document ID | ${companyName.substring(0,3).toUpperCase()}-POL-${domainKey.substring(0,3).toUpperCase()}-001 |
+| Version | v1.0 |
+| Status | Draft (Pending Board Approval) |
+| Classification | Confidential - Internal Use Only |
+| Applicable Frameworks | ${fwsFormatted} |
+| Jurisdictions | ${geography} (Origin: ${country}) |
+| Policy Owner | ${dpo} |
+| Control Owner | CISO / DPO |
+| Approval Authority | Board of Directors / Executive Committee |
+| Effective Date | ${new Date().toLocaleDateString('en-GB')} |
+| Review Frequency | Annual (12-month cycle) |
 
 `;
 
     const replaceVars = (str) => {
       if (!str) return "";
-      return str
+      let variedStr = SentenceVariationService.applyVariation(str, domainKey, companyName);
+      return variedStr
         .replace(/{{COMPANY_NAME}}/g, companyName)
         .replace(/{{INDUSTRY}}/g, industry)
         .replace(/{{COUNTRY}}/g, country)
         .replace(/{{CUSTOMER_GEOGRAPHY}}/g, geography)
         .replace(/{{CLOUD_PROVIDER}}/g, cloud)
         .replace(/{{POSTURE}}/g, posture)
-        .replace(/{{DPO_OFFICER}}/g, dpo)
-        .replace(/{{GRIEVANCE_OFFICER}}/g, grievance)
+        .replace(/{{DPO_OFFICER}}/g, SentenceVariationService.formatOwner("Data Protection Officer", profile.dpoOfficer))
+        .replace(/{{GRIEVANCE_OFFICER}}/g, SentenceVariationService.formatOwner("Grievance Officer", profile.grievanceOfficer))
         .replace(/{{PROCESSING_PURPOSE}}/g, purpose)
         .replace(/{{EMPLOYEE_COUNT}}/g, employeeCount)
         .replace(/{{SPECIAL_CATEGORIES}}/g, specialCategories);
@@ -351,21 +367,31 @@ REVIEW FREQUENCY: Annual (12-month cycle)
 
     const getClausesForSection = (secNum) => {
       let matching = CLAUSE_LIBRARY.filter(c => c.section === secNum && (c.domain === domainKey || c.domain === 'general'));
+      // Section 4 -> 6, Section 5 -> 7, etc based on mapping because we added sections
+      // For simulation, we'll map the old 12 sections into the new 12 sections.
+      // Old 1=Purpose, Old 2=Scope, Old 3=App, Old 4=Def, Old 5=Roles
       return matching.slice(0, 3).map(c => replaceVars(c.text)).join('\n\n');
     };
 
-    doc += `## 1. PURPOSE & OBJECTIVE\n\n${getClausesForSection(1) || 'To establish a governance framework.'}\n\n`;
-    doc += `## 2. SCOPE\n\n${getClausesForSection(2) || 'Applies globally to all systems.'}\n\n`;
-    doc += `## 3. APPLICABILITY\n\n${getClausesForSection(3) || 'Applies to all personnel.'}\n\n`;
-    doc += `## 4. DEFINITIONS\n\n${PolicyDefinitionsService.generateDefinitionsSection(selectedFrameworks, profile) || 'Standard industry definitions apply.'}\n\n`;
-    doc += `## 5. ROLES & RESPONSIBILITIES\n\n${getClausesForSection(5) || 'Defined by the executive committee.'}\n\n`;
-    doc += `## 6. POLICY REQUIREMENTS\n\n${getClausesForSection(6) || 'Strict adherence to selected compliance frameworks is required.'}\n\n`;
-    doc += `## 7. EXCEPTIONS\n\n${getClausesForSection(7) || 'Exceptions require formal approval.'}\n\n`;
-    doc += `## 8. NON-COMPLIANCE & ENFORCEMENT\n\n${getClausesForSection(8) || 'Violations result in disciplinary action.'}\n\n`;
-    doc += `## 9. MONITORING & COMPLIANCE\n\n${getClausesForSection(9) || 'Monitored continuously.'}\n\n`;
-    doc += `## 10. REVIEW & MAINTENANCE\n\n${getClausesForSection(10) || 'Reviewed annually.'}\n\n`;
-    doc += `## 11. RELATED DOCUMENTS\n\n${getClausesForSection(11) || 'Refer to the ISMS.'}\n\n`;
-    doc += `## 12. VERSION CONTROL\n\n${getClausesForSection(12) || 'Version 1.0.'}\n\n`;
+    doc += `## 1. OBJECTIVE\n\nTo establish a robust governance framework ensuring compliance and operational security for ${companyName} acting as a ${role}.\n\n`;
+    doc += `## 2. PURPOSE\n\n${getClausesForSection(1) || 'This policy exists to mitigate risks associated with data processing.'}\n\n`;
+    doc += `## 3. SCOPE\n\n${getClausesForSection(2) || 'Applies globally to all systems.'}\n\n`;
+    doc += `## 4. POLICY HIERARCHY\n\nThis policy sits at Level 1 of the Governance Framework. It supersedes all departmental procedures and acts as the parent document for related IT and Security standards.\n\n`;
+    doc += `## 5. APPLICABILITY\n\n${getClausesForSection(3) || 'Applies to all personnel.'}\n\n`;
+    doc += `## 6. DEFINITIONS\n\n${PolicyDefinitionsService.generateDefinitionsSection(selectedFrameworks, profile) || 'Standard industry definitions apply.'}\n\n`;
+    doc += `## 7. ROLES & RESPONSIBILITIES\n\n${getClausesForSection(5) || 'Defined by the executive committee.'}\n\n`;
+    doc += `## 8. POLICY REQUIREMENTS\n\n${getClausesForSection(6) || 'Strict adherence to selected compliance frameworks is required.'}\n\n`;
+    doc += `## 9. EXCEPTIONS\n\n${getClausesForSection(7) || 'Exceptions require formal approval.'}\n\n`;
+    doc += `## 10. NON-COMPLIANCE & ENFORCEMENT\n\n${getClausesForSection(8) || 'Violations result in disciplinary action.'}\n\n`;
+    doc += `## 11. MONITORING & COMPLIANCE\n\n${getClausesForSection(9) || 'Monitored continuously.'}\n\n`;
+    doc += `## 12. REVIEW & MAINTENANCE\n\n${getClausesForSection(10) || 'Reviewed annually.'}\n\n`;
+
+    // Appendices
+    doc += CrossReferenceService.generateAppendix(domainKey) + "\n\n";
+    doc += `### APPENDIX B — VERSION CONTROL\n\n| Version | Date | Author | Description |\n| --- | --- | --- | --- |\n| 1.0 | ${new Date().toLocaleDateString('en-GB')} | Compliance Team | Initial Draft |\n\n`;
+    doc += FrameworkMappingAppendixService.generateAppendix(selectedFrameworks) + "\n\n";
+    doc += RaciMatrixService.generateAppendix(domainKey) + "\n\n";
+    doc += AcronymService.generateAppendix(doc, domainKey, profile) + "\n\n";
 
     return doc;
   }

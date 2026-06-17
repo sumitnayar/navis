@@ -185,7 +185,7 @@ export class AIService {
       let isServerBridge = true;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
         response = await fetch('/api/gemini', {
           method: 'POST',
           headers: {
@@ -224,15 +224,15 @@ export class AIService {
           throw serverError;
         }
         
-        // If it is a status-bearing error (e.g. 429/503), rethrow it so outer catch can retry it
-        if (serverError.status) {
+        // If it is a status-bearing error that we want to retry (e.g. 429/503), rethrow it so outer catch can retry it
+        if (serverError.status === 429 || serverError.status === 503 || serverError.status === 504) {
           throw serverError;
         }
         
-        // If the server route is not found or connection failed (e.g. local dev without api server),
+        // If the server route is not found (e.g. 404 on local dev/github pages) or connection failed,
         // we can fallback to direct browser call if a local apiKey exists.
         if (apiKey) {
-          console.warn("Secure server bridge failed/unreachable. Attempting direct browser call fallback:", serverError);
+          console.warn("Secure server bridge failed/unreachable/timeout. Attempting direct browser call fallback:", serverError);
           isServerBridge = false;
         } else {
           throw serverError;
@@ -242,7 +242,7 @@ export class AIService {
       // 2. Direct Browser Fallback (if client key is provided and server route was missing/keyless)
       if (!isServerBridge) {
         const directController = new AbortController();
-        const directTimeoutId = setTimeout(() => directController.abort(), 30000);
+        const directTimeoutId = setTimeout(() => directController.abort(), 120000);
         const directResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
