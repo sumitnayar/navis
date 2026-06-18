@@ -2766,20 +2766,26 @@ Output ONLY the complete governance document. No conversational introductions. N
       generatePackBtn?.addEventListener('click', async () => {
         if (this.isGeneratingPack) return;
         this.isGeneratingPack = true;
-        this.render(container);
         
         try {
-          const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
           const { GovernancePackService } = await import('../services/governancePackService.js');
-          this.generatedPack = await GovernancePackService.generatePack(this.packDomain || 'bcp', this.selectedFrameworks, this.genProfile, apiKey);
+          const packDef = GovernancePackService.getArtifactDefinitions(this.packDomain || 'bcp', this.selectedFrameworks, this.genProfile);
+          
+          this.generatedPack = {
+            packName: packDef.packName,
+            domain: packDef.domain,
+            artifacts: packDef.artifacts.map(a => ({
+              ...a,
+              status: 'pending', // pending, generating, done, failed, fallback
+              documentText: ''
+            }))
+          };
+          
+          this.render(container);
+          await this.processArtifactsSequential(container);
         } catch (err) {
-          console.error("Pack generation failed:", err);
-          if (err.message && err.message.includes("SERVER_TIMEOUT")) {
-            alert("Timeout Exceeded: Vercel's 10-second limit was reached. To generate massive governance packs, please add your own Gemini API Key in 'Platform Settings' (top right). This will bypass the server limits entirely.");
-          } else {
-            alert("Failed to generate Governance Pack. See console for details. If you are experiencing timeouts, try adding your own Gemini API Key in Settings.");
-          }
-        } finally {
+          console.error("Failed to initialize pack generation:", err);
+          alert("Failed to initialize pack generation.");
           this.isGeneratingPack = false;
           this.render(container);
         }
@@ -2788,14 +2794,66 @@ Output ONLY the complete governance document. No conversational introductions. N
       const saveVaultBtn = container.querySelector('#save-pack-vault-btn');
       saveVaultBtn?.addEventListener('click', async () => {
         if (!this.generatedPack) return;
+        // Only save artifacts that actually generated some text
+        const validArtifacts = this.generatedPack.artifacts.filter(a => a.documentText && a.documentText.length > 0);
+        if (validArtifacts.length === 0) {
+          alert("No valid artifacts to save.");
+          return;
+        }
         try {
+          const packToSave = {
+            ...this.generatedPack,
+            artifacts: validArtifacts
+          };
           const { StorageService } = await import('../services/storageService.js');
-          await StorageService.saveGovernancePack(this.generatedPack);
-          alert(`Governance Pack saved to Vault as ${this.generatedPack.packName}!`);
+          await StorageService.saveGovernancePack(packToSave);
+          alert(`Governance Pack saved to Vault with ${validArtifacts.length} artifacts!`);
         } catch(err) {
           console.error("Failed to save pack to vault:", err);
           alert("Failed to save pack to vault.");
         }
+      });
+
+      // Artifact-specific actions
+      container.querySelectorAll('.regenerate-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          if (this.isGeneratingPack) return;
+          this.isGeneratingPack = true;
+          this.generatedPack.artifacts[idx].status = 'generating';
+          this.generatedPack.artifacts[idx].documentText = '';
+          this.render(container);
+          await this.generateSingleArtifact(idx, container);
+          this.isGeneratingPack = false;
+          this.render(container);
+        });
+      });
+
+      container.querySelectorAll('.fallback-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          this.generatedPack.artifacts[idx].status = 'fallback';
+          this.generatedPack.artifacts[idx].documentText = this.generatedPack.artifacts[idx].fallbackText;
+          this.render(container);
+        });
+      });
+
+      const retryFailedBtn = container.querySelector('#retry-failed-btn');
+      retryFailedBtn?.addEventListener('click', async () => {
+        if (this.isGeneratingPack) return;
+        this.isGeneratingPack = true;
+        this.render(container);
+        
+        for (let i = 0; i < this.generatedPack.artifacts.length; i++) {
+          if (this.generatedPack.artifacts[i].status === 'failed') {
+            this.generatedPack.artifacts[i].status = 'generating';
+            this.render(container);
+            await this.generateSingleArtifact(i, container);
+          }
+        }
+        
+        this.isGeneratingPack = false;
+        this.render(container);
       });
 
       container.querySelectorAll('.pack-preview-btn').forEach(btn => {
@@ -2828,20 +2886,95 @@ Output ONLY the complete governance document. No conversational introductions. N
     }
   }
 
+  async processArtifactsSequential(container) {
+    for (let i = 0; i < this.generatedPack.artifacts.length; i++) {
+      if (!this.isGeneratingPack) break; // If user somehow cancelled
+      const artifact = this.generatedPack.artifacts[i];
+      if (artifact.status === 'pending') {
+        artifact.status = 'generating';
+        this.render(container);
+        await this.generateSingleArtifact(i, container);
+      }
+    }
+    this.isGeneratingPack = false;
+    this.render(container);
+  }
+
+  async generateSingleArtifact(index, container) {
+    const artifact = this.generatedPack.artifacts[index];
+    const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
+    
+    try {
+      const { AIService } = await import('../services/aiService.js');
+      artifact.documentText = await AIService.queryGemini(artifact.prompt, apiKey);
+      artifact.status = 'done';
+    } catch (err) {
+      console.warn(`Artifact ${artifact.title} failed, retrying once...`, err);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const { AIService } = await import('../services/aiService.js');
+        artifact.documentText = await AIService.queryGemini(artifact.prompt, apiKey);
+        artifact.status = 'done';
+      } catch (retryErr) {
+        console.error(`Artifact ${artifact.title} failed on retry.`, retryErr);
+        artifact.status = 'failed';
+        // Auto fallback
+        artifact.documentText = artifact.fallbackText;
+        artifact.status = 'fallback';
+      }
+    }
+    this.render(container);
+  }
+
   renderGovernancePacksTab() {
     let packCards = '';
+    let hasFailed = false;
+
     if (this.generatedPack && this.generatedPack.artifacts) {
       this.generatedPack.artifacts.forEach((artifact, index) => {
+        let statusBadge = '';
+        let controls = '';
+        
+        if (artifact.status === 'pending') {
+          statusBadge = `<span style="font-size:12px; color:var(--text-muted);">⏳ Pending</span>`;
+        } else if (artifact.status === 'generating') {
+          statusBadge = `<span style="font-size:12px; color:var(--color-blue);"><svg class="spinner" viewBox="0 0 50 50" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"><circle></svg> Generating...</span>`;
+        } else if (artifact.status === 'done') {
+          statusBadge = `<span style="font-size:12px; color:var(--color-green);">✅ Done</span>`;
+          controls = `
+            <button class="btn btn-secondary pack-preview-btn" data-idx="${index}">Preview</button>
+            <button class="btn btn-secondary pack-export-btn" data-idx="${index}">Export</button>
+            <button class="btn btn-secondary regenerate-btn" data-idx="${index}">Regenerate</button>
+          `;
+        } else if (artifact.status === 'fallback') {
+          statusBadge = `<span style="font-size:12px; color:var(--color-orange);">⚠️ Fallback Used</span>`;
+          controls = `
+            <button class="btn btn-secondary pack-preview-btn" data-idx="${index}">Preview</button>
+            <button class="btn btn-secondary pack-export-btn" data-idx="${index}">Export</button>
+            <button class="btn btn-secondary regenerate-btn" data-idx="${index}">Regenerate</button>
+          `;
+        } else if (artifact.status === 'failed') {
+          hasFailed = true;
+          statusBadge = `<span style="font-size:12px; color:var(--color-red);">❌ Failed</span>`;
+          controls = `
+            <button class="btn btn-secondary regenerate-btn" data-idx="${index}">Retry</button>
+            <button class="btn btn-secondary fallback-btn" data-idx="${index}">Use Fallback</button>
+          `;
+        }
+
         packCards += `
-          <div class="glass-panel" style="margin-bottom:15px; padding:15px; border-left:4px solid var(--color-indigo);">
+          <div class="glass-panel" style="margin-bottom:15px; padding:15px; border-left:4px solid ${artifact.status === 'fallback' ? 'var(--color-orange)' : artifact.status === 'failed' ? 'var(--color-red)' : artifact.status === 'done' ? 'var(--color-green)' : 'var(--color-indigo)'};">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="margin:0; font-size:16px;">${artifact.title} <span style="font-size:11px; font-weight:normal; color:var(--text-muted); background:var(--background-alt); padding:2px 6px; border-radius:4px; margin-left:8px;">${artifact.artifactType}</span></h3>
+              <div style="display:flex; align-items:center; gap: 10px;">
+                <h3 style="margin:0; font-size:16px;">${artifact.title}</h3>
+                <span style="font-size:11px; font-weight:normal; color:var(--text-muted); background:var(--background-alt); padding:2px 6px; border-radius:4px;">${artifact.artifactType}</span>
+                ${statusBadge}
+              </div>
               <div style="display:flex; gap:8px;">
-                <button class="btn btn-secondary pack-preview-btn" data-idx="${index}">Preview</button>
-                <button class="btn btn-secondary pack-export-btn" data-idx="${index}">Export</button>
+                ${controls}
               </div>
             </div>
-            <p style="margin:0; font-size:13px; color:var(--text-secondary);">${artifact.documentText.substring(0, 120)}...</p>
+            ${artifact.documentText ? `<p style="margin:0; font-size:13px; color:var(--text-secondary);">${artifact.documentText.substring(0, 120)}...</p>` : ''}
           </div>
         `;
       });
@@ -2850,7 +2983,7 @@ Output ONLY the complete governance document. No conversational introductions. N
     return `
       <div class="glass-panel" style="margin-bottom: 20px;">
         <h2 style="margin-bottom: 15px;">Governance Packs Orchestration</h2>
-        <p style="color:var(--text-secondary); margin-bottom: 20px;">Generate a complete, interconnected governance system instead of an isolated policy.</p>
+        <p style="color:var(--text-secondary); margin-bottom: 20px;">Generate a complete, interconnected governance system artifact-by-artifact to ensure maximum reliability.</p>
         
         <div class="form-group" style="margin-bottom: 20px;">
           <label class="form-label">Select Domain Pack</label>
@@ -2863,9 +2996,10 @@ Output ONLY the complete governance document. No conversational introductions. N
 
         <div style="display:flex; gap:10px; margin-bottom: 20px;">
           <button class="btn btn-primary" id="generate-pack-btn" ${this.isGeneratingPack ? 'disabled' : ''}>
-            ${this.isGeneratingPack ? '<svg class="spinner" viewBox="0 0 50 50" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"><circle></svg> Generating Pack...' : 'Generate Full Pack'}
+            ${this.isGeneratingPack ? '<svg class="spinner" viewBox="0 0 50 50" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"><circle></svg> Orchestrating Pack...' : 'Generate Full Pack'}
           </button>
-          ${this.generatedPack ? `<button class="btn btn-secondary" id="save-pack-vault-btn">Save Pack to Vault</button>` : ''}
+          ${this.generatedPack && !this.isGeneratingPack ? `<button class="btn btn-secondary" id="save-pack-vault-btn">Save Pack to Vault</button>` : ''}
+          ${hasFailed && !this.isGeneratingPack ? `<button class="btn btn-secondary" id="retry-failed-btn" style="color:var(--color-red); border-color:var(--color-red);">Regenerate Failed</button>` : ''}
         </div>
       </div>
       
@@ -2881,7 +3015,7 @@ Output ONLY the complete governance document. No conversational introductions. N
         <div class="modal" style="display:block; background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100%; height:100%; z-index:1000; padding:40px;">
           <div class="glass-panel" style="max-width:900px; margin:0 auto; max-height:80vh; overflow-y:auto; position:relative;">
             <button class="btn btn-secondary" id="close-pack-modal" style="position:absolute; top:20px; right:20px;">Close</button>
-            <h2 style="margin-top:0;">${this.generatedPack.artifacts[this.packPreviewIndex].title}</h2>
+            <h2 style="margin-top:0;">${this.generatedPack.artifacts[this.packPreviewIndex].title} <span style="font-size:12px; font-weight:normal; color:${this.generatedPack.artifacts[this.packPreviewIndex].status === 'fallback' ? 'var(--color-orange)' : 'var(--text-muted)'}; background:var(--background-alt); padding:2px 6px; border-radius:4px; margin-left:8px;">${this.generatedPack.artifacts[this.packPreviewIndex].status === 'fallback' ? '⚠️ Fallback' : 'AI Generated'}</span></h2>
             <div style="font-family:monospace; white-space:pre-wrap; font-size:13px; color:var(--text-secondary); margin-top:20px; padding:15px; background:var(--background-alt); border-radius:6px;">${this.generatedPack.artifacts[this.packPreviewIndex].documentText}</div>
           </div>
         </div>
