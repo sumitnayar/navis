@@ -82,6 +82,71 @@ export class SettingsComponent {
                 </div>
               </div>
 
+              <h4 style="margin-top:20px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Business Context</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Products / Services</label>
+                  <input type="text" class="form-control" id="settings-products" value="${s.products || ''}" placeholder="e.g. Affiliate Platform, Attribution Engine" />
+                </div>
+                <div class="form-group">
+                  <label>Business Model</label>
+                  <select class="form-control" id="settings-business-model">
+                    <option value="B2B SaaS" ${s.businessModel === 'B2B SaaS' ? 'selected' : ''}>B2B SaaS</option>
+                    <option value="B2C Consumer" ${s.businessModel === 'B2C Consumer' ? 'selected' : ''}>B2C Consumer</option>
+                    <option value="B2B2C Platform" ${s.businessModel === 'B2B2C Platform' ? 'selected' : ''}>B2B2C Platform</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Customer Segments</label>
+                <input type="text" class="form-control" id="settings-customer-segments" value="${s.customerSegments || ''}" placeholder="e.g. Gaming, Fintech, E-commerce" />
+              </div>
+
+              <h4 style="margin-top:20px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Technical Context</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Cloud Provider</label>
+                  <input type="text" class="form-control" id="settings-cloud-provider" value="${s.cloudProvider || ''}" placeholder="e.g. AWS" />
+                </div>
+                <div class="form-group">
+                  <label>Hosting Region</label>
+                  <input type="text" class="form-control" id="settings-hosting-region" value="${s.hostingRegion || ''}" placeholder="e.g. ap-south-1" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Critical Vendors</label>
+                <input type="text" class="form-control" id="settings-critical-vendors" value="${s.criticalVendors || ''}" placeholder="e.g. Cloudflare, MongoDB Atlas" />
+              </div>
+              <div class="form-group">
+                <label>Critical Processes</label>
+                <input type="text" class="form-control" id="settings-critical-processes" value="${s.criticalProcesses || ''}" placeholder="e.g. Event ingestion, Attribution reporting" />
+              </div>
+
+              <h4 style="margin-top:20px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Governance Context</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Regulatory Exposure</label>
+                  <input type="text" class="form-control" id="settings-regulatory" value="${s.regulatoryExposure || ''}" placeholder="e.g. India, EU, UAE" />
+                </div>
+                <div class="form-group">
+                  <label>Risk Appetite</label>
+                  <select class="form-control" id="settings-risk-appetite">
+                    <option value="Conservative" ${s.riskAppetite === 'Conservative' ? 'selected' : ''}>Conservative</option>
+                    <option value="Moderate" ${s.riskAppetite === 'Moderate' ? 'selected' : ''}>Moderate</option>
+                    <option value="Aggressive" ${s.riskAppetite === 'Aggressive' ? 'selected' : ''}>Aggressive</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Recovery Philosophy</label>
+                <select class="form-control" id="settings-recovery-philosophy">
+                  <option value="Availability-first" ${s.recoveryPhilosophy === 'Availability-first' ? 'selected' : ''}>Availability-first</option>
+                  <option value="Privacy-first" ${s.recoveryPhilosophy === 'Privacy-first' ? 'selected' : ''}>Privacy-first</option>
+                  <option value="Compliance-first" ${s.recoveryPhilosophy === 'Compliance-first' ? 'selected' : ''}>Compliance-first</option>
+                </select>
+              </div>
+
               <div style="display:flex;gap:12px;margin-top:16px;">
                 <button class="btn btn-primary" id="btn-save-settings" style="flex-grow:1;justify-content:center;">Apply Configurations</button>
               </div>
@@ -232,6 +297,16 @@ export class SettingsComponent {
         companyName: container.querySelector('#settings-company-name').value,
         revenueBracket: container.querySelector('#settings-revenue').value,
         ipoTimeline: container.querySelector('#settings-ipo').value,
+        products: container.querySelector('#settings-products') ? container.querySelector('#settings-products').value : '',
+        businessModel: container.querySelector('#settings-business-model') ? container.querySelector('#settings-business-model').value : '',
+        customerSegments: container.querySelector('#settings-customer-segments') ? container.querySelector('#settings-customer-segments').value : '',
+        cloudProvider: container.querySelector('#settings-cloud-provider') ? container.querySelector('#settings-cloud-provider').value : '',
+        hostingRegion: container.querySelector('#settings-hosting-region') ? container.querySelector('#settings-hosting-region').value : '',
+        criticalVendors: container.querySelector('#settings-critical-vendors') ? container.querySelector('#settings-critical-vendors').value : '',
+        criticalProcesses: container.querySelector('#settings-critical-processes') ? container.querySelector('#settings-critical-processes').value : '',
+        regulatoryExposure: container.querySelector('#settings-regulatory') ? container.querySelector('#settings-regulatory').value : '',
+        riskAppetite: container.querySelector('#settings-risk-appetite') ? container.querySelector('#settings-risk-appetite').value : '',
+        recoveryPhilosophy: container.querySelector('#settings-recovery-philosophy') ? container.querySelector('#settings-recovery-philosophy').value : '',
         geminiApiKey: container.querySelector('#settings-api-key').value,
         activeUserRole: container.querySelector('#settings-role').value
       };

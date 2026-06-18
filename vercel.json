@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "navis-boardroom",
+  "outputDirectory": ".",
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [

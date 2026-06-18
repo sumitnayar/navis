@@ -2769,7 +2769,7 @@ Output ONLY the complete governance document. No conversational introductions. N
         
         try {
           const { GovernancePackService } = await import('../services/governancePackService.js');
-          const packDef = GovernancePackService.getArtifactDefinitions(this.packDomain || 'bcp', this.selectedFrameworks, this.genProfile);
+          const packDef = GovernancePackService.getArtifactDefinitions(this.packDomain || 'bcp', this.selectedFrameworks, this.state.settings || this.genProfile);
           
           this.generatedPack = {
             packName: packDef.packName,
@@ -2904,6 +2904,13 @@ Output ONLY the complete governance document. No conversational introductions. N
     const artifact = this.generatedPack.artifacts[index];
     const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
     
+    if (artifact.isDeterministic) {
+      artifact.documentText = artifact.fallbackText;
+      artifact.status = 'done';
+      this.render(container);
+      return;
+    }
+
     try {
       const { AIService } = await import('../services/aiService.js');
       artifact.documentText = await AIService.queryGemini(artifact.prompt, apiKey);

@@ -109,7 +109,17 @@ export class StorageService {
       soc2Status: 'SOC 2 Type II Certified',
       businessUnits: ['Enterprise Sales', 'Engineering & Infrastructure', 'Security Operations', 'Finance Operations', 'Legal & HR', 'Product Management'],
       locations: ['Bangalore HQ', 'Chennai Dev Center', 'US Delaware Entity'],
-      activeUserRole: 'CRO (Chief Risk Officer)'
+      activeUserRole: 'CRO (Chief Risk Officer)',
+      products: 'Affiliate Tracking Platform, Attribution Engine, Rewards System',
+      businessModel: 'B2B SaaS',
+      customerSegments: 'Gaming, E-commerce, Fintech, Ad-networks',
+      cloudProvider: 'AWS',
+      hostingRegion: 'ap-south-1 (Mumbai), us-east-1 (N. Virginia)',
+      criticalVendors: 'Cloudflare, MongoDB Atlas, Stripe, Datadog',
+      criticalProcesses: 'Event Ingestion (10B+ events/mo), Attribution Calculation, Publisher Payouts',
+      regulatoryExposure: 'India (DPDP Act), EU (GDPR)',
+      riskAppetite: 'Moderate',
+      recoveryPhilosophy: 'Availability-first'
     };
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));
     localStorage.setItem(STORAGE_KEYS.SEEDED, 'true');
