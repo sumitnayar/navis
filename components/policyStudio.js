@@ -2769,8 +2769,9 @@ Output ONLY the complete governance document. No conversational introductions. N
         this.render(container);
         
         try {
+          const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
           const { GovernancePackService } = await import('../services/governancePackService.js');
-          this.generatedPack = await GovernancePackService.generatePack(this.packDomain || 'bcp', this.selectedFrameworks, this.genProfile);
+          this.generatedPack = await GovernancePackService.generatePack(this.packDomain || 'bcp', this.selectedFrameworks, this.genProfile, apiKey);
         } catch (err) {
           console.error("Pack generation failed:", err);
           alert("Failed to generate Governance Pack. See console for details.");
