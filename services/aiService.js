@@ -275,11 +275,16 @@ export class AIService {
       
       const isRateLimit = status === 429 || errMsg.includes("429") || errMsg.includes("rate limit") || errMsg.includes("too many requests") || errMsg.includes("quota");
       const isOverload = status === 503 || errMsg.includes("503") || errMsg.includes("overload") || errMsg.includes("exhausted") || errMsg.includes("service unavailable");
+      const isTimeout = status === 504 || errMsg.includes("504") || errMsg.includes("timeout");
       
       if ((isRateLimit || isOverload) && !isRetry) {
         console.warn(`Gemini rate limit/overload error detected (status: ${status}, message: ${error.message}). Retrying in 3 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 3000));
         return this.queryGemini(prompt, apiKey, true);
+      }
+
+      if (isTimeout && !apiKey) {
+        throw new Error("SERVER_TIMEOUT: Vercel's 10-second serverless limit was exceeded while generating this massive document. Please add your own Gemini API Key in 'Platform Settings' to bypass the server proxy and generate unlimited-length Governance Packs directly.");
       }
       
       console.error("Gemini API Router Error:", error);

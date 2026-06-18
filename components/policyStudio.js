@@ -2774,7 +2774,11 @@ Output ONLY the complete governance document. No conversational introductions. N
           this.generatedPack = await GovernancePackService.generatePack(this.packDomain || 'bcp', this.selectedFrameworks, this.genProfile, apiKey);
         } catch (err) {
           console.error("Pack generation failed:", err);
-          alert("Failed to generate Governance Pack. See console for details.");
+          if (err.message && err.message.includes("SERVER_TIMEOUT")) {
+            alert("Timeout Exceeded: Vercel's 10-second limit was reached. To generate massive governance packs, please add your own Gemini API Key in 'Platform Settings' (top right). This will bypass the server limits entirely.");
+          } else {
+            alert("Failed to generate Governance Pack. See console for details. If you are experiencing timeouts, try adding your own Gemini API Key in Settings.");
+          }
         } finally {
           this.isGeneratingPack = false;
           this.render(container);
