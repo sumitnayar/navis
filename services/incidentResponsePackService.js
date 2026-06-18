@@ -4,17 +4,33 @@ import { DocumentCrossReferenceService } from './documentCrossReferenceService.j
 import { OwnershipService } from './ownershipService.js';
 import { SentenceVariationService } from './sentenceVariationService.js';
 import { OrganizationDependencyService } from './organizationDependencyService.js';
+import { KeyPersonRiskService } from './keyPersonRiskService.js';
 
 export class IncidentResponsePackService {
   static getArtifactDefinitions(frameworks, organizationContext) {
     const artifacts = [];
     
+    const deps = OrganizationDependencyService.getCriticalDependencies(organizationContext);
+    
+    let intelligenceDirectives = `\nORGANIZATIONAL INTELLIGENCE:\n`;
+    if (deps.vendorIntelligence.length > 0) {
+      intelligenceDirectives += `Vendor Threat Vectors:\n${deps.vendorIntelligence.map(v => `- ${v.name}: ${v.threats.join(', ')}`).join('\n')}\n`;
+    }
+    if (deps.productIntelligence.length > 0) {
+      intelligenceDirectives += `Product Operational Risks:\n${deps.productIntelligence.map(p => `- ${p.name}: ${p.risks.join(', ')}`).join('\n')}\n`;
+    }
+    if (deps.segmentIntelligence.length > 0) {
+      intelligenceDirectives += `Customer Segment Priorities (Use this to influence tone and focus):\n${deps.segmentIntelligence.map(s => `- ${s.name}: ${s.priorities.join(', ')}`).join('\n')}\n`;
+    }
+    intelligenceDirectives += `\nAvoid generic phrasing like "System Failure" or "Cyber Attack". Explicitly use the specific vendors, threats, and products listed above to build realistic scenarios.\n`;
+
     const baseDirectives = `
 You are a Big 4 management consultant drafting an Incident Response Governance Pack.
 Strictly output in Markdown format.
 
 ${SentenceVariationService.getLinguisticInstructions()}
 ${OwnershipService.getRaciDistribution()}
+${intelligenceDirectives}
 
 ANTI-HALLUCINATION: NEVER fabricate dates, exercises, incidents, historical tests, quarters, or metrics. Use placeholders like [Last Test Date], [Previous Quarter], [Target Completion Date], [Next Exercise Date].
 
@@ -73,23 +89,30 @@ ORGANIZATION ASSUMPTIONS: Assume the reader has read the Governance Pack Cover P
     });
 
     // 6. Tabletop Exercise Workbook
-    const dependencies = OrganizationDependencyService.getCriticalDependencies(organizationContext);
     const hierarchyTesting = GovernanceHierarchyService.getHierarchyStatement('Testing Program');
     artifacts.push({
       id: 'ir_tabletop',
       artifactType: 'Workbook',
       title: 'Tabletop Exercise Workbook',
-      prompt: `${baseDirectives}\n\nDraft a Tabletop Exercise Workbook.\nInclude this exact hierarchy statement: "${hierarchyTesting}"\nDesign a ransomware and data exfiltration scenario centered around this organizational dependency: ${dependencies.cyberattackScenario}\nInclude injection timeline, participant instructions, and evaluation rubrics in markdown tables.`,
-      fallbackText: `# Tabletop Exercise Workbook\n\nORGANIZATION ASSUMPTIONS: Refer to Governance Pack Cover Page.\n\n${hierarchyTesting}\n\n## Scenario: ${dependencies.cyberattackScenario}\n| Time | Inject | Expected Action |\n|---|---|---|\n| 09:00 | Helpdesk reports multiple users locked out of workstations. | CSIRT activated, initial triage. |\n| 10:30 | Threat actor emails CEO demanding 50 BTC. | Escalate to legal, draft holding statements. |\n| 14:00 | Actor publishes sample data on leak site. | Execute breach notification procedure. |`
+      prompt: `${baseDirectives}\n\nDraft a Tabletop Exercise Workbook.\nInclude this exact hierarchy statement: "${hierarchyTesting}"\nDesign a ransomware and data exfiltration scenario centered around this organizational dependency: ${deps.scenarios.cyberattackScenario}\nInclude injection timeline, participant instructions, and evaluation rubrics in markdown tables.`,
+      fallbackText: `# Tabletop Exercise Workbook\n\nORGANIZATION ASSUMPTIONS: Refer to Governance Pack Cover Page.\n\n${hierarchyTesting}\n\n## Scenario: ${deps.scenarios.cyberattackScenario}\n| Time | Inject | Expected Action |\n|---|---|---|\n| 09:00 | Helpdesk reports multiple users locked out of workstations. | CSIRT activated, initial triage. |\n| 10:30 | Threat actor emails CEO demanding 50 BTC. | Escalate to legal, draft holding statements. |\n| 14:00 | Actor publishes sample data on leak site. | Execute breach notification procedure. |`
     });
 
     // 7. Board Incident Report Template
     const hierarchyBoard = GovernanceHierarchyService.getHierarchyStatement('Board Pack');
+    const keyPersonRisks = KeyPersonRiskService.generateKeyPersonRisks(organizationContext);
+    
+    let boardIntelligence = `\nBOARD CONTEXT:\n`;
+    boardIntelligence += `- Primary Objective: ${organizationContext.primaryObjective || 'Operational Resilience'}\n`;
+    boardIntelligence += `- Board Sensitivities: ${organizationContext.boardSensitivities || 'Downtime, Regulatory penalties'}\n`;
+    boardIntelligence += `- Key Person Risks:\n  ${keyPersonRisks.map(r => '* ' + r).join('\n  ')}\n`;
+    boardIntelligence += `Prioritize the tone and investment asks around the Primary Objective and Board Sensitivities above.\n`;
+
     artifacts.push({
       id: 'ir_board',
       artifactType: 'Board Pack',
       title: 'Board Incident Report Template',
-      prompt: `${baseDirectives}\n\nDraft a Board Incident Report Template.\nInclude this exact hierarchy statement: "${hierarchyBoard}"\n\nThe Board Pack MUST contain EXACTLY these sections:\n### Executive Summary\n### Key Risks\n### Trend Since Previous Quarter\n### Residual Risk Heat Map\n### Open Actions\n### Investment Requirements\n### Decisions Requested From The Board\n### Key Dependencies\n### RAG Indicators\n### Emerging Concerns`,
+      prompt: `${baseDirectives}\n${boardIntelligence}\nDraft a Board Incident Report Template.\nInclude this exact hierarchy statement: "${hierarchyBoard}"\n\nThe Board Pack MUST contain EXACTLY these sections:\n### Executive Summary\n### Top Dependencies (Highlight vendors and infrastructure)\n### Vendor Concentration Risks\n### Key Person Risks (Detail the key person risks provided)\n### Trend Since Previous Quarter\n### Residual Risk Heat Map\n### Open Actions\n### Recommended Investments (Tie directly to Primary Objective)\n### Decisions Required\n### RAG Indicators\n### Emerging Concerns`,
       fallbackText: `# Board Incident Report Template\n\nORGANIZATION ASSUMPTIONS: Refer to Governance Pack Cover Page.\n\n${hierarchyBoard}\n\n### Executive Summary\n[Date] - [Brief description of the incident and threat actor attribution if known].\n\n### RAG Indicators\nOverall Status: RED.\n\n### Key Risks\nData exfiltration confirmed.\n\n### Open Actions\nDeploy enhanced EDR across fleet by [Target Completion Date].`
     });
 

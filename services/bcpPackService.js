@@ -4,17 +4,33 @@ import { DocumentCrossReferenceService } from './documentCrossReferenceService.j
 import { OwnershipService } from './ownershipService.js';
 import { SentenceVariationService } from './sentenceVariationService.js';
 import { OrganizationDependencyService } from './organizationDependencyService.js';
+import { KeyPersonRiskService } from './keyPersonRiskService.js';
 
 export class BcpPackService {
   static getArtifactDefinitions(frameworks, organizationContext) {
     const artifacts = [];
     
+    const deps = OrganizationDependencyService.getCriticalDependencies(organizationContext);
+    
+    let intelligenceDirectives = `\nORGANIZATIONAL INTELLIGENCE:\n`;
+    if (deps.vendorIntelligence.length > 0) {
+      intelligenceDirectives += `Vendor Threat Vectors:\n${deps.vendorIntelligence.map(v => `- ${v.name}: ${v.threats.join(', ')}`).join('\n')}\n`;
+    }
+    if (deps.productIntelligence.length > 0) {
+      intelligenceDirectives += `Product Operational Risks:\n${deps.productIntelligence.map(p => `- ${p.name}: ${p.risks.join(', ')}`).join('\n')}\n`;
+    }
+    if (deps.segmentIntelligence.length > 0) {
+      intelligenceDirectives += `Customer Segment Priorities (Use this to influence tone and focus):\n${deps.segmentIntelligence.map(s => `- ${s.name}: ${s.priorities.join(', ')}`).join('\n')}\n`;
+    }
+    intelligenceDirectives += `\nAvoid generic phrasing like "Cloud Outage" or "System Failure". Explicitly use the specific vendors, threats, and products listed above.\n`;
+
     const baseDirectives = `
 You are a Big 4 management consultant drafting a Business Continuity Governance Pack.
 Strictly output in Markdown format.
 
 ${SentenceVariationService.getLinguisticInstructions()}
 ${OwnershipService.getRaciDistribution()}
+${intelligenceDirectives}
 
 ANTI-HALLUCINATION: NEVER fabricate dates, exercises, incidents, historical tests, quarters, or metrics. Use placeholders like [Last Test Date], [Previous Quarter], [Target Completion Date], [Next Exercise Date].
 
@@ -64,13 +80,12 @@ ORGANIZATION ASSUMPTIONS: Assume the reader has read the Governance Pack Cover P
     });
 
     // 5. Scenario Workbook
-    const dependencies = OrganizationDependencyService.getCriticalDependencies(organizationContext);
     artifacts.push({
       id: 'bcp_scenario',
       artifactType: 'Workbook',
       title: 'Scenario Workbook',
-      prompt: `${baseDirectives}\n\nDraft a Scenario Workbook for tabletop exercises.\nInclude this exact hierarchy statement: "${hierarchyWorkbook}"\n\nDo not use generic scenarios like "Cloud Outage". Instead, build scenarios around these specific organizational dependencies:\n1. ${dependencies.cloudOutageScenario}\n2. ${dependencies.supplierDisruptionScenario}\n3. ${dependencies.cyberattackScenario}\n4. ${dependencies.keyPersonnelScenario}\n\nFor each scenario, generate markdown tables with: Trigger, Impact, Detection, Response pathways, and Recovery assumptions.`,
-      fallbackText: `# Scenario Workbook\n\nORGANIZATION ASSUMPTIONS: Refer to Governance Pack Cover Page.\n\n${hierarchyWorkbook}\n\n## 1. ${dependencies.cloudOutageScenario}\n| Trigger | Impact | Detection | Response | Recovery |\n|---|---|---|---|---|\n| Region Failure | Critical | Monitoring Alerts | Failover to secondary region | Confirm data consistency post-failover |`
+      prompt: `${baseDirectives}\n\nDraft a Scenario Workbook for tabletop exercises.\nInclude this exact hierarchy statement: "${hierarchyWorkbook}"\n\nDo not use generic scenarios like "Cloud Outage". Instead, build scenarios around these specific organizational dependencies:\n1. ${deps.scenarios.cloudOutageScenario}\n2. ${deps.scenarios.supplierDisruptionScenario}\n3. ${deps.scenarios.cyberattackScenario}\n\nFor each scenario, generate markdown tables with: Trigger, Impact, Detection, Response pathways, and Recovery assumptions.`,
+      fallbackText: `# Scenario Workbook\n\nORGANIZATION ASSUMPTIONS: Refer to Governance Pack Cover Page.\n\n${hierarchyWorkbook}\n\n## 1. ${deps.scenarios.cloudOutageScenario}\n| Trigger | Impact | Detection | Response | Recovery |\n|---|---|---|---|---|\n| Region Failure | Critical | Monitoring Alerts | Failover to secondary region | Confirm data consistency post-failover |`
     });
 
     // 6. Testing Program
@@ -85,11 +100,19 @@ ORGANIZATION ASSUMPTIONS: Assume the reader has read the Governance Pack Cover P
 
     // 7. Board Reporting Pack
     const hierarchyBoard = GovernanceHierarchyService.getHierarchyStatement('Board Pack');
+    const keyPersonRisks = KeyPersonRiskService.generateKeyPersonRisks(organizationContext);
+    
+    let boardIntelligence = `\nBOARD CONTEXT:\n`;
+    boardIntelligence += `- Primary Objective: ${organizationContext.primaryObjective || 'Operational Resilience'}\n`;
+    boardIntelligence += `- Board Sensitivities: ${organizationContext.boardSensitivities || 'Downtime, Regulatory penalties'}\n`;
+    boardIntelligence += `- Key Person Risks:\n  ${keyPersonRisks.map(r => '* ' + r).join('\n  ')}\n`;
+    boardIntelligence += `Prioritize the tone and investment asks around the Primary Objective and Board Sensitivities above.\n`;
+
     artifacts.push({
       id: 'bcp_board',
       artifactType: 'Board Pack',
       title: 'Business Continuity Board Report',
-      prompt: `${baseDirectives}\n\nDraft a Board Reporting Pack.\nInclude this exact hierarchy statement: "${hierarchyBoard}"\n\nThe Board Pack MUST contain EXACTLY these sections:\n### Executive Summary\n### Key Risks\n### Trend Since Previous Quarter\n### Residual Risk Heat Map\n### Open Actions\n### Investment Requirements\n### Decisions Requested From The Board\n### Key Dependencies\n### RAG Indicators\n### Emerging Concerns`,
+      prompt: `${baseDirectives}\n${boardIntelligence}\nDraft a Board Reporting Pack.\nInclude this exact hierarchy statement: "${hierarchyBoard}"\n\nThe Board Pack MUST contain EXACTLY these sections:\n### Executive Summary\n### Top Dependencies (Highlight vendors and infrastructure)\n### Vendor Concentration Risks\n### Key Person Risks (Detail the key person risks provided)\n### Trend Since Previous Quarter\n### Residual Risk Heat Map\n### Open Actions\n### Recommended Investments (Tie directly to Primary Objective)\n### Decisions Required\n### RAG Indicators\n### Emerging Concerns`,
       fallbackText: `# Board Reporting Pack\n\nORGANIZATION ASSUMPTIONS: Refer to Governance Pack Cover Page.\n\n${hierarchyBoard}\n\n### Executive Summary\nThe organization's resilience posture remains stable.\n\n### RAG Indicators\nOverall Status: GREEN.\n\n### Key Risks\nConcentration risk with primary cloud provider.\n\n### Open Actions\nComplete secondary region failover test by [Target Completion Date].`
     });
 

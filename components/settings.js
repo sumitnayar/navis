@@ -98,9 +98,21 @@ export class SettingsComponent {
                 </div>
               </div>
 
-              <div class="form-group">
-                <label>Customer Segments</label>
-                <input type="text" class="form-control" id="settings-customer-segments" value="${s.customerSegments || ''}" placeholder="e.g. Gaming, Fintech, E-commerce" />
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Customer Segments</label>
+                  <input type="text" class="form-control" id="settings-customer-segments" value="${s.customerSegments || ''}" placeholder="e.g. Gaming, Fintech, E-commerce" />
+                </div>
+                <div class="form-group">
+                  <label>Primary Objective</label>
+                  <select class="form-control" id="settings-primary-objective">
+                    <option value="Revenue Growth" ${s.primaryObjective === 'Revenue Growth' ? 'selected' : ''}>Revenue Growth</option>
+                    <option value="Customer Trust" ${s.primaryObjective === 'Customer Trust' ? 'selected' : ''}>Customer Trust</option>
+                    <option value="Operational Resilience" ${s.primaryObjective === 'Operational Resilience' ? 'selected' : ''}>Operational Resilience</option>
+                    <option value="Regulatory Compliance" ${s.primaryObjective === 'Regulatory Compliance' ? 'selected' : ''}>Regulatory Compliance</option>
+                    <option value="Innovation" ${s.primaryObjective === 'Innovation' ? 'selected' : ''}>Innovation</option>
+                  </select>
+                </div>
               </div>
 
               <h4 style="margin-top:20px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Technical Context</h4>
@@ -118,9 +130,15 @@ export class SettingsComponent {
                 <label>Critical Vendors</label>
                 <input type="text" class="form-control" id="settings-critical-vendors" value="${s.criticalVendors || ''}" placeholder="e.g. Cloudflare, MongoDB Atlas" />
               </div>
-              <div class="form-group">
-                <label>Critical Processes</label>
-                <input type="text" class="form-control" id="settings-critical-processes" value="${s.criticalProcesses || ''}" placeholder="e.g. Event ingestion, Attribution reporting" />
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Critical Processes</label>
+                  <input type="text" class="form-control" id="settings-critical-processes" value="${s.criticalProcesses || ''}" placeholder="e.g. Event ingestion, Attribution reporting" />
+                </div>
+                <div class="form-group">
+                  <label>Critical Assets</label>
+                  <input type="text" class="form-control" id="settings-critical-assets" value="${s.criticalAssets || ''}" placeholder="e.g. Production Database, Event Pipeline" />
+                </div>
               </div>
 
               <h4 style="margin-top:20px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Governance Context</h4>
@@ -138,13 +156,69 @@ export class SettingsComponent {
                   </select>
                 </div>
               </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Recovery Philosophy</label>
+                  <select class="form-control" id="settings-recovery-philosophy">
+                    <option value="Availability First" ${s.recoveryPhilosophy === 'Availability First' ? 'selected' : ''}>Availability First</option>
+                    <option value="Privacy First" ${s.recoveryPhilosophy === 'Privacy First' ? 'selected' : ''}>Privacy First</option>
+                    <option value="Compliance First" ${s.recoveryPhilosophy === 'Compliance First' ? 'selected' : ''}>Compliance First</option>
+                    <option value="Customer Experience First" ${s.recoveryPhilosophy === 'Customer Experience First' ? 'selected' : ''}>Customer Experience First</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Maturity Level</label>
+                  <select class="form-control" id="settings-maturity-level">
+                    <option value="Emerging" ${s.maturityLevel === 'Emerging' ? 'selected' : ''}>Emerging</option>
+                    <option value="Developing" ${s.maturityLevel === 'Developing' ? 'selected' : ''}>Developing</option>
+                    <option value="Established" ${s.maturityLevel === 'Established' ? 'selected' : ''}>Established</option>
+                    <option value="Advanced" ${s.maturityLevel === 'Advanced' ? 'selected' : ''}>Advanced</option>
+                  </select>
+                </div>
+              </div>
               <div class="form-group">
-                <label>Recovery Philosophy</label>
-                <select class="form-control" id="settings-recovery-philosophy">
-                  <option value="Availability-first" ${s.recoveryPhilosophy === 'Availability-first' ? 'selected' : ''}>Availability-first</option>
-                  <option value="Privacy-first" ${s.recoveryPhilosophy === 'Privacy-first' ? 'selected' : ''}>Privacy-first</option>
-                  <option value="Compliance-first" ${s.recoveryPhilosophy === 'Compliance-first' ? 'selected' : ''}>Compliance-first</option>
-                </select>
+                <label>Board Sensitivities</label>
+                <input type="text" class="form-control" id="settings-board-sensitivities" value="${s.boardSensitivities || ''}" placeholder="e.g. Vendor concentration, Reputation risk" />
+              </div>
+
+              <h4 style="margin-top:20px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Executive Roles</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>CEO</label>
+                  <input type="text" class="form-control" id="role-ceo" value="${s.executiveRoles?.ceo || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>COO</label>
+                  <input type="text" class="form-control" id="role-coo" value="${s.executiveRoles?.coo || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>CTO</label>
+                  <input type="text" class="form-control" id="role-cto" value="${s.executiveRoles?.cto || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>CISO</label>
+                  <input type="text" class="form-control" id="role-ciso" value="${s.executiveRoles?.ciso || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>DPO</label>
+                  <input type="text" class="form-control" id="role-dpo" value="${s.executiveRoles?.dpo || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>CRO</label>
+                  <input type="text" class="form-control" id="role-cro" value="${s.executiveRoles?.cro || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>BCM Lead</label>
+                  <input type="text" class="form-control" id="role-bcmLead" value="${s.executiveRoles?.bcmLead || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>Engineering Head</label>
+                  <input type="text" class="form-control" id="role-engineeringHead" value="${s.executiveRoles?.engineeringHead || ''}" placeholder="Name / Title" />
+                </div>
+                <div class="form-group">
+                  <label>Legal Counsel</label>
+                  <input type="text" class="form-control" id="role-legalCounsel" value="${s.executiveRoles?.legalCounsel || ''}" placeholder="Name / Title" />
+                </div>
               </div>
 
               <div style="display:flex;gap:12px;margin-top:16px;">
@@ -304,11 +378,26 @@ export class SettingsComponent {
         hostingRegion: container.querySelector('#settings-hosting-region') ? container.querySelector('#settings-hosting-region').value : '',
         criticalVendors: container.querySelector('#settings-critical-vendors') ? container.querySelector('#settings-critical-vendors').value : '',
         criticalProcesses: container.querySelector('#settings-critical-processes') ? container.querySelector('#settings-critical-processes').value : '',
+        criticalAssets: container.querySelector('#settings-critical-assets') ? container.querySelector('#settings-critical-assets').value : '',
         regulatoryExposure: container.querySelector('#settings-regulatory') ? container.querySelector('#settings-regulatory').value : '',
         riskAppetite: container.querySelector('#settings-risk-appetite') ? container.querySelector('#settings-risk-appetite').value : '',
         recoveryPhilosophy: container.querySelector('#settings-recovery-philosophy') ? container.querySelector('#settings-recovery-philosophy').value : '',
-        geminiApiKey: container.querySelector('#settings-api-key').value,
-        activeUserRole: container.querySelector('#settings-role').value
+        primaryObjective: container.querySelector('#settings-primary-objective') ? container.querySelector('#settings-primary-objective').value : '',
+        boardSensitivities: container.querySelector('#settings-board-sensitivities') ? container.querySelector('#settings-board-sensitivities').value : '',
+        maturityLevel: container.querySelector('#settings-maturity-level') ? container.querySelector('#settings-maturity-level').value : '',
+        geminiApiKey: container.querySelector('#settings-api-key') ? container.querySelector('#settings-api-key').value : '',
+        activeUserRole: container.querySelector('#settings-role') ? container.querySelector('#settings-role').value : '',
+        executiveRoles: {
+          ceo: container.querySelector('#role-ceo') ? container.querySelector('#role-ceo').value : '',
+          coo: container.querySelector('#role-coo') ? container.querySelector('#role-coo').value : '',
+          cto: container.querySelector('#role-cto') ? container.querySelector('#role-cto').value : '',
+          ciso: container.querySelector('#role-ciso') ? container.querySelector('#role-ciso').value : '',
+          dpo: container.querySelector('#role-dpo') ? container.querySelector('#role-dpo').value : '',
+          cro: container.querySelector('#role-cro') ? container.querySelector('#role-cro').value : '',
+          bcmLead: container.querySelector('#role-bcmLead') ? container.querySelector('#role-bcmLead').value : '',
+          engineeringHead: container.querySelector('#role-engineeringHead') ? container.querySelector('#role-engineeringHead').value : '',
+          legalCounsel: container.querySelector('#role-legalCounsel') ? container.querySelector('#role-legalCounsel').value : ''
+        }
       };
 
       await StorageService.saveSettings(updated);

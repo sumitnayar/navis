@@ -373,7 +373,11 @@ export class PolicyTemplateService {
       return matching.slice(0, 3).map(c => replaceVars(c.text)).join('\n\n');
     };
 
-    doc += `## 1. OBJECTIVE\n\nTo establish a robust governance framework ensuring compliance and operational security for ${companyName} acting as a ${role}.\n\n`;
+    const appetite = profile.riskAppetite || "Moderate";
+    const maturity = profile.maturityLevel || "Developing";
+    const philosophy = profile.recoveryPhilosophy || "Availability First";
+
+    doc += `## 1. OBJECTIVE & STRATEGIC CONTEXT\n\nTo establish a robust governance framework ensuring compliance and operational security for ${companyName} acting as a ${role}. This policy aligns with a **${appetite} risk appetite** and a **${philosophy}** operational philosophy, reflecting our current **${maturity}** maturity posture.\n\n`;
     doc += `## 2. PURPOSE\n\n${getClausesForSection(1) || 'This policy exists to mitigate risks associated with data processing.'}\n\n`;
     doc += `## 3. SCOPE\n\n${getClausesForSection(2) || 'Applies globally to all systems.'}\n\n`;
     doc += `## 4. POLICY HIERARCHY\n\nThis policy sits at Level 1 of the Governance Framework. It supersedes all departmental procedures and acts as the parent document for related IT and Security standards.\n\n`;

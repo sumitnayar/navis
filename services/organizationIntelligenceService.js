@@ -108,8 +108,10 @@ This Governance Pack establishes the definitive operating model and control envi
 
 | Attribute | Detail |
 | :--- | :--- |
+| **Primary Objective** | ${profile.primaryObjective || "Operational Resilience"} |
 | **Risk Appetite** | ${riskAppetite} |
 | **Recovery Philosophy** | ${recoveryPhilosophy} |
+| **Maturity Level** | ${profile.maturityLevel || "Developing"} |
 | **Critical Dependencies** | ${criticalDependencies} |
 
 ---

@@ -117,9 +117,24 @@ export class StorageService {
       hostingRegion: 'ap-south-1 (Mumbai), us-east-1 (N. Virginia)',
       criticalVendors: 'Cloudflare, MongoDB Atlas, Stripe, Datadog',
       criticalProcesses: 'Event Ingestion (10B+ events/mo), Attribution Calculation, Publisher Payouts',
+      criticalAssets: 'Production Databases, Event Kafka Clusters, Secrets Vault',
       regulatoryExposure: 'India (DPDP Act), EU (GDPR)',
       riskAppetite: 'Moderate',
-      recoveryPhilosophy: 'Availability-first'
+      recoveryPhilosophy: 'Availability First',
+      primaryObjective: 'Operational Resilience',
+      boardSensitivities: 'Vendor concentration, Reputation risk, Data breaches',
+      maturityLevel: 'Developing',
+      executiveRoles: {
+        ceo: 'Arun Kumar',
+        coo: 'Neha Sharma',
+        cto: 'Vikram Singh',
+        ciso: 'Priya Desai',
+        dpo: 'Sanjay Patel',
+        cro: 'Rahul Gupta',
+        bcmLead: 'Anjali Menon',
+        engineeringHead: 'Amit Verma',
+        legalCounsel: 'Nisha Reddy'
+      }
     };
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));
     localStorage.setItem(STORAGE_KEYS.SEEDED, 'true');

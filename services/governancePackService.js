@@ -2,6 +2,7 @@ import { BcpPackService } from './bcpPackService.js';
 import { IncidentResponsePackService } from './incidentResponsePackService.js';
 import { VendorRiskPackService } from './vendorRiskPackService.js';
 import { OrganizationIntelligenceService } from './organizationIntelligenceService.js';
+import { KeyPersonRiskService } from './keyPersonRiskService.js';
 
 export class GovernancePackService {
   /**
@@ -37,9 +38,19 @@ export class GovernancePackService {
 
     const coverPageMarkdown = OrganizationIntelligenceService.generateCoverPage(domain, organizationContext, frameworks);
 
+    const keyPersonRisks = KeyPersonRiskService.generateKeyPersonRisks(organizationContext);
+    
+    let boardIntelligence = `\nBOARD CONTEXT:\n`;
+    boardIntelligence += `- Primary Objective: ${organizationContext.primaryObjective || 'Operational Resilience'}\n`;
+    boardIntelligence += `- Board Sensitivities: ${organizationContext.boardSensitivities || 'Downtime, Regulatory penalties'}\n`;
+    boardIntelligence += `- Key Person Risks:\n  ${keyPersonRisks.map(r => '* ' + r).join('\n  ')}\n`;
+    boardIntelligence += `Prioritize the tone and investment asks around the Primary Objective and Board Sensitivities above.\n`;
+
     // AI Prompt for the Executive Summary, relying on the cover page data
     const execSummaryPrompt = `You are a Big 4 management consultant drafting an Executive Summary for a ${domainNames[domain]} Governance Pack.
 Strictly output in Markdown format.
+
+${boardIntelligence}
 
 Never fabricate dates, exercises, incidents, metrics, or quarters. Use placeholders like [Last Test Date], [Previous Quarter], [Target Completion Date], [Next Exercise Date].
 
