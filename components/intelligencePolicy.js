@@ -806,9 +806,13 @@ export class IntelligencePolicyComponent {
             <span>${entry.is_demo ? '[Demo Standard]' : ''}</span>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-weight:600;">
-            <span style="color:var(--color-critical);">⚠️ ${counts.risks || 0} risks</span>
-            <span style="color:var(--color-indigo-hover);">🔧 ${counts.controls || 0} controls</span>
-            <span style="color:var(--color-safe);">✓ ${entry.changesAccepted || 0} accepted</span>
+            ${entry.documentType === 'Governance Pack' && entry.artifacts ? `
+              <span style="color:var(--color-indigo);">📄 ${entry.artifacts.length} artifacts included</span>
+            ` : `
+              <span style="color:var(--color-critical);">⚠️ ${counts.risks || 0} risks</span>
+              <span style="color:var(--color-indigo-hover);">🔧 ${counts.controls || 0} controls</span>
+              <span style="color:var(--color-safe);">✓ ${entry.changesAccepted || 0} accepted</span>
+            `}
           </div>
         </div>
       </div>

@@ -876,6 +876,44 @@ export class StorageService {
     return entry;
   }
 
+  static async saveGovernancePack(pack) {
+    const packEntry = {
+      id: `pack-${Date.now()}`,
+      documentName: pack.packName,
+      documentType: 'Governance Pack',
+      documentSummary: `Complete governance pack for ${pack.domain} domain, containing ${pack.artifacts.length} interconnected artifacts.`,
+      uploadDate: new Date().toISOString(),
+      status: 'active',
+      domain: pack.domain,
+      artifacts: pack.artifacts // Parent-child relationship
+    };
+
+    if (isCloudMode) {
+      try {
+        const orgId = await this.getActiveOrgId();
+        const dbEntry = {
+          id: packEntry.id,
+          organization_id: orgId,
+          document_name: packEntry.documentName,
+          document_type: packEntry.documentType,
+          document_summary: packEntry.documentSummary,
+          upload_date: packEntry.uploadDate,
+          raw_extraction: JSON.stringify(pack.artifacts),
+          status: packEntry.status
+        };
+        const { error } = await supabaseClient.from('document_vault').upsert(dbEntry);
+        if (error) throw error;
+        return packEntry;
+      } catch (e) {
+        console.error('Supabase pack save failed, falling back to local:', e);
+      }
+    }
+    const vault = JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCUMENT_VAULT) || '[]');
+    vault.push(packEntry);
+    localStorage.setItem(STORAGE_KEYS.DOCUMENT_VAULT, JSON.stringify(vault));
+    return packEntry;
+  }
+
   // --- CHANGE QUEUE (Risk Intelligence Desk) ---
 
   static async getChangeQueue() {

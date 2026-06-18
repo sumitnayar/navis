@@ -210,6 +210,9 @@ export class PolicyStudioComponent {
         <button class="subtab-btn ${this.activeSubTab === 'versions' ? 'active' : ''}" data-subtab="versions" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'versions' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'versions' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
           Version History
         </button>
+        <button class="subtab-btn ${this.activeSubTab === 'packs' ? 'active' : ''}" data-subtab="packs" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'packs' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'packs' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
+          Governance Packs
+        </button>
       </div>
 
       <div class="policy-studio-body" id="tab-body-container">
@@ -302,6 +305,8 @@ export class PolicyStudioComponent {
       bodyHtml = this.renderUpgradeTab();
     } else if (this.activeSubTab === 'refinement') {
       bodyHtml = this.renderRefinementTab();
+    } else if (this.activeSubTab === 'packs') {
+      bodyHtml = this.renderGovernancePacksTab();
     } else {
       bodyHtml = this.renderVersionsTab();
     }
@@ -2748,5 +2753,134 @@ Output ONLY the complete governance document. No conversational introductions. N
         });
       });
     }
+
+    // ─── TAB: GOVERNANCE PACKS EVENTS ────────────────────────────────────
+    if (this.activeSubTab === 'packs') {
+      const packDomainSelect = container.querySelector('#pack-domain-select');
+      packDomainSelect?.addEventListener('change', () => {
+        this.packDomain = packDomainSelect.value;
+        this.render(container);
+      });
+
+      const generatePackBtn = container.querySelector('#generate-pack-btn');
+      generatePackBtn?.addEventListener('click', async () => {
+        if (this.isGeneratingPack) return;
+        this.isGeneratingPack = true;
+        this.render(container);
+        
+        try {
+          const { GovernancePackService } = await import('../services/governancePackService.js');
+          this.generatedPack = await GovernancePackService.generatePack(this.packDomain || 'bcp', this.selectedFrameworks, this.genProfile);
+        } catch (err) {
+          console.error("Pack generation failed:", err);
+          alert("Failed to generate Governance Pack. See console for details.");
+        } finally {
+          this.isGeneratingPack = false;
+          this.render(container);
+        }
+      });
+
+      const saveVaultBtn = container.querySelector('#save-pack-vault-btn');
+      saveVaultBtn?.addEventListener('click', async () => {
+        if (!this.generatedPack) return;
+        try {
+          const { StorageService } = await import('../services/storageService.js');
+          await StorageService.saveGovernancePack(this.generatedPack);
+          alert(`Governance Pack saved to Vault as ${this.generatedPack.packName}!`);
+        } catch(err) {
+          console.error("Failed to save pack to vault:", err);
+          alert("Failed to save pack to vault.");
+        }
+      });
+
+      container.querySelectorAll('.pack-preview-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          this.packPreviewIndex = idx;
+          this.render(container);
+        });
+      });
+
+      container.querySelectorAll('.pack-export-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          const artifact = this.generatedPack.artifacts[idx];
+          const blob = new Blob([artifact.documentText], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${artifact.title.replace(/\s+/g, '_')}.md`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      });
+
+      const closePackModalBtn = container.querySelector('#close-pack-modal');
+      closePackModalBtn?.addEventListener('click', () => {
+        this.packPreviewIndex = null;
+        this.render(container);
+      });
+    }
+  }
+
+  renderGovernancePacksTab() {
+    let packCards = '';
+    if (this.generatedPack && this.generatedPack.artifacts) {
+      this.generatedPack.artifacts.forEach((artifact, index) => {
+        packCards += `
+          <div class="glass-panel" style="margin-bottom:15px; padding:15px; border-left:4px solid var(--color-indigo);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="margin:0; font-size:16px;">${artifact.title} <span style="font-size:11px; font-weight:normal; color:var(--text-muted); background:var(--background-alt); padding:2px 6px; border-radius:4px; margin-left:8px;">${artifact.artifactType}</span></h3>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-secondary pack-preview-btn" data-idx="${index}">Preview</button>
+                <button class="btn btn-secondary pack-export-btn" data-idx="${index}">Export</button>
+              </div>
+            </div>
+            <p style="margin:0; font-size:13px; color:var(--text-secondary);">${artifact.documentText.substring(0, 120)}...</p>
+          </div>
+        `;
+      });
+    }
+
+    return `
+      <div class="glass-panel" style="margin-bottom: 20px;">
+        <h2 style="margin-bottom: 15px;">Governance Packs Orchestration</h2>
+        <p style="color:var(--text-secondary); margin-bottom: 20px;">Generate a complete, interconnected governance system instead of an isolated policy.</p>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Select Domain Pack</label>
+          <select class="form-select" id="pack-domain-select">
+            <option value="bcp" ${this.packDomain === 'bcp' ? 'selected' : ''}>Business Continuity Governance Pack</option>
+            <option value="ir" ${this.packDomain === 'ir' ? 'selected' : ''}>Incident Response Governance Pack</option>
+            <option value="vendor" ${this.packDomain === 'vendor' ? 'selected' : ''}>Vendor Risk Governance Pack</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+          <button class="btn btn-primary" id="generate-pack-btn" ${this.isGeneratingPack ? 'disabled' : ''}>
+            ${this.isGeneratingPack ? '<svg class="spinner" viewBox="0 0 50 50" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"><circle></svg> Generating Pack...' : 'Generate Full Pack'}
+          </button>
+          ${this.generatedPack ? `<button class="btn btn-secondary" id="save-pack-vault-btn">Save Pack to Vault</button>` : ''}
+        </div>
+      </div>
+      
+      ${this.generatedPack ? `
+        <div class="pack-artifacts-container">
+          <h2 style="margin-bottom: 15px;">Generated Artifacts (${this.generatedPack.artifacts.length})</h2>
+          ${packCards}
+        </div>
+      ` : ''}
+
+      <!-- Pack Preview Modal -->
+      ${this.packPreviewIndex !== undefined && this.packPreviewIndex !== null ? `
+        <div class="modal" style="display:block; background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100%; height:100%; z-index:1000; padding:40px;">
+          <div class="glass-panel" style="max-width:900px; margin:0 auto; max-height:80vh; overflow-y:auto; position:relative;">
+            <button class="btn btn-secondary" id="close-pack-modal" style="position:absolute; top:20px; right:20px;">Close</button>
+            <h2 style="margin-top:0;">${this.generatedPack.artifacts[this.packPreviewIndex].title}</h2>
+            <div style="font-family:monospace; white-space:pre-wrap; font-size:13px; color:var(--text-secondary); margin-top:20px; padding:15px; background:var(--background-alt); border-radius:6px;">${this.generatedPack.artifacts[this.packPreviewIndex].documentText}</div>
+          </div>
+        </div>
+      ` : ''}
+    `;
   }
 }
