@@ -777,8 +777,7 @@ export class StorageService {
 
         return updated;
       } catch (err) {
-        alert(`Supabase RLS Violation: Writing denied. (${err.message})`);
-        throw err;
+        console.warn(`Supabase write failed: ${err.message}. Falling back to local storage.`);
       }
     }
 
