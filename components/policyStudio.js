@@ -34,22 +34,8 @@ export class PolicyStudioComponent {
     // Initialize scaffolded GRC organization memory
     OrganizationMemoryService.getMemory();
     
-    // Load cached profile or default to Trackier SaaS configuration
-    const storedProfile = localStorage.getItem('navis_v3_company_profile');
-    this.genProfile = storedProfile ? JSON.parse(storedProfile) : {
-      companyName: 'Trackier',
-      industry: 'SaaS',
-      country: 'India',
-      customerGeography: 'India + EU',
-      employeeCount: '150',
-      b2bB2c: 'B2B',
-      controllerProcessor: 'Processor + Fiduciary',
-      cloudProvider: 'AWS',
-      specialCategories: 'None',
-      dpoOfficer: 'Sumit Nayar',
-      grievanceOfficer: 'Sumit Nayar',
-      processingPurpose: 'Enterprise SaaS tracking analytics and event attribution metadata operations'
-    };
+    // Sync Policy Studio profile with central Settings to ensure single source of truth
+    this.genProfile = { ...this.state.settings };
     
     // Clause lists & filters
     this.clauseGroupFilter = 'all';
@@ -192,8 +178,11 @@ export class PolicyStudioComponent {
 
       <!-- SUBTAB STRIP -->
       <div class="subtab-strip no-print" style="display:flex;gap:4px;border-bottom:1px solid var(--border-color);margin-bottom:20px;padding-bottom:1px;">
+        <button class="subtab-btn ${this.activeSubTab === 'library' ? 'active' : ''}" data-subtab="library" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'library' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'library' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
+          Document Library
+        </button>
         <button class="subtab-btn ${this.activeSubTab === 'generator' ? 'active' : ''}" data-subtab="generator" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'generator' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'generator' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
-          Library & Generator
+          Generator
         </button>
         <button class="subtab-btn ${this.activeSubTab === 'intelligence' ? 'active' : ''}" data-subtab="intelligence" style="background:none;border:none;padding:10px 20px;font-size:12px;font-weight:600;color:${this.activeSubTab === 'intelligence' ? 'var(--color-indigo)' : 'var(--text-secondary)'};border-bottom:2px solid ${this.activeSubTab === 'intelligence' ? 'var(--color-indigo)' : 'transparent'};cursor:pointer;">
           Clause Intelligence
@@ -284,7 +273,9 @@ export class PolicyStudioComponent {
     const bannerHtml = this.selectedDocId ? this.renderLifecycleBanner(lifecycleStatus) : "";
 
     let bodyHtml = "";
-    if (this.activeSubTab === 'generator') {
+    if (this.activeSubTab === 'library') {
+      bodyHtml = this.renderDocumentLibraryTab();
+    } else if (this.activeSubTab === 'generator') {
       bodyHtml = this.renderGeneratorTab();
     } else if (this.activeSubTab === 'intelligence') {
       bodyHtml = this.renderIntelligenceTab();
@@ -1631,7 +1622,8 @@ export class PolicyStudioComponent {
       container.querySelectorAll('.profile-field').forEach(field => {
         field.addEventListener('input', () => {
           this.genProfile[field.dataset.key] = field.value;
-          localStorage.setItem('navis_v3_company_profile', JSON.stringify(this.genProfile));
+          this.state.settings = { ...this.state.settings, ...this.genProfile };
+          StorageService.saveSettings(this.state.settings);
         });
       });
 
@@ -2979,11 +2971,165 @@ Output ONLY the complete governance document. No conversational introductions. N
       if (artifact.status === 'pending') {
         artifact.status = 'generating';
         this.render(container);
-        await this.generateSingleArtifact(i, container);
+        await this.handleUpgradeAnalysis(container);
       }
     }
+
+    // Upload Interface Binding
+    const fileInput = container.querySelector('#ingest-file-input');
+    if (fileInput) {
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Reset file input so same file can be selected again if it failed
+        fileInput.value = '';
+
+        if (file.size > 3 * 1024 * 1024) {
+          alert("File exceeds 3MB limit. Please split the document or contact support.");
+          return;
+        }
+
+        const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+        if (!validTypes.includes(file.type) && !file.name.endsWith('.pdf') && !file.name.endsWith('.docx') && !file.name.endsWith('.txt')) {
+          alert("Unsupported file type. Use PDF, DOCX, or TXT.");
+          return;
+        }
+
+        this.isUploading = true;
+        this.uploadStatusText = "Reading file...";
+        this.uploadError = null;
+        this.render(container);
+
+        try {
+          // Read as Base64
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = async () => {
+            const base64String = reader.result.split(',')[1];
+            const orgId = this.state.settings.organization_id || '00000000-0000-0000-0000-000000000000';
+
+            this.uploadStatusText = "Extracting text... Chunking... Embedding... Storing... Summarising...";
+            this.render(container);
+
+            const response = await fetch('/api/documents/ingest', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fileName: file.name,
+                mimeType: file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'text/plain'),
+                base64Data: base64String,
+                organizationId: orgId
+              })
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+              throw new Error(result.error || 'Ingestion failed.');
+            }
+
+            // Success
+            this.isUploading = false;
+            // Force refresh of document list by fetching from StorageService
+            this.policyDocs = null; 
+            this.render(container);
+          };
+          reader.onerror = (err) => {
+            throw new Error("Failed to read file on client.");
+          };
+        } catch (err) {
+          this.isUploading = false;
+          this.uploadError = err.message;
+          this.render(container);
+        }
+      });
+    }
+
+    container.querySelectorAll('.view-doc-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.target.dataset.id;
+        // Optionally show details or summary in a modal
+      });
+    });
+
     this.isGeneratingPack = false;
     this.render(container);
+  }
+
+  renderDocumentLibraryTab() {
+    // If not fetched yet, fetch ingested documents
+    if (!this.policyDocs) {
+      StorageService.getPolicyDocuments().then(docs => {
+        this.policyDocs = docs.filter(d => d.document_type === 'Ingested Document');
+        this.render(document.querySelector('#app-container .component-container') || document.body);
+      });
+      return `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Loading Document Library...</div>`;
+    }
+
+    let uploadSectionHtml = `
+      <div class="glass-panel" style="margin-bottom: 20px;">
+        <h3 class="dashboard-card-title">Upload Ground Truth</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">Upload existing SOPs, policies, or process documentation to power the AI ingestion engine. Supported formats: PDF, DOCX, TXT. (Max size: 3MB per file)</p>
+        
+        <div style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px; text-align: center; position: relative;">
+          ${this.isUploading ? `
+            <div style="color: var(--color-indigo); font-weight: 500;">
+              <svg class="spinner" viewBox="0 0 50 50" style="width:24px;height:24px;margin:0 auto 10px;animation:spin 1s linear infinite;display:block;">
+                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke="currentColor"></circle>
+              </svg>
+              ${this.uploadStatusText || 'Uploading...'}
+            </div>
+          ` : `
+            <input type="file" id="ingest-file-input" accept=".pdf,.docx,.txt" style="opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;" />
+            <div style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;">📄</div>
+            <div style="font-weight: 600; color: #0a1628;">Drag & drop a file here</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">or click to browse</div>
+          `}
+        </div>
+        ${this.uploadError ? `<div style="color: var(--color-critical); font-size: 13px; margin-top: 10px; padding: 10px; background: rgba(220, 38, 38, 0.1); border-radius: 4px;">Error: ${this.uploadError}</div>` : ''}
+      </div>
+    `;
+
+    let docsHtml = `
+      <div class="glass-panel">
+        <h3 class="dashboard-card-title">Ingested Documents</h3>
+        ${this.policyDocs.length === 0 ? `
+          <div style="text-align:center; padding: 30px; color: var(--text-muted); font-size: 13px;">No documents ingested yet.</div>
+        ` : `
+          <table style="width:100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-secondary);">
+                <th style="padding: 12px 8px; font-weight: 600;">Name</th>
+                <th style="padding: 12px 8px; font-weight: 600;">Type</th>
+                <th style="padding: 12px 8px; font-weight: 600;">Upload Date</th>
+                <th style="padding: 12px 8px; font-weight: 600;">Status</th>
+                <th style="padding: 12px 8px; font-weight: 600;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.policyDocs.map(d => `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 12px 8px; color: #0a1628; font-weight: 500;">
+                    ${d.title}
+                    ${d.summary ? `<div style="font-size:11px; color:var(--text-muted); margin-top:4px; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${d.summary}</div>` : ''}
+                  </td>
+                  <td style="padding: 12px 8px; color: var(--text-secondary);">${d.mime_type.split('/')[1] || d.mime_type}</td>
+                  <td style="padding: 12px 8px; color: var(--text-secondary);">${new Date(d.created_at).toLocaleDateString()}</td>
+                  <td style="padding: 12px 8px;">
+                    <span style="background: #16a34a20; color: #16a34a; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${d.status}</span>
+                  </td>
+                  <td style="padding: 12px 8px;">
+                    <button class="btn btn-secondary btn-sm view-doc-btn" data-id="${d.id}">View</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `}
+      </div>
+    `;
+
+    return `<div style="max-width: 900px; margin: 0 auto;">${uploadSectionHtml}${docsHtml}</div>`;
   }
 
   async generateSingleArtifact(index, container) {

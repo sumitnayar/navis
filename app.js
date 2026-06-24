@@ -18,6 +18,7 @@ import { BoardQAComponent } from './components/boardQA.js';
 import { IntelligencePolicyComponent } from './components/intelligencePolicy.js';
 import { BoardPackComponent } from './components/boardPack.js';
 import { PolicyStudioComponent } from './components/policyStudio.js?v=5';
+import { GovernanceMapComponent } from './components/governanceMap.js';
 import { PublicWebsite } from './components/publicWebsite.js';
 
 const TAB_ROUTES = {
@@ -36,7 +37,8 @@ const TAB_ROUTES = {
   controls: '/controls',
   actions: '/actions',
   culture: '/culture',
-  settings: '/settings'
+  settings: '/settings',
+  governanceMap: '/governance-map'
 };
 
 const PROTECTED_ROUTES = {
@@ -63,7 +65,8 @@ const PROTECTED_ROUTES = {
   '/controls': 'controls',
   '/actions': 'actions',
   '/culture': 'culture',
-  '/settings': 'settings'
+  '/settings': 'settings',
+  '/governance-map': 'governanceMap'
 };
 
 const PUBLIC_WEBSITE_ROUTES = new Set([
@@ -79,9 +82,9 @@ const PUBLIC_WEBSITE_ROUTES = new Set([
 const PUBLIC_ROUTES = new Set([...PUBLIC_WEBSITE_ROUTES, '/login']);
 
 const MODE_TABS = {
-  board: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
-  intelligence: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
-  builder: ['dashboard', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack']
+  board: ['dashboard', 'governanceMap', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
+  intelligence: ['dashboard', 'governanceMap', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack'],
+  builder: ['dashboard', 'governanceMap', 'intelligencePolicy', 'policyStudio', 'boardQA', 'objectives', 'scenario', 'network', 'portfolio', 'boardPack']
 };
 
 const TAB_LABELS = {
@@ -93,7 +96,8 @@ const TAB_LABELS = {
   scenario: 'Board Decision Room',
   network: 'Cascade Map',
   portfolio: 'Portfolio Mapper',
-  boardPack: 'Board Pack'
+  boardPack: 'Board Pack',
+  governanceMap: 'Governance Map'
 };
 
 function getCurrentPath() {
@@ -667,7 +671,7 @@ class RiskOSApplication {
       
       this.components = {
         dashboard: DashboardComponent,
-        boardQA: BoardQAComponent,
+        governanceMap: GovernanceMapComponent,
         intelligencePolicy: IntelligencePolicyComponent,
         policyStudio: PolicyStudioComponent,
         objectives: ObjectivesComponent,

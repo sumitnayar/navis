@@ -232,6 +232,7 @@ CREATE TABLE IF NOT EXISTS public.policy_documents (
     status TEXT NOT NULL CHECK (status IN ('Uploaded', 'Processing', 'Ready', 'Failed')),
     extracted_text TEXT,
     summary TEXT,
+    domain TEXT, -- Added for Phase 2: Governance Map fixed domains
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -259,3 +260,204 @@ CREATE TABLE IF NOT EXISTS public.policy_questions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ==========================================
+-- 5. LAYER 0: ORGANIZATIONAL INTELLIGENCE
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.organizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Core org graph nodes
+CREATE TABLE IF NOT EXISTS public.org_departments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  name TEXT NOT NULL,
+  head_name TEXT,
+  head_title TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.org_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  department_id UUID REFERENCES public.org_departments(id),
+  role_title TEXT NOT NULL,
+  person_name TEXT,
+  is_policy_owner BOOLEAN DEFAULT FALSE,
+  is_approver BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.org_committees (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  name TEXT NOT NULL,
+  chair_role_id UUID REFERENCES public.org_roles(id),
+  members JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.risk_register (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  risk_name TEXT NOT NULL,
+  risk_domain TEXT NOT NULL,
+  risk_description TEXT,
+  likelihood TEXT CHECK (likelihood IN ('Low','Medium','High','Critical')),
+  impact TEXT CHECK (impact IN ('Low','Medium','High','Critical')),
+  owner_role_id UUID REFERENCES public.org_roles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.controls (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  control_id TEXT NOT NULL, -- e.g. IAM-01
+  control_name TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  implementation_status TEXT CHECK (implementation_status IN ('Not Started','Partial','Implemented','Verified')),
+  owner_role_id UUID REFERENCES public.org_roles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.kris (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  kri_name TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  current_value TEXT,
+  threshold TEXT,
+  status TEXT CHECK (status IN ('Normal','Warning','Breach')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.regulations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  regulation_name TEXT NOT NULL, -- ISO 27001, SOC 2, DPDP, etc.
+  applicable BOOLEAN DEFAULT TRUE,
+  certification_status TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.vendors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  vendor_name TEXT NOT NULL,
+  tier TEXT CHECK (tier IN ('Critical','High','Medium','Low')),
+  last_review_date DATE,
+  owner_role_id UUID REFERENCES public.org_roles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.tech_stack (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  system_name TEXT NOT NULL,
+  category TEXT, -- Cloud, SaaS, On-Prem, etc.
+  data_classification TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Relationship: Risk to Policy (traceability)
+CREATE TABLE IF NOT EXISTS public.risk_policy_map (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES public.organizations(id),
+  risk_id UUID REFERENCES public.risk_register(id),
+  policy_id UUID REFERENCES public.policy_documents(id),
+  control_ids UUID[], -- array of control IDs
+  regulation_ids UUID[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Global org config
+CREATE TABLE IF NOT EXISTS public.org_global_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID UNIQUE REFERENCES public.organizations(id),
+  company_name TEXT,
+  logo_url TEXT,
+  primary_font TEXT DEFAULT 'Inter',
+  brand_color TEXT DEFAULT '#1a1a2e',
+  industry TEXT,
+  employee_count INTEGER,
+  hq_location TEXT,
+  certifications_active JSONB, -- ["ISO 27001", "SOC 2"]
+  certifications_inprogress JSONB,
+  us_customers BOOLEAN DEFAULT FALSE,
+  remote_employee_percentage INTEGER,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================
+-- 6. PHASE 3: RAG RETRIEVAL FUNCTION
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION match_policy_chunks(
+  query_embedding vector(1536),
+  match_threshold float,
+  match_count int,
+  org_id uuid
+)
+RETURNS TABLE (
+  id uuid,
+  chunk_text text,
+  section_title text,
+  similarity float
+)
+LANGUAGE sql STABLE
+AS $$
+  SELECT
+    id,
+    chunk_text,
+    section_title,
+    1 - (embedding <=> query_embedding) AS similarity
+  FROM policy_document_chunks
+  WHERE organization_id = org_id
+    AND 1 - (embedding <=> query_embedding) > match_threshold
+$$;
+
+-- ==========================================
+-- 7. ORGANISATIONAL IDENTITY LAYER
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.org_identity (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID UNIQUE REFERENCES organizations(id),
+  
+  -- Business model
+  business_model TEXT CHECK (business_model IN ('B2B', 'B2C', 'B2B2C', 'Internal')),
+  business_model_description TEXT,
+  primary_industry TEXT,
+  primary_sub_sector TEXT,
+  
+  -- Data role classification
+  data_role TEXT CHECK (data_role IN ('Controller', 'Processor', 'Dual Role')),
+  controller_data_categories TEXT[], -- what data the org controls
+  processor_data_categories TEXT[], -- what data the org processes on behalf of clients
+  dual_role_explanation TEXT, -- plain language explanation of the split
+  
+  -- Client relationship context
+  client_description TEXT, -- who clients are, what they send
+  processing_activities TEXT, -- what the org does with client data
+  dpa_in_place BOOLEAN DEFAULT FALSE, -- are Data Processing Agreements in place with clients
+  
+  -- Jurisdictional footprint
+  operating_jurisdictions TEXT[], -- where the org operates
+  client_jurisdictions TEXT[], -- where clients are based
+  data_residency TEXT, -- where data is stored
+  
+  -- Data categories
+  data_categories_processed TEXT[], -- personal, sensitive, financial, health, children
+  
+  -- Data flow description
+  data_flow_description TEXT, -- plain language: how data moves through the org
+  
+  -- Regulatory priority
+  primary_regulations TEXT[], -- top 3 regulations most relevant given the above
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);

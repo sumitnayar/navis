@@ -20,7 +20,7 @@ const STORAGE_KEYS = {
   SCENARIOS: 'navis_v3_scenarios',
   CULTURE: 'navis_v3_culture',
   TRENDS: 'navis_v3_trends',
-  SEEDED: 'navis_v3_seeded_flag_v3',
+  SEEDED: 'navis_v3_demo_seeded',
   DOCUMENT_VAULT: 'navis_v3_document_vault',
   CHANGE_QUEUE:   'navis_v3_change_queue',
   POLICY_DOCUMENTS: 'navis_v3_policy_documents',
@@ -84,7 +84,13 @@ export class StorageService {
   static init() {
     const isSeeded = localStorage.getItem(STORAGE_KEYS.SEEDED);
     if (!isSeeded) {
-      this.resetToDefaults();
+      const existingRisks = localStorage.getItem(STORAGE_KEYS.RISKS);
+      if (!existingRisks || JSON.parse(existingRisks).length === 0) {
+        this.resetToDefaults();
+      } else {
+        // If they have existing data but no flag, set the flag so we don't overwrite later
+        localStorage.setItem(STORAGE_KEYS.SEEDED, 'true');
+      }
     }
     const isPolicySeeded = localStorage.getItem(STORAGE_KEYS.POLICY_SEEDED);
     if (!isPolicySeeded) {
@@ -138,6 +144,12 @@ export class StorageService {
     };
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));
     localStorage.setItem(STORAGE_KEYS.SEEDED, 'true');
+
+    // Remove policy data so it gets re-seeded on next init
+    localStorage.removeItem(STORAGE_KEYS.POLICY_DOCUMENTS);
+    localStorage.removeItem(STORAGE_KEYS.POLICY_CHUNKS);
+    localStorage.removeItem(STORAGE_KEYS.POLICY_QUESTIONS);
+    localStorage.removeItem(STORAGE_KEYS.POLICY_SEEDED);
   }
 
   // --- RISKS CRUD WITH AUTOMATIC CONVERSION ---
@@ -712,7 +724,10 @@ export class StorageService {
           const localKey = localStorage.getItem('navis_v3_gemini_api_key') || '';
           const localRole = localStorage.getItem('navis_v3_active_user_role') || s.active_user_role || 'CRO (Chief Risk Officer)';
 
+          const localSettings = JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS) || '{}');
+          
           return {
+            ...localSettings, // Merge local-only fields (like products, criticalVendors, etc.)
             brandName: s.brand_name,
             companyName: s.company_name,
             revenueBracket: s.revenue_bracket,
@@ -790,6 +805,7 @@ export class StorageService {
           }
         }
 
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
         return updated;
       } catch (err) {
         console.warn(`Supabase write failed: ${err.message}. Falling back to local storage.`);
@@ -798,6 +814,153 @@ export class StorageService {
 
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(updated));
     return updated;
+  }
+
+  // --- LAYER 0: GLOBAL CONFIG ---
+
+  static async getGlobalConfig() {
+    if (isCloudMode) {
+      try {
+        const orgId = await this.getActiveOrgId();
+        const { data, error } = await supabaseClient
+          .from('org_global_config')
+          .select('*')
+          .eq('organization_id', orgId);
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          return data[0];
+        }
+      } catch (e) {
+        console.warn("Failed to fetch global config from Supabase, falling back to local:", e);
+      }
+    }
+    
+    // Fallback to local storage if not in cloud mode or fetch fails
+    const local = localStorage.getItem('navis_layer0_global_config');
+    return local ? JSON.parse(local) : {
+      company_name: '',
+      logo_url: '',
+      primary_font: 'Inter',
+      brand_color: '#1a1a2e',
+      industry: '',
+      employee_count: 0,
+      hq_location: '',
+      certifications_active: [],
+      certifications_inprogress: [],
+      us_customers: false,
+      remote_employee_percentage: 0
+    };
+  }
+
+  static async saveGlobalConfig(config) {
+    if (isCloudMode) {
+      try {
+        const orgId = await this.getActiveOrgId();
+        
+        // Check if config exists for upsert behavior logic
+        const { data: existingData } = await supabaseClient
+          .from('org_global_config')
+          .select('id')
+          .eq('organization_id', orgId);
+          
+        const dbPayload = {
+          organization_id: orgId,
+          ...config,
+          updated_at: new Date().toISOString()
+        };
+        
+        if (existingData && existingData.length > 0) {
+          dbPayload.id = existingData[0].id;
+        }
+
+        const { error } = await supabaseClient
+          .from('org_global_config')
+          .upsert(dbPayload);
+          
+        if (error) throw error;
+      } catch (e) {
+        console.warn("Failed to save global config to Supabase, saving locally:", e);
+      }
+    }
+    
+    localStorage.setItem('navis_layer0_global_config', JSON.stringify(config));
+    return config;
+  }
+
+  static async getOrgIdentity() {
+    if (isCloudMode) {
+      try {
+        const orgId = await this.getActiveOrgId();
+        const { data, error } = await supabaseClient
+          .from('org_identity')
+          .select('*')
+          .eq('organization_id', orgId);
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          return data[0];
+        }
+      } catch (e) {
+        console.warn("Failed to fetch org identity from Supabase, falling back to local:", e);
+      }
+    }
+    
+    // Fallback to local storage
+    const local = localStorage.getItem('navis_layer0_org_identity');
+    return local ? JSON.parse(local) : {
+      business_model: '',
+      business_model_description: '',
+      primary_industry: '',
+      primary_sub_sector: '',
+      data_role: '',
+      controller_data_categories: [],
+      processor_data_categories: [],
+      dual_role_explanation: '',
+      client_description: '',
+      processing_activities: '',
+      dpa_in_place: false,
+      operating_jurisdictions: [],
+      client_jurisdictions: [],
+      data_residency: '',
+      data_categories_processed: [],
+      data_flow_description: '',
+      primary_regulations: []
+    };
+  }
+
+  static async saveOrgIdentity(identity) {
+    if (isCloudMode) {
+      try {
+        const orgId = await this.getActiveOrgId();
+        
+        const { data: existingData } = await supabaseClient
+          .from('org_identity')
+          .select('id')
+          .eq('organization_id', orgId);
+          
+        const dbPayload = {
+          organization_id: orgId,
+          ...identity,
+          updated_at: new Date().toISOString()
+        };
+        
+        if (existingData && existingData.length > 0) {
+          dbPayload.id = existingData[0].id;
+        }
+
+        const { error } = await supabaseClient
+          .from('org_identity')
+          .upsert(dbPayload);
+          
+        if (error) throw error;
+      } catch (e) {
+        console.warn("Failed to save org identity to Supabase, saving locally:", e);
+      }
+    }
+    
+    localStorage.setItem('navis_layer0_org_identity', JSON.stringify(identity));
+    return identity;
   }
 
   // --- TEMPLATES ---
