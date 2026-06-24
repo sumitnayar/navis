@@ -301,7 +301,12 @@ export class GovernanceMapComponent {
 
   async fetchMapData() {
     try {
-      const response = await fetch('/api/governance/map');
+      const orgId = this.state.settings?.organization_id || '00000000-0000-0000-0000-000000000000';
+      const response = await fetch('/api/governance/map', {
+        headers: {
+          'org-id': orgId
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch map data');
       const data = await response.json();
       this.mapData = data.data;
