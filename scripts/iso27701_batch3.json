@@ -1,0 +1,188 @@
+[
+  {
+    "section_reference": "A.1.2.2",
+    "section_title": "Identify and document purpose",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control objective: To demonstrate that processing is lawful, with legal basis as per applicable jurisdictions, with clearly defined and legitimate purposes. Control: The organization shall identify and document the specific purposes for which the PII will be processed."
+  },
+  {
+    "section_reference": "A.1.2.3",
+    "section_title": "Identify lawful basis",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall determine, document and be able to demonstrate compliance with the relevant lawful basis for the processing of PII for the identified purposes."
+  },
+  {
+    "section_reference": "A.1.2.4",
+    "section_title": "Determine when and how consent is to be obtained",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall determine and document a process by which it can demonstrate if, when and how consent for the processing of PII was obtained from PII principals."
+  },
+  {
+    "section_reference": "A.1.2.5",
+    "section_title": "Obtain and record consent",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall obtain and record consent from PII principals according to the documented processes."
+  },
+  {
+    "section_reference": "A.1.2.6",
+    "section_title": "Privacy impact assessment",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall assess the need for, and implement where appropriate, a privacy impact assessment whenever new processing of PII or changes to existing processing of PII is planned."
+  },
+  {
+    "section_reference": "A.1.2.7",
+    "section_title": "Contracts with PII processors",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall have a written contract with any PII processor that it uses, and shall ensure that their contracts with PII processors address the implementation of the appropriate controls in Annex A (see Table A.2)."
+  },
+  {
+    "section_reference": "A.1.2.8",
+    "section_title": "Joint PII controller",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall determine respective roles and responsibilities for the processing of PII (including PII protection and security requirements) with any joint PII controller."
+  },
+  {
+    "section_reference": "A.1.2.9",
+    "section_title": "Records related to processing PII",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall determine and securely maintain the necessary records in support of its obligations for the processing of PII."
+  },
+  {
+    "section_reference": "A.1.3.2",
+    "section_title": "Determining and fulfilling obligations to PII principals",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control objective: To ensure that PII principals are provided with appropriate information about the processing of their PII, and to meet any other applicable obligations to PII principals related to the processing of their PII. Control: The organization shall determine and document its legal, regulatory and business obligations to PII principals related to the processing of their PII and provide the means to meet these obligations."
+  },
+  {
+    "section_reference": "A.1.3.3",
+    "section_title": "Determining information for PII principals",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall determine and document the information to be provided to PII principals regarding the processing of their PII and the timing of such a provision."
+  },
+  {
+    "section_reference": "A.1.3.4",
+    "section_title": "Providing information to PII principals",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall provide PII principals with clear and easily accessible information identifying the PII controller and describing the processing of their PII."
+  },
+  {
+    "section_reference": "A.1.3.5",
+    "section_title": "Providing mechanism to modify or withdraw consent",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall provide a mechanism for PII principals to modify or withdraw their consent."
+  },
+  {
+    "section_reference": "A.1.3.6",
+    "section_title": "Providing mechanism to object to PII processing",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall provide a mechanism for PII principals to object to the processing of their PII."
+  },
+  {
+    "section_reference": "A.1.3.7",
+    "section_title": "Access, correction or erasure",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall implement policies, procedures or mechanisms to meet its obligations to PII principals to access, correct or erase their PII."
+  },
+  {
+    "section_reference": "A.1.3.8",
+    "section_title": "PII controllers' obligations to inform third parties",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall inform third parties with whom PII has been shared of any modification, withdrawal or objections pertaining to the shared PII, and implement appropriate policies, procedures or mechanisms to do so."
+  },
+  {
+    "section_reference": "A.1.3.9",
+    "section_title": "Providing copy of PII processed",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall be able to provide a copy of the PII that is processed, when requested by the PII principal."
+  },
+  {
+    "section_reference": "A.1.3.10",
+    "section_title": "Handling requests",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall define and document policies and procedures for handling and responding to legitimate requests from PII principals."
+  },
+  {
+    "section_reference": "A.1.3.11",
+    "section_title": "Automated decision making",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall identify obligations, including legal obligations, to the PII principals resulting from decisions made by the organization which are related to the PII principal based solely on automated processing of PII, and be able to demonstrate how it addresses these obligations."
+  },
+  {
+    "section_reference": "A.1.4.2",
+    "section_title": "Limit collection",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control objective: To ensure that processes and systems are designed such that the collection and processing of PII (including use, disclosure, retention, transmission and disposal) are limited to what is necessary for the identified purpose. Control: The organization shall limit the collection of PII to the minimum that is relevant, proportional and necessary for the identified purposes."
+  },
+  {
+    "section_reference": "A.1.4.3",
+    "section_title": "Limit processing",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall limit the processing of PII to that which is adequate, relevant and necessary for the identified purposes."
+  },
+  {
+    "section_reference": "A.1.4.4",
+    "section_title": "Accuracy and quality",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall ensure and document that PII is as accurate, complete and up to date as necessary for the purposes for which it is processed, throughout the life cycle of the PII."
+  },
+  {
+    "section_reference": "A.1.4.5",
+    "section_title": "PII minimization objectives",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall define and document data minimization objectives and what mechanisms (such as de-identification) are used to meet those objectives."
+  },
+  {
+    "section_reference": "A.1.4.6",
+    "section_title": "PII de-identification and deletion at the end of processing",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall either delete PII or render it in a form which does not permit identification or re-identification of PII principals, as soon as the original PII is no longer necessary for the identified purpose(s)."
+  },
+  {
+    "section_reference": "A.1.4.7",
+    "section_title": "Temporary files",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall ensure that temporary files created as a result of the processing of PII are disposed of (e.g. erased or destroyed) following documented procedures within a specified, documented period."
+  },
+  {
+    "section_reference": "A.1.4.8",
+    "section_title": "Retention",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall not retain PII for longer than is necessary for the purposes for which the PII is processed."
+  },
+  {
+    "section_reference": "A.1.4.9",
+    "section_title": "Disposal",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall have documented policies, procedures or mechanisms for the disposal of PII."
+  },
+  {
+    "section_reference": "A.1.4.10",
+    "section_title": "PII transmission controls",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall subject PII transmitted (e.g. sent to another organization) over a data-transmission network to appropriate controls designed to ensure that the data reaches its intended destination."
+  },
+  {
+    "section_reference": "A.1.5.2",
+    "section_title": "Identify basis for PII transfer between jurisdictions",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control objective: To determine whether, and document when, PII is shared, transferred to other jurisdictions or third parties or disclosed in accordance with applicable obligations. Control: The organization shall identify and document the relevant basis for transfers of PII between jurisdictions."
+  },
+  {
+    "section_reference": "A.1.5.3",
+    "section_title": "Countries and international organizations to which PII can be transferred",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall specify and document the countries and international organizations to which PII can possibly be transferred."
+  },
+  {
+    "section_reference": "A.1.5.4",
+    "section_title": "Records of transfer of PII",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall record transfers of PII to or from third parties and ensure cooperation with those parties to support future requests related to obligations to the PII principals."
+  },
+  {
+    "section_reference": "A.1.5.5",
+    "section_title": "Records of PII disclosures to third parties",
+    "applies_to": "PII Controller",
+    "chunk_text": "Control: The organization shall record disclosures of PII to third parties, including which PII has been disclosed, to whom and at what time."
+  }
+]

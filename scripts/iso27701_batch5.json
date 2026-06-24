@@ -1,0 +1,176 @@
+[
+  {
+    "section_reference": "A.3.3",
+    "section_title": "Policies for information security",
+    "applies_to": "Both",
+    "chunk_text": "Control objective: To ensure the security of PII processing. Control: Information security policies related to PII processing shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel and relevant interested parties, and reviewed at planned intervals and if significant changes occur."
+  },
+  {
+    "section_reference": "A.3.4",
+    "section_title": "Information security roles and responsibilities",
+    "applies_to": "Both",
+    "chunk_text": "Control: Information security roles and responsibilities related to PII processing shall be defined and allocated according to the organizational needs."
+  },
+  {
+    "section_reference": "A.3.5",
+    "section_title": "Classification of information",
+    "applies_to": "Both",
+    "chunk_text": "Control: Information shall be classified according to the information security needs of the organization, taking into consideration PII, based on confidentiality, integrity, availability and relevant interested party requirements."
+  },
+  {
+    "section_reference": "A.3.6",
+    "section_title": "Labelling of information",
+    "applies_to": "Both",
+    "chunk_text": "Control: An appropriate set of procedures for information labelling that considers PII shall be developed and implemented in accordance with the information classification scheme adopted by the organization."
+  },
+  {
+    "section_reference": "A.3.7",
+    "section_title": "Information transfer",
+    "applies_to": "Both",
+    "chunk_text": "Control: Information transfer rules, procedures, or agreements related to processing PII shall be in place for all types of transfer facilities within the organization and between the organization and other parties."
+  },
+  {
+    "section_reference": "A.3.8",
+    "section_title": "Identity management",
+    "applies_to": "Both",
+    "chunk_text": "Control: The full life cycle of identities related to PII processing shall be managed."
+  },
+  {
+    "section_reference": "A.3.9",
+    "section_title": "Access rights",
+    "applies_to": "Both",
+    "chunk_text": "Control: Access rights to PII and other associated assets related to PII processing shall be provisioned, reviewed, modified and removed in accordance with the organization's topic-specific policy on and rules for access control."
+  },
+  {
+    "section_reference": "A.3.10",
+    "section_title": "Addressing information security within supplier agreements",
+    "applies_to": "Both",
+    "chunk_text": "Control: Relevant information security requirements related to PII processing shall be established and agreed with each supplier based on the type of supplier relationship."
+  },
+  {
+    "section_reference": "A.3.11",
+    "section_title": "Information security incident management planning and preparation",
+    "applies_to": "Both",
+    "chunk_text": "Control: The organization shall plan and prepare for managing information security incidents related to PII processing by defining, establishing and communicating incident management processes, roles and responsibilities."
+  },
+  {
+    "section_reference": "A.3.12",
+    "section_title": "Response to information security incidents",
+    "applies_to": "Both",
+    "chunk_text": "Control: Responses to information security incidents related to PII processing shall be according to the documented procedures."
+  },
+  {
+    "section_reference": "A.3.13",
+    "section_title": "Legal, statutory, regulatory and contractual requirements",
+    "applies_to": "Both",
+    "chunk_text": "Control: Legal, statutory, regulatory and contractual requirements relevant to information security related to PII processing and the organization's approach to meet these requirements shall be documented and this documentation kept up to date."
+  },
+  {
+    "section_reference": "A.3.14",
+    "section_title": "Protection of records",
+    "applies_to": "Both",
+    "chunk_text": "Control: Records related to PII processing shall be protected from loss, destruction, falsification, unauthorized access and unauthorized release."
+  },
+  {
+    "section_reference": "A.3.15",
+    "section_title": "Independent review of information security",
+    "applies_to": "Both",
+    "chunk_text": "Control: The organization's approach to managing information security related to PII processing and its implementation including people, processes and technologies shall be reviewed independently at planned intervals, or when significant changes occur."
+  },
+  {
+    "section_reference": "A.3.16",
+    "section_title": "Compliance with policies, rules and standards for information security",
+    "applies_to": "Both",
+    "chunk_text": "Control: Compliance with the organization's information security policy, topic-specific policies, rules and standards related to PII processing shall be regularly reviewed."
+  },
+  {
+    "section_reference": "A.3.17",
+    "section_title": "Information security awareness, education and training",
+    "applies_to": "Both",
+    "chunk_text": "Control: Personnel of the organization and relevant interested parties shall receive appropriate information security awareness education and training and regular updates of the organization's information security policy, topic-specific policies and procedures, as relevant for their job function, as they relate to PII processing."
+  },
+  {
+    "section_reference": "A.3.18",
+    "section_title": "Confidentiality or non-disclosure agreements",
+    "applies_to": "Both",
+    "chunk_text": "Control: Confidentiality or non-disclosure agreements reflecting the organization's needs for the protection of PII shall be identified, documented, regularly reviewed and signed by personnel and other relevant interested parties."
+  },
+  {
+    "section_reference": "A.3.19",
+    "section_title": "Clear desk and clear screen",
+    "applies_to": "Both",
+    "chunk_text": "Control: Clear desk rules for papers and removable storage media and clear screen rules for information processing facilities shall be defined and appropriately enforced."
+  },
+  {
+    "section_reference": "A.3.20",
+    "section_title": "Storage media",
+    "applies_to": "Both",
+    "chunk_text": "Control: Storage media with PII shall be managed through its life cycle of acquisition, use, transportation and disposal in accordance with the organization's classification scheme and handling requirements."
+  },
+  {
+    "section_reference": "A.3.21",
+    "section_title": "Secure disposal or re-use of equipment",
+    "applies_to": "Both",
+    "chunk_text": "Control: Items of equipment containing storage media with PII shall be verified to ensure that any sensitive data and licensed software has been removed or securely overwritten prior to disposal or re-use."
+  },
+  {
+    "section_reference": "A.3.22",
+    "section_title": "User endpoint devices",
+    "applies_to": "Both",
+    "chunk_text": "Control: PII stored on, processed by or accessible via user endpoint devices shall be protected."
+  },
+  {
+    "section_reference": "A.3.23",
+    "section_title": "Secure authentication",
+    "applies_to": "Both",
+    "chunk_text": "Control: Secure authentication technologies and procedures related to PII processing shall be implemented based on information access restrictions."
+  },
+  {
+    "section_reference": "A.3.24",
+    "section_title": "Information backup",
+    "applies_to": "Both",
+    "chunk_text": "Control: Backup copies of PII, and software and systems related to PII processing shall be maintained and regularly tested."
+  },
+  {
+    "section_reference": "A.3.25",
+    "section_title": "Logging",
+    "applies_to": "Both",
+    "chunk_text": "Control: Logs that record activities, exceptions, faults and other relevant events related to PII processing shall be produced, stored, protected and analysed."
+  },
+  {
+    "section_reference": "A.3.26",
+    "section_title": "Use of cryptography",
+    "applies_to": "Both",
+    "chunk_text": "Control: Rules for the effective use of cryptography related to PII processing, including cryptographic key management, shall be defined and implemented."
+  },
+  {
+    "section_reference": "A.3.27",
+    "section_title": "Secure development life cycle",
+    "applies_to": "Both",
+    "chunk_text": "Control: Rules for the secure development of software and systems related to PII processing shall be established and applied."
+  },
+  {
+    "section_reference": "A.3.28",
+    "section_title": "Application security requirements",
+    "applies_to": "Both",
+    "chunk_text": "Control: Information security requirements related to PII processing shall be identified, specified and approved when developing or acquiring applications."
+  },
+  {
+    "section_reference": "A.3.29",
+    "section_title": "Secure system architecture and engineering principles",
+    "applies_to": "Both",
+    "chunk_text": "Control: Principles for engineering secure systems related to processing PII shall be established, documented, maintained and applied to any information system development activities."
+  },
+  {
+    "section_reference": "A.3.30",
+    "section_title": "Outsourced development",
+    "applies_to": "Both",
+    "chunk_text": "Control: The organization shall direct, monitor and review the activities related to outsourced PII processing system development."
+  },
+  {
+    "section_reference": "A.3.31",
+    "section_title": "Test information",
+    "applies_to": "Both",
+    "chunk_text": "Control: Test information related to PII processing shall be appropriately selected, protected and managed."
+  }
+]

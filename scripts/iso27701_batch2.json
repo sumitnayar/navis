@@ -1,0 +1,182 @@
+[
+  {
+    "section_reference": "4.1",
+    "section_title": "Understanding the organization and its context",
+    "applies_to": null,
+    "chunk_text": "The organization shall determine external and internal issues that are relevant to its purpose and that affect its ability to achieve the intended result(s) of its privacy information management system. The organization shall determine whether climate change is a relevant issue. The organization shall determine if it is acting as a PII controller (including as a joint PII controller) or as a PII processor. The organization shall determine external and internal issues that are relevant to its context and that affect its ability to achieve the intended outcome(s) of its PIMS. External and internal issues can include but are not limited to: applicable privacy legislation; applicable regulations; applicable judicial decisions; applicable organizational context, governance, policies and procedures; applicable administrative decisions; applicable contractual requirements. Where the organization acts in both roles (i.e. a PII controller and a PII processor), separate roles shall be determined, each of which will be the subject of a separate set of controls. Note: The role of the organization can be different for each instance of the processing of PII, since it depends on who determines the purposes and means of the processing."
+  },
+  {
+    "section_reference": "4.2",
+    "section_title": "Understanding the needs and expectations of interested parties",
+    "applies_to": null,
+    "chunk_text": "The organization shall determine: the interested parties that are relevant to the privacy information management system; the relevant requirements of these interested parties; which of these requirements will be addressed through the privacy information management system. The organization shall include among its interested parties those parties having interests or responsibilities associated with the processing of PII, including the PII principals. Other interested parties can include customers, supervisory authorities, other PII controllers, PII processors and their subcontractors. Depending on the role of the organization, 'customer' can be understood as: an organization who has a contract with a PII controller (e.g. the customer of the PII controller); a PII controller who has a contract with a PII processor (e.g. the customer of the PII processor); or a PII processor who has a contract with a subcontractor for PII processing (e.g. the customer of the subcontracted PII processor). An individual person whose PII is processed in a business association (for example in a consumer, employee, vendor, visitor relationship) is referred to as a 'PII principal' in this document. Requirements relevant to the processing of PII can be determined by legal and regulatory requirements, by contractual obligations and by self-imposed organizational objectives."
+  },
+  {
+    "section_reference": "4.3",
+    "section_title": "Determining the scope of the privacy information management system",
+    "applies_to": null,
+    "chunk_text": "The organization shall determine the boundaries and applicability of the privacy information management system to establish its scope. When determining this scope, the organization shall consider: the external and internal issues referred to in 4.1; the requirements referred to in 4.2. The scope shall be available as documented information. When determining the scope of the PIMS, the organization shall include the processing of PII."
+  },
+  {
+    "section_reference": "4.4",
+    "section_title": "Privacy information management system",
+    "applies_to": null,
+    "chunk_text": "The organization shall establish, implement, maintain and continually improve a privacy information management system, including the processes needed and their interactions, in accordance with the requirements of this document."
+  },
+  {
+    "section_reference": "5.1",
+    "section_title": "Leadership and commitment",
+    "applies_to": null,
+    "chunk_text": "Top management shall demonstrate leadership and commitment with respect to the privacy information management system by: ensuring that the privacy policy (see 5.2) and privacy objectives (see 6.2) are established and are compatible with the strategic direction of the organization; ensuring the integration of the privacy information management system requirements into the organization's business processes; ensuring that the resources needed for the privacy information management system are available; communicating the importance of effective privacy information management and of conforming to the privacy information management system requirements; ensuring that the privacy information management system achieves its intended result(s); directing and supporting persons to contribute to the effectiveness of the privacy information management system; promoting continual improvement; supporting other relevant roles to demonstrate their leadership as it applies to their areas of responsibility."
+  },
+  {
+    "section_reference": "5.2",
+    "section_title": "Privacy policy",
+    "applies_to": null,
+    "chunk_text": "Top management shall establish a privacy policy that: is appropriate to the purpose of the organization; provides a framework for setting privacy objectives; includes a commitment to meet applicable requirements; includes a commitment to continual improvement of the privacy information management system. The privacy policy shall: be available as documented information; be communicated within the organization; be available to interested parties, as appropriate."
+  },
+  {
+    "section_reference": "5.3",
+    "section_title": "Roles, responsibilities and authorities",
+    "applies_to": null,
+    "chunk_text": "Top management shall ensure that the responsibilities and authorities for relevant roles are assigned and communicated within the organization. Top management shall assign the responsibility and authority for: ensuring that the privacy information management system conforms to the requirements of this document; reporting on the performance of the privacy information management system to top management."
+  },
+  {
+    "section_reference": "6.1.1",
+    "section_title": "Actions to address risks and opportunities — General",
+    "applies_to": null,
+    "chunk_text": "When planning for the privacy information management system, the organization shall consider the issues referred to in 4.1 and the requirements referred to in 4.2 and determine the risks and opportunities that need to be addressed to: give assurance that the privacy information management system can achieve its intended result(s); prevent, or reduce, undesired effects; achieve continual improvement. The organization shall plan: actions to address these risks and opportunities; how to integrate and implement the actions into its privacy information management system processes; how to evaluate the effectiveness of these actions."
+  },
+  {
+    "section_reference": "6.1.2",
+    "section_title": "Privacy risk assessment",
+    "applies_to": null,
+    "chunk_text": "The organization shall define and apply a privacy risk assessment process that: establishes and maintains privacy risk criteria that include the risk acceptance criteria, and criteria for performing privacy risk assessments; ensures that repeated privacy risk assessments produce consistent, valid and comparable results; identifies the privacy risks associated with the protection of privacy and information security risks within the scope of the privacy information management system, and that identify the risk owners; analyses the privacy risks by assessing the potential consequences for both the organization and PII principals that would result if the risks were to materialize, assessing the realistic likelihood of the occurrence of the risks, and determining the levels of risk; evaluates the privacy risks by comparing the results of risk analysis with the risk criteria established, and prioritizing the analysed risks for risk treatment. The organization shall retain documented information about the privacy risk assessment process."
+  },
+  {
+    "section_reference": "6.1.3",
+    "section_title": "Privacy risk treatment",
+    "applies_to": null,
+    "chunk_text": "The organization shall define and apply a privacy risk treatment process to treat risks related to the processing of PII, including risks to PII principals, and including the security of PII, by: selecting appropriate privacy risk treatment options, taking account of the risk assessment results; determining all controls that are necessary to implement the privacy risk treatment option(s) chosen; identifying and documenting the information security programme implemented by the organization, including the appropriate security controls. The information security programme at a minimum should address: information security risk management; policies for information security; organization of information security; human resources security; asset management; access control; operations security; network security management; development security; supplier management; incident management; information security continuity; information security reviews; cryptography; physical and environmental security. The organization shall produce a statement of applicability that includes the necessary controls, justification for their inclusion, whether the necessary controls are implemented or not, and the justification for excluding any controls from Annex A. The organization shall formulate a privacy risk treatment plan, obtain the privacy risk owners' approval of the privacy risk treatment plan and acceptance of the residual privacy risks. The organization shall retain documented information about the privacy risk treatment process."
+  },
+  {
+    "section_reference": "6.2",
+    "section_title": "Privacy objectives and planning to achieve them",
+    "applies_to": null,
+    "chunk_text": "The organization shall establish privacy objectives at relevant functions and levels. The privacy objectives shall: be consistent with the privacy policy (see 5.2); be measurable (if practicable); take into account applicable requirements; be monitored; be communicated; be updated as appropriate; be available as documented information. When planning how to achieve its privacy objectives, the organization shall determine: what will be done; what resources will be required; who will be responsible; when it will be completed; how the results will be evaluated."
+  },
+  {
+    "section_reference": "6.3",
+    "section_title": "Planning of changes",
+    "applies_to": null,
+    "chunk_text": "When the organization determines the need for changes to the privacy information management system, the changes shall be carried out in a planned manner."
+  },
+  {
+    "section_reference": "7.1",
+    "section_title": "Resources",
+    "applies_to": null,
+    "chunk_text": "The organization shall determine and provide the resources needed for the establishment, implementation, maintenance and continual improvement of the privacy information management system."
+  },
+  {
+    "section_reference": "7.2",
+    "section_title": "Competence",
+    "applies_to": null,
+    "chunk_text": "The organization shall: determine the necessary competence of person(s) doing work under its control that affects its privacy information management performance; ensure that these persons are competent on the basis of appropriate education, training, or experience; where applicable, take actions to acquire the necessary competence, and evaluate the effectiveness of the actions taken. Appropriate documented information shall be available as evidence of competence."
+  },
+  {
+    "section_reference": "7.3",
+    "section_title": "Awareness",
+    "applies_to": null,
+    "chunk_text": "Persons doing work under the organization's control shall be aware of: the privacy policy (see 5.2); their contribution to the effectiveness of the privacy information management system, including the benefits of improved privacy performance; the implications of not conforming with the privacy information management system requirements."
+  },
+  {
+    "section_reference": "7.4",
+    "section_title": "Communication",
+    "applies_to": null,
+    "chunk_text": "The organization shall determine the internal and external communications relevant to the privacy information management system including: on what it will communicate; when to communicate; with whom to communicate; how to communicate."
+  },
+  {
+    "section_reference": "7.5.1",
+    "section_title": "Documented information — General",
+    "applies_to": null,
+    "chunk_text": "The organization's privacy information management system shall include: documented information required by this document; documented information determined by the organization as being necessary for the effectiveness of the privacy information management system. The extent of documented information for a privacy information management system can differ from one organization to another due to: the size of organization and its type of activities, processes, products and services; the complexity of processes and their interactions; the competence of persons."
+  },
+  {
+    "section_reference": "7.5.2",
+    "section_title": "Creating and updating documented information",
+    "applies_to": null,
+    "chunk_text": "When creating and updating documented information, the organization shall ensure appropriate: identification and description (e.g. a title, date, author, or reference number); format (e.g. language, software version, graphics) and media (e.g. paper, electronic); review and approval for suitability and adequacy."
+  },
+  {
+    "section_reference": "7.5.3",
+    "section_title": "Control of documented information",
+    "applies_to": null,
+    "chunk_text": "Documented information required by the privacy information management system and by this document shall be controlled to ensure: it is available and suitable for use, where and when it is needed; it is adequately protected (e.g. from loss of confidentiality, improper use, or loss of integrity). For the control of documented information, the organization shall address the following activities, as applicable: distribution, access, retrieval and use; storage and preservation, including preservation of legibility; control of changes (e.g. version control); retention and disposition. Documented information of external origin determined by the organization to be necessary for the planning and operation of the privacy information management system shall be identified as appropriate, and controlled."
+  },
+  {
+    "section_reference": "8.1",
+    "section_title": "Operational planning and control",
+    "applies_to": null,
+    "chunk_text": "The organization shall plan, implement and control the processes needed to meet requirements, and to implement the actions determined in Clause 6, by: establishing criteria for the processes; implementing control of the processes in accordance with the criteria. Documented information shall be available to the extent necessary to have confidence that the processes have been carried out as planned. The organization shall control planned changes and review the consequences of unintended changes, taking action to mitigate any adverse effects, as necessary. The organization shall ensure that externally provided processes, products or services that are relevant to the privacy information management system are controlled."
+  },
+  {
+    "section_reference": "8.2",
+    "section_title": "Privacy risk assessment",
+    "applies_to": null,
+    "chunk_text": "The organization shall perform privacy risk assessments at planned intervals or when significant changes are proposed or occur, taking account of the criteria established in 6.1.2 a). The organization shall retain documented information of the results of the privacy risk assessments."
+  },
+  {
+    "section_reference": "8.3",
+    "section_title": "Privacy risk treatment",
+    "applies_to": null,
+    "chunk_text": "The organization shall implement the privacy risk treatment plan. The organization shall retain documented information of the results of the privacy risk treatment."
+  },
+  {
+    "section_reference": "9.1",
+    "section_title": "Monitoring, measurement, analysis and evaluation",
+    "applies_to": null,
+    "chunk_text": "The organization shall determine: what needs to be monitored and measured; the methods for monitoring, measurement, analysis and evaluation, as applicable, to ensure valid results; when the monitoring and measuring shall be performed; when the results from monitoring and measurement shall be analysed and evaluated. Documented information shall be available as evidence of the results. The organization shall evaluate the privacy performance and the effectiveness of the privacy information management system."
+  },
+  {
+    "section_reference": "9.2.1",
+    "section_title": "Internal audit — General",
+    "applies_to": null,
+    "chunk_text": "The organization shall conduct internal audits at planned intervals to provide information on whether the privacy information management system: conforms to the organization's own requirements for its privacy information management system and the requirements of this document; is effectively implemented and maintained."
+  },
+  {
+    "section_reference": "9.2.2",
+    "section_title": "Internal audit programme",
+    "applies_to": null,
+    "chunk_text": "The organization shall plan, establish, implement and maintain an audit programme(s), including the frequency, methods, responsibilities, planning requirements and reporting. When establishing the internal audit programme(s), the organization shall consider the importance of the processes concerned and the results of previous audits. The organization shall: define the audit objectives, criteria and scope for each audit; select auditors and conduct audits to ensure objectivity and the impartiality of the audit process; ensure that the results of audits are reported to relevant managers. Documented information shall be available as evidence of the implementation of the audit programme(s) and the audit results."
+  },
+  {
+    "section_reference": "9.3.1",
+    "section_title": "Management review — General",
+    "applies_to": null,
+    "chunk_text": "Top management shall review the organization's privacy information management system, at planned intervals, to ensure its continuing suitability, adequacy and effectiveness."
+  },
+  {
+    "section_reference": "9.3.2",
+    "section_title": "Management review inputs",
+    "applies_to": null,
+    "chunk_text": "The management review shall include: the status of actions from previous management reviews; changes in external and internal issues that are relevant to the privacy information management system; changes in needs and expectations of interested parties that are relevant to the privacy information management system; information on the privacy information management system performance, including trends in nonconformities and corrective actions, monitoring and measurement results, and audit results; opportunities for continual improvement."
+  },
+  {
+    "section_reference": "9.3.3",
+    "section_title": "Management review results",
+    "applies_to": null,
+    "chunk_text": "The results of the management review shall include decisions related to continual improvement opportunities and any need for changes to the privacy information management system. Documented information shall be available as evidence of the results of management reviews."
+  },
+  {
+    "section_reference": "10.1",
+    "section_title": "Continual improvement",
+    "applies_to": null,
+    "chunk_text": "The organization shall continually improve the suitability, adequacy and effectiveness of the privacy information management system."
+  },
+  {
+    "section_reference": "10.2",
+    "section_title": "Nonconformity and corrective action",
+    "applies_to": null,
+    "chunk_text": "When a nonconformity occurs, the organization shall: react to the nonconformity, and as applicable take action to control and correct it, and deal with the consequences; evaluate the need for action to eliminate the cause(s) of the nonconformity, in order that it does not recur or occur elsewhere, by reviewing the nonconformity, determining the causes of the nonconformity, and determining if similar nonconformities exist, or can potentially occur; implement any action needed; review the effectiveness of any corrective action taken; make changes to the privacy information management system, if necessary. Corrective actions shall be appropriate to the effects of the nonconformities encountered. Documented information shall be available as evidence of the nature of the nonconformities and any subsequent actions taken, and the results of any corrective action."
+  }
+]

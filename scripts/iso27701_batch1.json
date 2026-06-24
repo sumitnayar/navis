@@ -1,0 +1,152 @@
+[
+  {
+    "section_reference": "3.1",
+    "section_title": "organization",
+    "applies_to": null,
+    "chunk_text": "person or group of people that has its own functions with responsibilities, authorities and relationships to achieve its objectives. Note 1 to entry: The concept of organization includes, but is not limited to, sole-trader, company, corporation, firm, enterprise, authority, partnership, charity or institution, or part or combination thereof, whether incorporated or not, public or private. Note 2 to entry: If the organization is part of a larger entity, the term 'organization' refers only to the part of the larger entity that is within the scope of the privacy information management system (3.23)."
+  },
+  {
+    "section_reference": "3.2",
+    "section_title": "interested party",
+    "applies_to": null,
+    "chunk_text": "person or organization (3.1) that can affect, be affected by, or perceive itself to be affected by a decision or activity."
+  },
+  {
+    "section_reference": "3.3",
+    "section_title": "top management",
+    "applies_to": null,
+    "chunk_text": "person or group of people who directs and controls an organization (3.1) at the highest level. Note 1 to entry: Top management has the power to delegate authority and provide resources within the organization. Note 2 to entry: If the scope of the management system (3.4) covers only part of an organization, then top management refers to those who direct and control that part of the organization."
+  },
+  {
+    "section_reference": "3.4",
+    "section_title": "management system",
+    "applies_to": null,
+    "chunk_text": "set of interrelated or interacting elements of an organization (3.1) to establish policies (3.5) and objectives (3.6), as well as processes (3.8) to achieve those objectives. Note 1 to entry: A management system can address a single discipline or several disciplines. Note 2 to entry: The management system elements include the organization's structure, roles and responsibilities, planning and operation."
+  },
+  {
+    "section_reference": "3.5",
+    "section_title": "policy",
+    "applies_to": null,
+    "chunk_text": "intentions and direction of an organization (3.1) as formally expressed by its top management (3.3)."
+  },
+  {
+    "section_reference": "3.6",
+    "section_title": "objective",
+    "applies_to": null,
+    "chunk_text": "result to be achieved. Note 1 to entry: An objective can be strategic, tactical, or operational. Note 2 to entry: Objectives can relate to different disciplines (such as finance, health and safety, and environment). They can be, for example, organization-wide or specific to a project, product or process (3.8). Note 3 to entry: An objective can be expressed in other ways, e.g. as an intended result, as a purpose, as an operational criterion, as a privacy objective or by the use of other words with similar meaning (e.g. aim, goal, or target). Note 4 to entry: In the context of privacy information management systems (3.23), privacy objectives are set by the organization (3.1), consistent with the privacy policy (3.5), to achieve specific results."
+  },
+  {
+    "section_reference": "3.7",
+    "section_title": "risk",
+    "applies_to": null,
+    "chunk_text": "effect of uncertainty. Note 1 to entry: An effect is a deviation from the expected — positive or negative. Note 2 to entry: Uncertainty is the state, even partial, of deficiency of information related to, understanding or knowledge of, an event, its consequence, or its likelihood. Note 3 to entry: Risk is often characterized by reference to potential events and consequences, or a combination of these. Note 4 to entry: Risk is often expressed in terms of a combination of the consequences of an event (including changes in circumstances) and the associated likelihood of occurrence."
+  },
+  {
+    "section_reference": "3.8",
+    "section_title": "process",
+    "applies_to": null,
+    "chunk_text": "set of interrelated or interacting activities that uses or transforms inputs to deliver a result. Note 1 to entry: Whether the result of a process is called an output, a product or a service depends on the context of the reference."
+  },
+  {
+    "section_reference": "3.9",
+    "section_title": "competence",
+    "applies_to": null,
+    "chunk_text": "ability to apply knowledge and skills to achieve intended results."
+  },
+  {
+    "section_reference": "3.10",
+    "section_title": "documented information",
+    "applies_to": null,
+    "chunk_text": "information required to be controlled and maintained by an organization (3.1) and the medium on which it is contained. Note 1 to entry: Documented information can be in any format and media and from any source. Note 2 to entry: Documented information can refer to: the management system (3.4), including related processes (3.8); information created in order for the organization to operate (documentation); evidence of results achieved (records)."
+  },
+  {
+    "section_reference": "3.11",
+    "section_title": "performance",
+    "applies_to": null,
+    "chunk_text": "measurable result. Note 1 to entry: Performance can relate either to quantitative or qualitative findings. Note 2 to entry: Performance can relate to managing activities, processes (3.8), products, services or organizations (3.1)."
+  },
+  {
+    "section_reference": "3.12",
+    "section_title": "continual improvement",
+    "applies_to": null,
+    "chunk_text": "recurring activity to enhance performance (3.11)."
+  },
+  {
+    "section_reference": "3.13",
+    "section_title": "effectiveness",
+    "applies_to": null,
+    "chunk_text": "extent to which planned activities are realized and planned results are achieved."
+  },
+  {
+    "section_reference": "3.14",
+    "section_title": "requirement",
+    "applies_to": null,
+    "chunk_text": "need or expectation that is stated, generally implied or obligatory. Note 1 to entry: 'Generally implied' means that it is custom or common practice for the organization (3.1) and interested parties (3.2) that the need or expectation under consideration is implied. Note 2 to entry: A specified requirement is one that is stated, e.g. in documented information (3.10)."
+  },
+  {
+    "section_reference": "3.15",
+    "section_title": "conformity",
+    "applies_to": null,
+    "chunk_text": "fulfilment of a requirement (3.14)."
+  },
+  {
+    "section_reference": "3.16",
+    "section_title": "nonconformity",
+    "applies_to": null,
+    "chunk_text": "non-fulfilment of a requirement (3.14)."
+  },
+  {
+    "section_reference": "3.17",
+    "section_title": "corrective action",
+    "applies_to": null,
+    "chunk_text": "action to eliminate the cause(s) of a nonconformity (3.16) and to prevent recurrence."
+  },
+  {
+    "section_reference": "3.18",
+    "section_title": "audit",
+    "applies_to": null,
+    "chunk_text": "systematic and independent process (3.8) for obtaining evidence and evaluating it objectively to determine the extent to which the audit criteria are fulfilled. Note 1 to entry: An audit can be an internal audit (first party) or an external audit (second party or third party). Note 2 to entry: An internal audit is conducted by the organization (3.1) itself, or by an external party on its behalf. Note 3 to entry: 'Audit evidence' and 'audit criteria' are defined in ISO 19011."
+  },
+  {
+    "section_reference": "3.19",
+    "section_title": "measurement",
+    "applies_to": null,
+    "chunk_text": "process (3.8) to determine a value."
+  },
+  {
+    "section_reference": "3.20",
+    "section_title": "monitoring",
+    "applies_to": null,
+    "chunk_text": "determining the status of a system, a process (3.8) or an activity. Note 1 to entry: To determine the status, there can be a need to check, supervise or critically observe."
+  },
+  {
+    "section_reference": "3.21",
+    "section_title": "joint PII controller",
+    "applies_to": null,
+    "chunk_text": "personally identifiable information (PII) controller that determines the purposes and means of the processing of PII jointly with one or more other PII controllers."
+  },
+  {
+    "section_reference": "3.22",
+    "section_title": "customer",
+    "applies_to": null,
+    "chunk_text": "person or organization (3.1) that can or does receive a product or a service that is intended for or required by this person or organization. EXAMPLE: Consumer, client, end-user, retailer, receiver of product or service from an internal process (3.8), beneficiary and purchaser. Note 1 to entry: A customer can be internal or external to the organization. Note 2 to entry: A customer can be an organization that has a contract with a PII controller, a PII controller who has a contract with a PII processor or a PII processor that has a contract with a subcontractor for PII processing."
+  },
+  {
+    "section_reference": "3.23",
+    "section_title": "privacy information management system (PIMS)",
+    "applies_to": null,
+    "chunk_text": "management system (3.4) which addresses the protection of privacy as potentially affected by the processing of personally identifiable information."
+  },
+  {
+    "section_reference": "3.24",
+    "section_title": "information security programme",
+    "applies_to": null,
+    "chunk_text": "set of policies (3.5), objectives (3.6) and processes (3.8) designed to manage risks (3.7) to an organization's (3.1) assets, to ensure the confidentiality, integrity and availability of information. Note 1 to entry: An information security programme can be, for example, an information security management system such as one based on ISO/IEC 27001."
+  },
+  {
+    "section_reference": "3.25",
+    "section_title": "statement of applicability",
+    "applies_to": null,
+    "chunk_text": "documentation of all necessary controls and justification for the inclusion or exclusion of such controls."
+  }
+]

@@ -1,0 +1,284 @@
+[
+  {
+    "section_reference": "B.2.2.2",
+    "section_title": "Implementation guidance — Customer agreement",
+    "applies_to": "PII Processor",
+    "chunk_text": "The contract between the organization and the customer should include the following aspects, where relevant and depending on the customer's role (i.e. PII controller or PII processor): privacy by design and privacy by default; achieving security of processing; notification of breaches involving PII to a supervisory authority; notification of breaches involving PII to customers and PII principals; conducting privacy impact assessments; and the assurance of assistance by the PII processor if prior consultations with relevant PII protection authorities are needed. Some jurisdictions require that the contract includes the subject matter and duration of the processing, the nature and purpose of the processing, the type of PII and categories of PII principals."
+  },
+  {
+    "section_reference": "B.2.2.3",
+    "section_title": "Implementation guidance — Organization's purposes",
+    "applies_to": "PII Processor",
+    "chunk_text": "The contract between the organization and the customer should include, but not be limited to, the objective and time frame to be achieved by the service. In order to achieve the customer's purpose, there can be technical reasons why it is appropriate for the organization to determine the method for processing PII, consistent with the general instructions of the customer but without the customer's express instruction. The organization should allow the customer to verify its compliance with the purpose specification and limitation principles. This also ensures that no PII is processed by the organization or any of its subcontractors for other purposes than those expressed in the documented instructions of the customer."
+  },
+  {
+    "section_reference": "B.2.2.4",
+    "section_title": "Implementation guidance — Marketing and advertising use",
+    "applies_to": "PII Processor",
+    "chunk_text": "Compliance of PII processors with the customer's contractual requirements should be documented, especially where marketing or advertising is planned. Organizations should not insist on the inclusion of marketing or advertising uses where express consent has not been fairly obtained from PII principals."
+  },
+  {
+    "section_reference": "B.2.2.5",
+    "section_title": "Implementation guidance — Infringing instruction",
+    "applies_to": "PII Processor",
+    "chunk_text": "The organization's ability to verify if the instruction infringes legal requirements can depend on the technological context, on the instruction itself, and on the contract between the organization and the customer."
+  },
+  {
+    "section_reference": "B.2.2.6",
+    "section_title": "Implementation guidance — Customer obligations",
+    "applies_to": "PII Processor",
+    "chunk_text": "The information needed by the customer can include whether the organization allows for and contributes to audits conducted by the customer or another auditor mandated or otherwise agreed by the customer."
+  },
+  {
+    "section_reference": "B.2.2.7",
+    "section_title": "Implementation guidance — Records related to processing PII",
+    "applies_to": "PII Processor",
+    "chunk_text": "Some jurisdictions can require the organization to record information such as: categories of processing carried out on behalf of each customer; transfers to third countries or international organizations; and a general description of the technical and organizational security measures."
+  },
+  {
+    "section_reference": "B.2.3.2",
+    "section_title": "Implementation guidance — Comply with obligations to PII principals",
+    "applies_to": "PII Processor",
+    "chunk_text": "A PII controller's obligations can be defined by legal requirements or by contract. These obligations can include matters where the customer uses the services of the organization for implementation of these obligations. For example, this can include the correction or deletion of PII in a timely fashion. Where a customer depends on the organization for information or technical measures to facilitate meeting the obligations to PII principals, the relevant information or technical measures should be specified in a contract."
+  },
+  {
+    "section_reference": "B.2.4.2",
+    "section_title": "Implementation guidance — Temporary files (processor)",
+    "applies_to": "PII Processor",
+    "chunk_text": "The organization should conduct periodic verification that unused temporary files are deleted within the identified time period. Information systems can create temporary files in the normal course of their operation. Temporary files are not needed after the related information processing task has been completed. A garbage collection procedure should identify the relevant files and determine how long it has been since they were last used."
+  },
+  {
+    "section_reference": "B.2.4.3",
+    "section_title": "Implementation guidance — Return, transfer or disposal of PII",
+    "applies_to": "PII Processor",
+    "chunk_text": "At some point in time, it can be necessary to dispose of PII in some manner. This can involve returning the PII to the customer, transferring it to another organization or to a PII controller (e.g. as a result of a merger), deleting or otherwise destroying it, de-identifying it or archiving it. The capability for the return, transfer or disposal of PII should be managed in a secure manner. The organization should provide the assurance necessary to allow the customer to ensure that PII processed under a contract is erased (by the organization and any of its subcontractors) from wherever they are stored, including for the purposes of backup and business continuity, as soon as they are no longer necessary for the purposes identified by the customer. The policy should cover the retention period for PII before its disposal after termination of a contract."
+  },
+  {
+    "section_reference": "B.2.4.4",
+    "section_title": "Implementation guidance — PII transmission controls (processor)",
+    "applies_to": "PII Processor",
+    "chunk_text": "Transmission of PII should be controlled, typically by ensuring that only authorized individuals have access to transmission systems, and by following the appropriate processes (including the retention of audit data) to ensure that PII is transmitted without compromise to the correct recipients. Requirements for transmission controls can be included in the contract between the PII processor and the customer. Where no contractual requirements related to transmission are in place, it can be appropriate to take advice from the customer prior to transmission."
+  },
+  {
+    "section_reference": "B.2.5.2",
+    "section_title": "Implementation guidance — Basis for PII transfer between jurisdictions (processor)",
+    "applies_to": "PII Processor",
+    "chunk_text": "PII transfer between jurisdictions can be subject to legal requirements depending on the jurisdiction or organization to which PII is to be transferred. The organization should document compliance with such requirements as the basis for transfer. The organization should inform the customer of any transfer of PII, including transfers to suppliers, other parties, and other countries or international organizations. In case of changes, the organization should inform the customer in advance, according to an agreed time frame, so that the customer has the ability to object to such changes or to terminate the contract. In case of international transfer of PII, agreements such as model contract clauses, binding corporate rules or cross border privacy rules, the countries involved and the circumstances in which such agreements apply, should be identified."
+  },
+  {
+    "section_reference": "B.2.5.3",
+    "section_title": "Implementation guidance — Countries and international organizations to which PII can be transferred (processor)",
+    "applies_to": "PII Processor",
+    "chunk_text": "The identities of the countries and international organizations to which PII can possibly be transferred in normal operations should be made available to customers. The identities of the countries arising from the use of subcontracted PII processing should be included."
+  },
+  {
+    "section_reference": "B.2.5.4",
+    "section_title": "Implementation guidance — Records of PII disclosures to third parties (processor)",
+    "applies_to": "PII Processor",
+    "chunk_text": "PII can be disclosed during normal operations. These disclosures should be recorded. Any additional disclosures to third parties, such as those arising from legal investigations or external audits, should also be recorded. The records should include the source of the disclosure and the source of the authority to make the disclosure."
+  },
+  {
+    "section_reference": "B.2.5.5",
+    "section_title": "Implementation guidance — Notification of PII disclosure requests",
+    "applies_to": "PII Processor",
+    "chunk_text": "The organization can receive legally binding requests for the disclosure of PII (e.g. from legal authorities). In these cases, the organization should notify the customer of any such request within agreed time frames and according to an agreed procedure which can be included in the customer contract. In some cases, the legally binding requests include the requirement for the organization not to notify anyone about the event. An example of a possible prohibition on disclosure would be a prohibition under criminal law to preserve the confidentiality of a legal investigation."
+  },
+  {
+    "section_reference": "B.2.5.6",
+    "section_title": "Implementation guidance — Legally binding PII disclosures",
+    "applies_to": "PII Processor",
+    "chunk_text": "Details relevant to the implementation of the control can be included in the customer contract. Such requests can originate from several sources, including courts, tribunals and administrative authorities. They can arise from any jurisdiction."
+  },
+  {
+    "section_reference": "B.2.5.7",
+    "section_title": "Implementation guidance — Disclosure of subcontractors used to process PII",
+    "applies_to": "PII Processor",
+    "chunk_text": "Provisions for the use of subcontractors to process PII should be included in the customer contract. Information disclosed should cover the fact that subcontracting is used and the names of relevant subcontractors. The information disclosed should also include the countries and international organizations to which subcontractors can transfer data and the means by which subcontractors are obliged to meet or exceed the obligations of the organization. Where public disclosure of subcontractor information is assessed to increase security risk beyond acceptable limits, disclosure should be made under a non-disclosure agreement or on the request of the customer."
+  },
+  {
+    "section_reference": "B.2.5.8",
+    "section_title": "Implementation guidance — Engagement of a subcontractor to process PII",
+    "applies_to": "PII Processor",
+    "chunk_text": "Where the organization subcontracts some or all of the processing of PII to another organization, a written authorization from the customer is required prior to the PII processed by the subcontractor. The organization should have a written contract with any subcontractors that it uses for PII processing on its behalf. The organization should ensure that its contracts with subcontractors address the implementation of the appropriate controls in Table A.2. The contract between the organization and any subcontractor processing PII on its behalf should require the subcontractor to implement the appropriate controls specified in Table A.2."
+  },
+  {
+    "section_reference": "B.2.5.9",
+    "section_title": "Implementation guidance — Change of subcontractor to process PII",
+    "applies_to": "PII Processor",
+    "chunk_text": "Where the organization changes the organization with which it subcontracts some or all of the processing of PII, then written authorization from the customer is required for the change, prior to the PII processed by the new subcontractor. This can be in the form of appropriate clauses in the customer contract or a specific one-off agreement."
+  },
+  {
+    "section_reference": "B.3.3",
+    "section_title": "Implementation guidance — Policies for information security",
+    "applies_to": "Both",
+    "chunk_text": "Either by the development of separate privacy policies, or by the augmentation of information security policies, the organization should produce a statement concerning support for and commitment to achieving compliance with legal requirements applicable to PII protection and with the contractual terms agreed between the organization and its partners, its subcontractors and its applicable third parties (customers, suppliers etc.), which should clearly allocate responsibilities between them. Any organization that processes PII, whether a PII controller or a PII processor, should consider legal requirements applicable to PII protection during the development and maintenance of information security policies."
+  },
+  {
+    "section_reference": "B.3.4",
+    "section_title": "Implementation guidance — Information security roles and responsibilities",
+    "applies_to": "Both",
+    "chunk_text": "The organization should designate a point of contact for use by the customer regarding the processing of PII. When the organization is a PII controller, a point of contact should be designated for PII principals regarding the processing of their PII. The organization should appoint one or more persons responsible for developing, implementing, maintaining and monitoring an organization-wide governance and privacy programme, to ensure compliance with all applicable legal requirements regarding the processing of PII. The responsible person should, where appropriate: be independent and report directly to the appropriate management level; be involved in the management of all issues which relate to the processing of PII; be an expert in data protection legislation, regulation and practice; act as a contact point for supervisory authorities; inform top-level management and employees of the organization of their obligations with respect to the processing of PII; provide advice in respect of privacy impact assessments conducted by the organization. Note: Some jurisdictions refer to this person as a data protection officer."
+  },
+  {
+    "section_reference": "B.3.5",
+    "section_title": "Implementation guidance — Classification of information",
+    "applies_to": "Both",
+    "chunk_text": "The organization's information classification scheme should explicitly consider PII as part of the scheme it implements. Considering PII within the overall classification scheme is integral to understanding which PII the organization processes (e.g. type, special categories), where such PII is stored and the systems through which it can flow."
+  },
+  {
+    "section_reference": "B.3.6",
+    "section_title": "Implementation guidance — Labelling of information",
+    "applies_to": "Both",
+    "chunk_text": "The organization should ensure that people under its control are made aware of the definition of PII and how to recognize information that is PII."
+  },
+  {
+    "section_reference": "B.3.7",
+    "section_title": "Implementation guidance — Information transfer",
+    "applies_to": "Both",
+    "chunk_text": "The organization should consider procedures for ensuring that rules related to the processing of PII are enforced throughout and outside of the system, where applicable."
+  },
+  {
+    "section_reference": "B.3.8",
+    "section_title": "Implementation guidance — Identity management",
+    "applies_to": "Both",
+    "chunk_text": "Procedures for registration and de-registration of users who administer or operate systems and services that process PII should address the situation where user access control for those users is compromised, such as the corruption or compromise of passwords or other user registration data. The organization should not reissue to users any de-activated or expired user IDs for systems and services that process PII. In the case where the organization is providing PII processing as a service, the customer can be responsible for some or all aspects of user ID management. Some jurisdictions impose specific requirements regarding the frequency of checks for unused authentication credentials related to systems that process PII."
+  },
+  {
+    "section_reference": "B.3.9",
+    "section_title": "Implementation guidance — Access rights",
+    "applies_to": "Both",
+    "chunk_text": "The organization should maintain an accurate, up-to-date record of the user profiles created for users who have authorized access to the information system and the PII contained therein. Each profile comprises the set of data about the user, including user ID, necessary to implement the identified technical controls providing authorized access. Implementing individual user access IDs enables appropriately configured systems to identify who accessed PII and what additions, deletions or changes they made. In the case where the organization is providing PII processing as a service, the customer can be responsible for some or all aspects of access management."
+  },
+  {
+    "section_reference": "B.3.10",
+    "section_title": "Implementation guidance — Addressing information security within supplier agreements",
+    "applies_to": "Both",
+    "chunk_text": "The organization should specify in agreements with suppliers whether PII is processed and the minimum technical and organizational measures that the supplier is required to meet for the organization to meet its information security and PII protection obligations. Supplier agreements should clearly allocate responsibilities between the organization, its partners, its suppliers and its relevant third parties (customers, suppliers, etc.) taking into account the type of PII processed. The agreements between the organization and its suppliers should provide a mechanism for ensuring the organization supports and manage compliance with all applicable legal requirements."
+  },
+  {
+    "section_reference": "B.3.11",
+    "section_title": "Implementation guidance — Information security incident management planning and preparation",
+    "applies_to": "Both",
+    "chunk_text": "As part of the overall information security incident management process, the organization should establish responsibilities and procedures for identifying and recording breaches of PII. Additionally, the organization should establish responsibilities and procedures related to notifying relevant parties of PII breaches (including the timing of such notifications) and the disclosure to authorities, taking into account the applicable legal requirements. Some jurisdictions impose specific regulations regarding breach responses, including notification. Organizations operating in these jurisdictions should ensure that they are aware of, and document how they comply with, these regulations."
+  },
+  {
+    "section_reference": "B.3.12",
+    "section_title": "Implementation guidance — Response to information security incidents",
+    "applies_to": "Both",
+    "chunk_text": "An incident that involves PII should trigger a review by the organization, as part of its information security incident management process, to determine if a breach involving PII that requires a response has taken place. When a breach of PII has occurred, response procedures should include relevant notifications and records. Some jurisdictions define cases when the breach should be notified to the relevant supervisory authority and when it should be notified to PII principals. Notifications should be clear. A notification can contain details such as: a contact point where more information can be obtained; a description of and the likely consequences of the breach; a description of the breach including the number of individuals concerned as well as the number of records concerned; measures taken or planned to be taken. Where a breach involving PII has occurred, a record should be maintained with sufficient information to provide a report for regulatory or forensic purposes."
+  },
+  {
+    "section_reference": "B.3.13",
+    "section_title": "Implementation guidance — Legal, statutory, regulatory and contractual requirements",
+    "applies_to": "Both",
+    "chunk_text": "The organization should identify any potential legal sanctions (which can result from some obligations being missed) related to the processing of PII, including substantial fines directly from the local supervisory authority. In some jurisdictions, International Standards such as this document can be used to form the basis for a contract between the organization and the customer, outlining their respective security, privacy and PII protection responsibilities."
+  },
+  {
+    "section_reference": "B.3.14",
+    "section_title": "Implementation guidance — Protection of records",
+    "applies_to": "Both",
+    "chunk_text": "Review of current and historical policies and procedures can be required (e.g. in the cases of customer dispute resolution and investigation by a supervisory authority). The organization should retain copies of its privacy policies and associated procedures for a period as specified in its retention schedule. This includes retention of previous versions of these documents when they are updated."
+  },
+  {
+    "section_reference": "B.3.15",
+    "section_title": "Implementation guidance — Independent review of information security",
+    "applies_to": "Both",
+    "chunk_text": "Where an organization is acting as a PII processor, and where individual customer audits are impractical or can increase risks to security, the organization should make available to customers, prior to entering into and for the duration of a contract, independent evidence that information security is implemented and operated in accordance with the organization's policies and procedures. A relevant independent audit, as selected by the organization, should normally be an acceptable method for fulfilling the customer's interest in reviewing the organization's processing operations, if it covers the needs of anticipated users and if results are provided in a sufficiently transparent manner."
+  },
+  {
+    "section_reference": "B.3.16",
+    "section_title": "Implementation guidance — Compliance with policies, rules and standards for information security",
+    "applies_to": "Both",
+    "chunk_text": "As part of technical reviews of compliance with security policies and standards, the organization should include methods of reviewing tools and components related to processing PII. This can include: ongoing monitoring to verify that only permitted processing is taking place; or specific penetration or vulnerability tests (e.g. de-identified data sets can be subject to a motivated intruder test to validate that de-identification methods are compliant with organizational requirements)."
+  },
+  {
+    "section_reference": "B.3.17",
+    "section_title": "Implementation guidance — Information security awareness, education and training",
+    "applies_to": "Both",
+    "chunk_text": "Measures should be put in place, including raising awareness of incident reporting, to ensure that relevant staff are aware of the possible consequences of breaching privacy or security rules and procedures, especially those addressing the handling of PII. These include consequences for the organization (e.g. legal consequences, loss of business and brand or reputational damage), to the staff member (e.g. disciplinary consequences) and to the PII principal (e.g. physical, material and emotional consequences) of breaching privacy or security rules and procedures."
+  },
+  {
+    "section_reference": "B.3.18",
+    "section_title": "Implementation guidance — Confidentiality or non-disclosure agreements",
+    "applies_to": "Both",
+    "chunk_text": "The organization should ensure that individuals operating under its control with access to PII are subject to a confidentiality obligation. The confidentiality agreement, whether part of a contract or separate, should specify the length of time the obligations should be adhered to. When the organization is a PII processor, a confidentiality agreement, in whatever form, between the organization, its employees and its agents should ensure that employees and agents comply with the policy and procedures concerning data handling and protection."
+  },
+  {
+    "section_reference": "B.3.19",
+    "section_title": "Implementation guidance — Clear desk and clear screen",
+    "applies_to": "Both",
+    "chunk_text": "The organization should restrict the creation of hardcopy material including PII to the minimum needed to fulfil the identified processing purpose."
+  },
+  {
+    "section_reference": "B.3.20",
+    "section_title": "Implementation guidance — Storage media",
+    "applies_to": "Both",
+    "chunk_text": "The organization should document any use of removable media or devices for the storage of PII. Wherever feasible, the organization should use removable physical media or devices that permit encryption when storing PII. Unencrypted media should only be used where unavoidable, and in instances where unencrypted media or devices are used, the organization should implement procedures and compensating controls to mitigate risks to the PII. Removable media which is taken outside the physical confines of the organization is prone to loss, damage and inappropriate access. Encrypting removable media adds a level of protection for PII, which reduces security and privacy risks if the removable media is compromised."
+  },
+  {
+    "section_reference": "B.3.21",
+    "section_title": "Implementation guidance — Secure disposal or re-use of equipment",
+    "applies_to": "Both",
+    "chunk_text": "The organization should ensure that, whenever storage space is re-assigned, any PII previously residing on that storage space is not accessible. With regard to deletion of PII held in an information system, performance issues can mean that explicit erasure of that PII is impractical. This creates the risk that another user can access the PII. Such risk should be avoided by specific technical measures. For secure disposal or re-use, equipment containing storage media that can possibly contain PII should be treated as though it contains PII."
+  },
+  {
+    "section_reference": "B.3.22",
+    "section_title": "Implementation guidance — User endpoint devices",
+    "applies_to": "Both",
+    "chunk_text": "The organization should ensure that the use of mobile devices does not lead to a compromise of PII."
+  },
+  {
+    "section_reference": "B.3.23",
+    "section_title": "Implementation guidance — Secure authentication",
+    "applies_to": "Both",
+    "chunk_text": "Where required by the customer, the organization should provide the capability for secure log-on procedures for any user accounts under the customer's control."
+  },
+  {
+    "section_reference": "B.3.24",
+    "section_title": "Implementation guidance — Information backup",
+    "applies_to": "Both",
+    "chunk_text": "The organization should have a policy which addresses the requirements for backup, recovery and restoration of PII and any further requirements for the erasure of PII contained in information held for backup purposes. Some jurisdictions impose specific requirements regarding the frequency of backups of PII, the frequency of reviews and tests of backup, or regarding the recovery procedures for PII. There can be occasions where PII is required to be restored, perhaps due to a system malfunction, attack or disaster. When PII is restored, processes should be in place to ensure that the PII is restored into a state where the integrity of PII can be assured. The organization should have a procedure for, and a log of, PII restoration efforts."
+  },
+  {
+    "section_reference": "B.3.25",
+    "section_title": "Implementation guidance — Logging",
+    "applies_to": "Both",
+    "chunk_text": "A process should be put in place to review event logs using continuous, automated monitoring and alerting processes, or else manually where such a review should be performed with a specified, documented periodicity, to identify irregularities and propose remediation efforts. Where possible, event logs should record access to PII, including by whom, when, which PII principal's PII was accessed, and what (if any) changes were made (e.g. additions, modifications or deletions) as a result of the event. Where multiple service providers are involved in providing services, there can be varied or shared roles in implementing this guidance. These roles should be clearly defined and included in the documented information, and agreement on any log access between providers should be addressed. A procedure, preferably automatic, should be put in place to ensure that logged information is either deleted or de-identified as specified in the retention schedule."
+  },
+  {
+    "section_reference": "B.3.26",
+    "section_title": "Implementation guidance — Use of cryptography",
+    "applies_to": "Both",
+    "chunk_text": "Some jurisdictions can require the use of cryptography to protect particular kinds of PII, such as health data, resident registration numbers, passport numbers and driver's licence numbers. The organization should provide information to the customer regarding the circumstances in which it uses cryptography to protect the PII it processes. The organization should also provide information to the customer about any capabilities it provides that can assist the customer in applying their own cryptographic protection."
+  },
+  {
+    "section_reference": "B.3.27",
+    "section_title": "Implementation guidance — Secure development life cycle",
+    "applies_to": "Both",
+    "chunk_text": "Policies for system development and design should include guidance for the organization's processing of PII needs, based on obligations to PII principals or any applicable legal requirements and the types of processing performed by the organization. Policies that contribute to privacy by design and privacy by default should consider the following aspects: guidance on PII protection and the implementation of the privacy principles in the software development life cycle; privacy and PII protection requirements in the design phase, which can be based on the output from a privacy risk assessment or a privacy impact assessment; PII protection checkpoints within project milestones; required privacy and PII protection knowledge; by default, minimize processing of PII."
+  },
+  {
+    "section_reference": "B.3.28",
+    "section_title": "Implementation guidance — Application security requirements",
+    "applies_to": "Both",
+    "chunk_text": "The organization should ensure that PII that is transmitted over untrusted data transmission networks is encrypted for transmission. Untrusted networks can include the public internet and other facilities outside of the operational control of the organization."
+  },
+  {
+    "section_reference": "B.3.29",
+    "section_title": "Implementation guidance — Secure system architecture and engineering principles",
+    "applies_to": "Both",
+    "chunk_text": "Systems or components related to the processing of PII should be designed following the principles of privacy by design and privacy by default, and to anticipate and facilitate the implementation of relevant controls for PII controllers and PII processors, in particular such that the collection and processing of PII in those systems is limited to what is necessary for the identified purposes of the processing of PII. For example, an organization that processes PII should ensure that it disposes of PII after a specified period. The system that processes that PII should be designed in a way to facilitate this deletion requirement."
+  },
+  {
+    "section_reference": "B.3.30",
+    "section_title": "Implementation guidance — Outsourced development",
+    "applies_to": "Both",
+    "chunk_text": "The same principles of privacy by design and privacy by default should be applied, if applicable, to outsourced information systems."
+  },
+  {
+    "section_reference": "B.3.31",
+    "section_title": "Implementation guidance — Test information",
+    "applies_to": "Both",
+    "chunk_text": "PII should not be used for testing purposes; false or synthetic PII should be used. Where the use of PII for testing purposes cannot be avoided, technical and organizational measures equivalent to those used in the production environment should be implemented to minimize the risks. Where such equivalent measures are not feasible, a risk assessment should be undertaken and used to identify the selection of appropriate mitigating controls."
+  }
+]

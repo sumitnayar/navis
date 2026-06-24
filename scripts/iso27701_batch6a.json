@@ -1,0 +1,188 @@
+[
+  {
+    "section_reference": "B.1.2.2",
+    "section_title": "Implementation guidance — Identify and document purpose",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should ensure that PII principals understand the purpose for which their PII is processed. It is the responsibility of the organization to clearly document and communicate this to PII principals. Without a clear statement of the purpose for processing, consent and choice cannot be adequately given. Documentation of the purpose(s) for processing PII should be sufficiently clear and detailed so that it can be used as part of the information to be provided to PII principals. This documentation should include information necessary to obtain consent, as well as documented information of policies and procedures."
+  },
+  {
+    "section_reference": "B.1.2.3",
+    "section_title": "Implementation guidance — Identify lawful basis",
+    "applies_to": "PII Controller",
+    "chunk_text": "Some jurisdictions require the organization to be able to demonstrate that the lawfulness of processing was duly established before the processing. The legal basis for the processing of PII can include: consent from PII principals; performance of a contract; compliance with a legal obligation; protection of the vital interests of PII principals; performance of a task carried out in the public interest; legitimate interests of the PII controller. The organization should document this basis for each PII processing activity. Whenever special categories of PII are defined, either by the nature of the PII or by the PII principals concerned (e.g. PII relating to children), the organization should include those categories of PII in its classification schemes. The classification of PII that falls into these categories can vary from one jurisdiction to another."
+  },
+  {
+    "section_reference": "B.1.2.4",
+    "section_title": "Implementation guidance — Determine when and how consent is to be obtained",
+    "applies_to": "PII Controller",
+    "chunk_text": "Consent can be required for processing of PII. The organization should clearly document when consent needs to be obtained and the requirements for obtaining consent. Some jurisdictions have specific requirements for how consent is collected and recorded (e.g. not bundled with other agreements). Additionally, certain types of data collection (e.g. for scientific research) and certain types of PII principals, such as children, can be subject to additional requirements. The consent should be: freely given; specific regarding the purpose for processing; and unambiguous and explicit."
+  },
+  {
+    "section_reference": "B.1.2.5",
+    "section_title": "Implementation guidance — Obtain and record consent",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should obtain and record consent from PII principals in such a way that it can provide details by request of the consent provided (e.g. the time that consent was provided, the identification of the PII principal and the consent statement). The information delivered to the PII principal before the consent process should follow the guidance in B.1.3.4."
+  },
+  {
+    "section_reference": "B.1.2.6",
+    "section_title": "Implementation guidance — Privacy impact assessment",
+    "applies_to": "PII Controller",
+    "chunk_text": "PII processing generates risks for PII principals. These risks should be assessed through a privacy impact assessment. Some jurisdictions define cases for which a privacy impact assessment is mandated. Criteria can include automated decision making which produces legal effects on PII principals, large scale processing of special categories of PII (e.g. health-related information, racial or ethnic origin, political opinions, religious or philosophical beliefs, trade-union membership, genetic data or biometric data), or systematic monitoring of a publicly accessible area on a large scale. The organization should determine the elements that are necessary for the completion of a privacy impact assessment. These can include a list of the types of PII processed, where the PII is stored and where it can be transferred. Data flow diagrams and data maps can also be helpful in this context."
+  },
+  {
+    "section_reference": "B.1.2.7",
+    "section_title": "Implementation guidance — Contracts with PII processors",
+    "applies_to": "PII Controller",
+    "chunk_text": "The contract between the organization and any PII processor processing PII on its behalf should require the PII processor to implement the appropriate controls specified in Table A.2, taking account of the information security risk assessment process and the scope of the processing of PII performed by the PII processor. By default, all controls specified in Table A.2 should be assumed as relevant. If the organization decides that the PII processor is not required to implement a control from Table A.2, it should justify its exclusion. A contract can define the responsibilities of each party differently but, to be consistent with this document, all controls should be considered and included in the documented information."
+  },
+  {
+    "section_reference": "B.1.2.8",
+    "section_title": "Implementation guidance — Joint PII controller",
+    "applies_to": "PII Controller",
+    "chunk_text": "Roles and responsibilities for the processing of PII should be determined in a transparent manner. These roles and responsibilities should be documented in a contract or any similar binding document that contains the terms and conditions for the joint processing of PII. In some jurisdictions, such an agreement is called a data sharing agreement. A joint PII controller agreement can include: the purpose of PII sharing/joint PII controller relationship; the identity of the organizations (PII controllers) that are part of the joint PII controller relationship; the categories of PII to be shared or transferred and processed under the agreement; an overview of the processing operations (e.g. transfer, use); a description of the respective roles and responsibilities; the responsibility for implementing technical and organizational security measures for PII protection; the definition of responsibility in case of a PII breach (e.g. who will notify, when, mutual information); terms of retention or disposal of PII; liabilities for failure to comply with the agreement; how obligations to PII principals are met; a contact point for PII principals."
+  },
+  {
+    "section_reference": "B.1.2.9",
+    "section_title": "Implementation guidance — Records related to processing PII",
+    "applies_to": "PII Controller",
+    "chunk_text": "Documented information of the processing of PII can be maintained through an inventory or list of the PII processing activities that the organization performs. Such an inventory can include: the type of processing; the purposes for the processing; a description of the categories of PII and PII principals (e.g. children); the categories of recipients to whom the PII has been or will be disclosed, including recipients in third countries or international organizations; a general description of the technical and organizational security measures; and a privacy impact assessment report. Such an inventory should have an owner who is responsible for its accuracy and completeness."
+  },
+  {
+    "section_reference": "B.1.3.2",
+    "section_title": "Implementation guidance — Determining and fulfilling obligations to PII principals",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should ensure that they provide the appropriate means to meet the obligations to PII principals in an accessible and timely manner. Clear documentation should be provided to the PII principal describing the extent to which the obligations to them are fulfilled and how, along with an up-to-date contact point where they can address their requests. The contact point should be provided in a similar way to that used to collect PII and consent (e.g. if PII are collected by email or a website, the contact point should be by email or the website)."
+  },
+  {
+    "section_reference": "B.1.3.3",
+    "section_title": "Implementation guidance — Determining information for PII principals",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should determine the legal, regulatory or business requirements for providing information to the PII principal and for the type of information to be provided. Examples of types of information that can be provided to PII principals are: information about the purpose of the processing; contact details for the PII controller or its representative; information about the lawful basis for the processing; information on where the PII was obtained, if not obtained directly from the PII principal; information about whether the provision of PII is a statutory or contractual requirement; information on obligations to PII principals and how PII principals can benefit from them, especially regarding accessing, amending, correcting, requesting erasure, receiving a copy of their PII and objecting to the processing; information on how the PII principal can withdraw consent; information about transfers of PII; information about recipients or categories of recipients of PII; information about the period for which the PII will be retained; information about the use of automated decision making based on the automated processing of PII; information about the right to lodge a complaint."
+  },
+  {
+    "section_reference": "B.1.3.4",
+    "section_title": "Implementation guidance — Providing information to PII principals",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should provide the information detailed in B.1.3.3 to PII principals in a timely, concise, complete, transparent, intelligible and easily accessible form, using clear and plain language, as appropriate to the target audience. Where appropriate, the information should be given at the time of PII collection. It should also be permanently accessible."
+  },
+  {
+    "section_reference": "B.1.3.5",
+    "section_title": "Implementation guidance — Providing mechanism to modify or withdraw consent",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should inform PII principals of their rights related to withdrawing consent at any time and provide the mechanism to do so. The mechanism used for withdrawal depends on the system; it should be consistent with the mechanisms used for obtaining consent when possible. Modifying consent can include placing restrictions on the processing of PII. The organization should record any request to withdraw or change consent in a similar way to the recording of the consent itself. Any change of consent should be disseminated, through appropriate systems, to authorized users and to relevant third parties. The organization should define a response time and requests should be handled according to it."
+  },
+  {
+    "section_reference": "B.1.3.6",
+    "section_title": "Implementation guidance — Providing mechanism to object to PII processing",
+    "applies_to": "PII Controller",
+    "chunk_text": "Some jurisdictions provide PII principals with a right to object to the processing of their PII. Organizations subject to the legal requirements of such jurisdictions should be able to demonstrate how they ensure that they retain records of PII principals exercising this right. The organization should document the legal and regulatory requirements related to objections by the PII principals to processing. The organization should provide information to principals regarding the ability to object in these situations. Mechanisms to object can vary but should be consistent with the type of service provided."
+  },
+  {
+    "section_reference": "B.1.3.7",
+    "section_title": "Implementation guidance — Access, correction or erasure",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should implement policies, procedures or mechanisms for enabling PII principals to obtain access to, correct and erase their PII, if requested and without undue delay. The organization should define a response time and requests should be handled according to it. Any corrections or erasures should be disseminated through the system or to authorized users, and should be passed to third parties to whom the PII has been transferred. The organization should implement policies, procedures or mechanisms for use when there can be a dispute about the accuracy or correction of the data by the PII principal. Some jurisdictions impose restrictions on when and how a PII principal can request correction or erasure of their PII."
+  },
+  {
+    "section_reference": "B.1.3.8",
+    "section_title": "Implementation guidance — PII controllers' obligations to inform third parties",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should take appropriate steps, bearing in mind the available technology, to inform third parties of any modification or withdrawal of consent, or objections pertaining to the shared PII. The organization should determine and maintain active communication channels with third parties. Related responsibilities can be assigned to individuals in charge of their operations and maintenance."
+  },
+  {
+    "section_reference": "B.1.3.9",
+    "section_title": "Implementation guidance — Providing copy of PII processed",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should provide a copy of the PII that is processed in a structured, commonly used, format accessible by the PII principal. Some jurisdictions define cases where the organization should provide a copy of the PII processed in a format allowing portability to the PII principals or to recipient PII controllers (typically structured, commonly used and machine readable). The organization should ensure that any copies of PII provided to a PII principal relate specifically to that PII principal. Where the requested PII has already been deleted subject to the retention and disposal policy, the PII controller should inform the PII principal that the requested PII has been deleted."
+  },
+  {
+    "section_reference": "B.1.3.10",
+    "section_title": "Implementation guidance — Handling requests",
+    "applies_to": "PII Controller",
+    "chunk_text": "Legitimate requests can include requests for a copy of PII processed, or requests to lodge a complaint. Some jurisdictions allow the organization to charge a fee in certain cases (e.g. excessive or repetitive requests). Requests should be handled within the appropriate defined response times. Some jurisdictions define response times, depending on the complexity and number of the requests, as well as requirements to inform PII principals of any delay."
+  },
+  {
+    "section_reference": "B.1.3.11",
+    "section_title": "Implementation guidance — Automated decision making",
+    "applies_to": "PII Controller",
+    "chunk_text": "Some jurisdictions define specific obligations to PII principals when a decision based solely on automated processing of PII significantly affects them, such as notifying the existence of automated decision making, allowing for the PII principals to object to such decision making, or obtaining human intervention. In some jurisdictions, some processing of PII cannot be fully automated. Organizations operating in these jurisdictions should be able to demonstrate how they take compliance with these obligations into account."
+  },
+  {
+    "section_reference": "B.1.4.2",
+    "section_title": "Implementation guidance — Limit collection",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should limit the collection of PII to what is adequate, relevant and necessary in relation to the identified purposes. This includes limiting the amount of PII that the organization collects indirectly (e.g. through web logs, system logs). Privacy by default implies that, where any optionality in the collection and processing of PII exists, each option should be disabled by default and only enabled by explicit choice of the PII principal."
+  },
+  {
+    "section_reference": "B.1.4.3",
+    "section_title": "Implementation guidance — Limit processing",
+    "applies_to": "PII Controller",
+    "chunk_text": "Limiting the processing of PII should be managed through information security and privacy policies along with documented procedures for their adoption and compliance. Processing of PII should be limited by default to the minimum necessary, relative to the identified purposes. This processing includes the disclosure, the period of PII storage, and who can access their PII."
+  },
+  {
+    "section_reference": "B.1.4.4",
+    "section_title": "Implementation guidance — Accuracy and quality",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should implement policies, procedures or mechanisms to minimize inaccuracies in the PII it processes. There should also be policies, procedures or mechanisms to respond to instances of inaccurate PII. These policies, procedures or mechanisms should be included in the documented information and should apply throughout the PII life cycle."
+  },
+  {
+    "section_reference": "B.1.4.5",
+    "section_title": "Implementation guidance — PII minimization objectives",
+    "applies_to": "PII Controller",
+    "chunk_text": "Organizations should identify how the specific PII and amount of PII collected and processed is limited relative to the identified purposes. This can include the use of de-identification or other data minimization techniques. The identified purpose can require the processing of PII that has not been de-identified, in which case the organization should be able to describe such processing. In other cases, the identified purpose does not require the processing of the original PII, and the processing of de-identified PII can suffice to achieve the identified purpose."
+  },
+  {
+    "section_reference": "B.1.4.6",
+    "section_title": "Implementation guidance — PII de-identification and deletion at the end of processing",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should have mechanisms to erase the PII when no further processing is anticipated. Alternatively, some de-identification techniques can be used, as long as the resulting de-identified data cannot reasonably permit re-identification of PII principals."
+  },
+  {
+    "section_reference": "B.1.4.7",
+    "section_title": "Implementation guidance — Temporary files",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should perform periodic checks that unused temporary files are deleted within the identified time period. Information systems can create temporary files in the normal course of their operation. Such files are specific to the system or application but can include file system roll-back journals and temporary files associated with the updating of databases. Temporary files are not needed after the related information processing task has been completed but there are circumstances in which they cannot be deleted. A garbage collection procedure should identify the relevant files and determine how long it has been since they were last used."
+  },
+  {
+    "section_reference": "B.1.4.8",
+    "section_title": "Implementation guidance — Retention",
+    "applies_to": "PII Controller",
+    "chunk_text": "The organization should develop and maintain retention schedules for information it retains, taking into account the requirement to retain PII for no longer than is necessary. Such schedules should take into account legal, regulatory and business requirements. Where such requirements conflict, a business decision should be taken (based on a risk assessment) and documented in the appropriate schedule."
+  },
+  {
+    "section_reference": "B.1.4.9",
+    "section_title": "Implementation guidance — Disposal",
+    "applies_to": "PII Controller",
+    "chunk_text": "The choice of PII disposal techniques depends on a number of factors, as disposal techniques differ in their properties and outcomes (e.g. in the granularity of the resultant physical media, or the ability to recover deleted information on electronic media). Factors to consider when choosing an appropriate disposal technique include, but are not limited to, the nature and extent of the PII to be disposed of, whether or not there is metadata associated with the PII, and the physical characteristics of the media on which the PII is stored."
+  },
+  {
+    "section_reference": "B.1.4.10",
+    "section_title": "Implementation guidance — PII transmission controls",
+    "applies_to": "PII Controller",
+    "chunk_text": "Transmission of PII should be controlled, typically by ensuring that only authorized individuals have access to transmission systems, and by following the appropriate processes (including the retention of audit logs) to ensure that PII is transmitted without compromise to the correct recipients."
+  },
+  {
+    "section_reference": "B.1.5.2",
+    "section_title": "Implementation guidance — Identify basis for PII transfer between jurisdictions",
+    "applies_to": "PII Controller",
+    "chunk_text": "PII transfer can be subject to legal requirements, depending on the jurisdiction or international organization to which data are to be transferred. The organization should document compliance with such requirements as the basis for transfer. Some jurisdictions can require that information transfer agreements be reviewed by a designated supervisory authority. Where transfers take place within a specific jurisdiction, the applicable legal requirements are the same for the sender and recipient."
+  },
+  {
+    "section_reference": "B.1.5.3",
+    "section_title": "Implementation guidance — Countries and international organizations to which PII can be transferred",
+    "applies_to": "PII Controller",
+    "chunk_text": "The identities of the countries and international organizations to which PII can possibly be transferred in normal operations should be made available to customers. The identities of the countries arising from the use of subcontracted PII processing should be included. The countries included should be considered in relation to the basis for PII transfer between jurisdictions. Outside of normal operations, there can be cases of transfer made at the request of a legal authority, for which the identity of the countries cannot be specified in advance, or such transfer can be prohibited by applicable jurisdictions to preserve the confidentiality of a law enforcement investigation."
+  },
+  {
+    "section_reference": "B.1.5.4",
+    "section_title": "Implementation guidance — Records of transfer of PII",
+    "applies_to": "PII Controller",
+    "chunk_text": "Recording can include transfers from third parties of PII which has been modified as a result of PII controllers managing its obligations, or transfers to third parties to implement legitimate requests from PII principals, including requests to erase PII (e.g. after consent withdrawal). The organization should have a policy defining the retention period of these records. The organization should apply the data minimization principle to the records of transfers by retaining only the strictly needed information."
+  },
+  {
+    "section_reference": "B.1.5.5",
+    "section_title": "Implementation guidance — Records of PII disclosures to third parties",
+    "applies_to": "PII Controller",
+    "chunk_text": "PII can be disclosed during normal operations. These disclosures should be recorded. Any additional disclosures to third parties, such as those arising from legal investigations or external audits, should also be recorded. The records should include the source of the disclosure and the source of the authority to make the disclosure."
+  }
+]
