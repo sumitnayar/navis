@@ -39,14 +39,20 @@ export class GovernanceMapComponent {
         </div>
       </div>
 
-      <div class="tabs-nav" style="margin-bottom: 20px; display: flex; gap: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-        <button class="tab-btn ${this.activeTab === 'universe' ? 'active' : ''}" data-tab="universe" style="background:none; border:none; color: ${this.activeTab === 'universe' ? 'var(--color-indigo)' : 'var(--text-secondary)'}; font-weight: ${this.activeTab === 'universe' ? '600' : '400'}; cursor: pointer;">Universe View</button>
-        <button class="tab-btn ${this.activeTab === 'gaps' ? 'active' : ''}" data-tab="gaps" style="background:none; border:none; color: ${this.activeTab === 'gaps' ? 'var(--color-indigo)' : 'var(--text-secondary)'}; font-weight: ${this.activeTab === 'gaps' ? '600' : '400'}; cursor: pointer;">Gap View</button>
-      </div>
+      <div class="register-layout">
+        <div class="details-panel" style="max-width: 1200px; margin: 0 auto; width: 100%;">
+          
+          <div class="tabs-nav" style="margin-bottom: 20px; display: flex; gap: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <button class="tab-btn ${this.activeTab === 'universe' ? 'active' : ''}" data-tab="universe" style="background:none; border:none; color: ${this.activeTab === 'universe' ? 'var(--color-indigo)' : 'var(--text-secondary)'}; font-weight: ${this.activeTab === 'universe' ? '600' : '400'}; cursor: pointer;">Universe View</button>
+            <button class="tab-btn ${this.activeTab === 'gaps' ? 'active' : ''}" data-tab="gaps" style="background:none; border:none; color: ${this.activeTab === 'gaps' ? 'var(--color-indigo)' : 'var(--text-secondary)'}; font-weight: ${this.activeTab === 'gaps' ? '600' : '400'}; cursor: pointer;">Gap View</button>
+          </div>
 
-      <div class="tab-content">
-        ${this.activeTab === 'universe' ? this._renderUniverse() : ''}
-        ${this.activeTab === 'gaps' ? this._renderGaps() : ''}
+          <div class="tab-content" style="padding-bottom: 40px;">
+            ${this.activeTab === 'universe' ? this._renderUniverse() : ''}
+            ${this.activeTab === 'gaps' ? this._renderGaps() : ''}
+          </div>
+          
+        </div>
       </div>
     `;
 
@@ -153,8 +159,10 @@ export class GovernanceMapComponent {
     if (!d) return '';
 
     let html = `
-      <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; position: relative;">
-        <button class="btn-close-panel" style="position:absolute; right:20px; top:20px; background:none; border:none; font-size:20px; cursor:pointer;">&times;</button>
+      <div style="margin-bottom: 20px;">
+        <button class="btn btn-secondary btn-close-panel">← Back to Governance Map</button>
+      </div>
+      <div class="glass-panel" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; position: relative;">
         <h2 style="font-family: 'IBM Plex Serif', serif; color: #0a1628; margin-top:0; text-transform: uppercase;">${d.domain}</h2>
         <hr style="border-top: 1px solid var(--border-color); margin: 15px 0;" />
         
@@ -228,8 +236,10 @@ export class GovernanceMapComponent {
   _renderTraceability() {
     const p = this.traceabilityPolicy;
     return `
-      <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; position: relative;">
-        <button class="btn-close-panel" style="position:absolute; right:20px; top:20px; background:none; border:none; font-size:20px; cursor:pointer;">&times;</button>
+      <div style="margin-bottom: 20px;">
+        <button class="btn btn-secondary btn-close-panel">← Back to Governance Map</button>
+      </div>
+      <div class="glass-panel" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; position: relative;">
         <h2 style="font-family: 'IBM Plex Serif', serif; color: #0a1628; margin-top:0;">Traceability Map</h2>
         <p style="color:var(--text-secondary); margin-bottom:30px;">Lineage trace for ${p.title}</p>
 
