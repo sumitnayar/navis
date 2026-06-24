@@ -1,0 +1,642 @@
+<USER_REQUEST>
+# Navis — Policy Studio Rebuild & Governance OS Brief
+**Instruction Brief for AG | Navis v0.4**
+
+---
+
+## Context: What Exists, What Changes, What's New
+
+### What exists and is preserved
+- Supabase schema with `policy_documents`, `policy_document_chunks` (with `embedding vector(1536)`), `document_vault`, `policy_questions` tables — **do not drop or modify these tables**
+- `OrganizationContextService.generateNarrative` — preserved and extended, not replaced
+- Clause library modular structure (`generalClauses.js`, `privacyClauses.js`, `infosecClauses.js` etc.) — content preserved, UI rebuilt
+- Gemini API route on Vercel — being replaced by Anthropic Claude API. Remove Gemini dependency entirely.
+
+### What is being replaced
+- Single-prompt Gemini generation → Multi-agent Claude pipeline via server-side API routes
+- Client-side AI calls → All AI calls move to `/api` server-side routes
+- Silent fallback to hardcoded dummy content → Honest error states only (see Fallback Policy below)
+- Small unformatted edit window → Rich text editor with proper rendered formatting
+- PDF-only export via html2pdf.js → PDF (Puppeteer server-side) + DOCX export
+- Static hardcoded clause library UI → AI-recommended clause cards
+
+### What is new
+- Layer 0: Organizational Intelligence Schema
+- Governance Map screen
+- Multi-agent Policy Generation pipeline
+- Document Ingestion Engine (RAG activation)
+- Policy Challenge Mode
+- Policy Simulation
+- SVG diagram generation and embedding
+- Version control and Policy Library
+- Global Config (logo, fonts, org structure saved once)
+- Coverage Score with reasoning engine
+- Future-state governance recommendations
+
+---
+
+## FALLBACK POLICY — Read This First, Apply Everywhere
+
+**There are no fallback modes in this rebuild. None.**
+
+If an AI call fails, the system stops and shows an honest, specific error message. It does not produce partial output. It does not produce simulated content. It does not produce hardcoded canned drafts.
+
+Error states must be informative:
+- "Policy generation failed: Claude API unavailable. Please try again."
+- "Document ingestion failed: File could not be parsed. Supported formats: PDF, DOCX, TXT."
+- "Coverage Score unavailable: AI call failed. Retry when ready."
+
+Empty states are invitations to act, not mood:
+- "No policies generated yet. Start with your highest-risk domain."
+- "No documents ingested. Upload your ISMS, SOPs, or HR manual to personalise generation."
+
+A user who receives a dummy policy and acts on it in an audit is worse off than a user who received an honest error. Never produce governance content you cannot stand behind.
+
+---
+
+## Model
+
+All AI calls use `claude-sonnet-4-6` via the Anthropic API.
+
+```javascript
+const response = await fetch("https://api.anthropic.com/v1/messages", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": process.env.ANTHROPIC_API_KEY,
+    "anthropic-version": "2023-06-01"
+  },
+  body: JSON.stringify({
+    model: "claude-sonnet-4-6",
+    max_tokens: 8000,
+    messages: [...]
+  })
+});
+```
+
+API key stored in Vercel environment variables as `ANTHROPIC_API_KEY`. Never in client code. Never in localStorage.
+
+---
+
+## Phase 1 — Layer 0: Organizational Intelligence Schema
+
+### Purpose
+Every other feature reads from and writes to this layer. Build this first. Nothing else starts until this is complete and tested.
+
+### New Supabase Tables
+
+```sql
+-- Core org graph nodes
+CREATE TABLE org_departments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  name TEXT NOT NULL,
+  head_name TEXT,
+  head_title TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE org_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  department_id UUID REFERENCES org_departments(id),
+  role_title TEXT NOT NULL,
+  person_name TEXT,
+  is_policy_owner BOOLEAN DEFAULT FALSE,
+  is_approver BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE org_committees (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  name TEXT NOT NULL,
+  chair_role_id UUID REFERENCES org_roles(id),
+  members JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE risk_register (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  risk_name TEXT NOT NULL,
+  risk_domain TEXT NOT NULL,
+  risk_description TEXT,
+  likelihood TEXT CHECK (likelihood IN ('Low','Medium','High','Critical')),
+  impact TEXT CHECK (impact IN ('Low','Medium','High','Critical')),
+  owner_role_id UUID REFERENCES org_roles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE controls (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  control_id TEXT NOT NULL, -- e.g. IAM-01
+  control_name TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  implementation_status TEXT CHECK (implementation_status IN ('Not Started','Partial','Implemented','Verified')),
+  owner_role_id UUID REFERENCES org_roles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE kris (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  kri_name TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  current_value TEXT,
+  threshold TEXT,
+  status TEXT CHECK (status IN ('Normal','Warning','Breach')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE regulations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  regulation_name TEXT NOT NULL, -- ISO 27001, SOC 2, DPDP, etc.
+  applicable BOOLEAN DEFAULT TRUE,
+  certification_status TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE vendors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  vendor_name TEXT NOT NULL,
+  tier TEXT CHECK (tier IN ('Critical','High','Medium','Low')),
+  last_review_date DATE,
+  owner_role_id UUID REFERENCES org_roles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE tech_stack (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  system_name TEXT NOT NULL,
+  category TEXT, -- Cloud, SaaS, On-Prem, etc.
+  data_classification TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Relationship: Risk to Policy (traceability)
+CREATE TABLE risk_policy_map (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id),
+  risk_id UUID REFERENCES risk_register(id),
+  policy_id UUID REFERENCES policy_documents(id),
+  control_ids UUID[], -- array of control IDs
+  regulation_ids UUID[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Global org config
+CREATE TABLE org_global_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID UNIQUE REFERENCES organizations(id),
+  company_name TEXT,
+  logo_url TEXT,
+  primary_font TEXT DEFAULT 'Inter',
+  brand_color TEXT DEFAULT '#1a1a2e',
+  industry TEXT,
+  employee_count INTEGER,
+  hq_location TEXT,
+  certifications_active JSONB, -- ["ISO 27001", "SOC 2"]
+  certifications_inprogress JSONB,
+  us_customers BOOLEAN DEFAULT FALSE,
+  remote_employee_percentage INTEGER,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Global Config UI
+One screen under Settings. Fields: company name, logo upload, primary font, brand colour, industry, headcount, location, active certifications, certifications in progress, US customers (yes/no), remote work percentage.
+
+Save once. Referenced by every policy generation, every coverage score, every future-state recommendation. Never ask again.
+
+---
+
+## Phase 2 — Governance Map
+
+### Purpose
+The cockpit. The first screen a board member or diligence team opens. Answers one question: where is this organisation exposed?
+
+### Architecture
+Server-side API route: `/api/governance/map`
+Reads from: `risk_register`, `controls`, `kris`, `policy_documents`, `risk_policy_map`, `org_roles`, `regulations`
+Returns: domain-level governance object for each risk domain
+
+### Domain View (default screen)
+Grid of domain tiles. Each domain (Identity & Access, Third Party Risk, Data Privacy, HR, Finance, Operations, Compliance, Business Continuity, etc.) shows:
+- Domain name
+- Overall maturity: Strong / Moderate / Weak / Critical Gap
+- Policy count (approved / total)
+- Control status (implemented / total)
+- KRI alerts count
+- Owner
+
+### Domain Expansion (click any tile)
+Full node view:
+
+```
+THIRD PARTY RISK
+─────────────────────────────────────
+Policies
+  ✓ Vendor Management Policy       Approved
+  ✓ Procurement Policy             Approved
+  ⚠ Third Party Data Sharing       Draft
+
+Controls
+  ✓ Vendor Due Diligence           Implemented
+  ✓ Security Assessment            Implemented
+  ✗ Annual Vendor Review           Not Started
+
+KRIs
+  ⚠ Critical Vendors Without Review = 12
+  ✓ Vendor Tiering Completed
+
+Open Actions
+  ⚠ Vendor Tiering Project — Delayed 3 weeks
+
+Assurance
+  ✓ Internal Audit — March 2025
+
+Owner
+  Head Procurement
+
+Overall Maturity
+  Moderate
+─────────────────────────────────────
+Coverage Score
+  WEAK
+  Reasoning:
+  Policy exists and is approved.
+  Controls partially implemented — annual review not started.
+  12 critical vendors without completed review on record.
+  No evidence of last review cycle.
+  Recommend: prioritise annual vendor review control and vendor tiering project.
+```
+
+### Coverage Score
+This is NOT a percentage. It is an AI-generated reasoning block.
+
+API call: Pass domain node data (policies, controls, KRIs, evidence, owner) to Claude. Ask for a maturity assessment in this exact JSON structure:
+
+```json
+{
+  "maturity": "Weak | Moderate | Strong | Critical Gap",
+  "reasoning": [
+    "Policy exists and is approved.",
+    "Controls partially implemented.",
+    "No evidence of annual review cycle.",
+    "12 critical vendors unclassified."
+  ],
+  "top_recommendation": "Prioritise vendor tiering and annual review control."
+}
+```
+
+Render the reasoning array as a readable list. Never render a percentage. Never render a bar chart labelled "87% complete."
+
+If the AI call fails: show "Coverage assessment pending. Retry." Do not show a score. Do not show zero.
+
+### Gap Identification
+Missing policies are not static suggestions. For each identified gap, Claude receives:
+- Domain
+- Org global config (headcount, remote %, certifications, US customers)
+- Existing controls and risks in that domain
+
+Returns:
+
+```json
+{
+  "policy_name": "Remote Work Security Policy",
+  "reason": "42 remote employees. Access from unmanaged devices likely. Customer data processed remotely.",
+  "risk_addressed": "Data leakage via unsecured endpoints",
+  "regulatory_relevance": ["ISO 27001 A.6.2", "DPDP Section 8"],
+  "priority": "High"
+}
+```
+
+Render each gap as a card. Priority sorted. Not alphabetical.
+
+### Future-State Recommendations
+Triggered when org config is updated or on a weekly schedule.
+
+Claude receives: current governance state + org trajectory signals (certifications in progress, headcount growth, US customer flag, recent risk events).
+
+Returns list of predicted governance needs within 6 months with rationale.
+
+Example output:
+```
+Likely Required Within 6 Months
+─────────────────────────────────
+AI Governance Policy
+Reason: SOC 2 underway. US customers increasing. No AI use policy on record.
+
+Model Risk Management Policy  
+Reason: Fraud detection ML models in production. No model governance framework exists.
+
+Third Party Risk Policy Enhancement
+Reason: 12 critical vendors unreviewed. Current policy does not define tiering criteria.
+```
+
+### Three Map Views
+- **Universe View** — all domains, all tiles, bird's eye
+- **Gap View** — AI-generated, sorted by risk severity, missing policies and controls only
+- **Traceability View** — click any policy, see: risk it addresses → controls it enables → regulations it satisfies → owner → last review → next review due
+
+---
+
+## Phase 3 — Document Ingestion Engine
+
+### Purpose
+Activate the existing RAG schema. Make ingested documents the primary source of truth for policy generation.
+
+### What exists already
+`policy_document_chunks` table with `embedding vector(1536)` column exists in Supabase. It is unused. Activate it.
+
+### API Route: `/api/documents/ingest`
+Accepts: PDF, DOCX, TXT
+Process:
+1. Extract text (use `pdf-parse` for PDF, `mammoth` for DOCX)
+2. Chunk by section — not by fixed token count. Respect document structure. If no clear sections, chunk at 800 tokens with 100 token overlap.
+3. Embed each chunk using `text-embedding-3-small` (OpenAI) or Claude's embedding endpoint
+4. Store in `policy_document_chunks` with: chunk_text, section_title, page_number, token_count, embedding, document_id, organization_id
+5. Generate document summary via Claude. Store in `policy_documents.summary`
+6. Return: document name, chunk count, summary preview
+
+### Retrieval
+At policy generation time, before calling the Structure Agent:
+- Embed the policy intent (type + domain + scope)
+- Query `policy_document_chunks` by cosine similarity
+- Retrieve top 10 chunks with similarity > 0.75 only
+- If no chunks above threshold: proceed without RAG context, do not hallucinate context
+- Pass retrieved chunks to agents as `[ORGANISATIONAL CONTEXT]` block
+
+This is not a customisation multiplier. This is the primary source of truth. If the organisation has uploaded an Access Control SOP and you are generating an IAM Policy, that SOP drives the policy. Not generic best practice.
+
+---
+
+## Phase 4 — Policy Studio Rebuild
+
+### Intake Screen
+Before any generation begins, capture:
+- Policy name
+- Domain (dropdown from predefined list + custom)
+- Policy owner (dropdown from `org_roles`)
+- Approver (dropdown from `org_roles`)
+- Effective date
+- Review frequency
+- Applicable regulations (multi-select from `regulations` table)
+- Scope (which departments / systems)
+- Specific context or instructions (free text)
+- Documents to include (select from ingested document library)
+
+This is not a quick form. It is a deliberate setup step. Display it as a clean full-screen intake, not a sidebar.
+
+### Multi-Agent Pipeline
+
+**Orchestrator** (`/api/policy/generate`)
+- Receives intake form data + org context from Layer 0 + retrieved RAG chunks
+- Calls agents in sequence: Structure → Content → Compliance
+- Passes each agent's output to the next as input
+- Assembles final document
+- Runs Challenge Mode automatically
+- Returns assembled policy + challenge report to client
+- Shows progress states to user throughout: "Analysing organisational context... Building policy structure... Generating content... Running compliance check..."
+
+**Structure Agent** (internal call within orchestrator)
+System prompt: You are a governance architect. Your job is to produce a policy skeleton — section headers, scope statement, definitions, ownership assignments — drawn from the organisational context provided. Use actual names and titles from the org data. Do not invent roles. Do not use placeholder text.
+
+Input: policy type, org Layer 0 context, RAG chunks
+Output: JSON skeleton with section titles, scope, definitions, owner name and title, approver name and title
+
+**Content Agent** (internal call)
+System prompt: You are a governance writer producing board-ready policy content. Tone: authoritative, precise, unambiguous. Use "shall" and "must" for obligations. Use actual names, titles, system names, and process references from the organisational context. Do not produce generic policy text that could apply to any organisation.
+
+Input: structure skeleton + org context + RAG chunks
+Output: Full policy draft in markdown, section by section
+
+**Compliance Agent** (internal call)
+System prompt: You are a compliance reviewer. Review this policy draft against the applicable regulations and controls provided. Identify: missing ownership statements, missing escalation timelines, regulatory gaps, ambiguous language, unrealistic requirements, contradictions between sections. Be specific. Reference section numbers.
+
+Input: full policy draft + applicable regulations from org Layer 0
+Output: Challenge report JSON (see Challenge Mode below)
+
+### Challenge Mode Output
+Automatically attached to every generated policy. Rendered below the policy in the editor.
+
+```json
+{
+  "weaknesses_found": 4,
+  "items": [
+    {
+      "severity": "High",
+      "section": "Section 4.2",
+      "issue": "No escalation timeline defined for severity 1 incidents.",
+      "recommendation": "Add severity-based response matrix with defined SLA per tier."
+    },
+    {
+      "severity": "Medium", 
+      "section": "Section 6.1",
+      "issue": "Ownership assigned to role title only. No named individual.",
+      "recommendation": "Assign named owner with backup owner defined."
+    }
+  ]
+}
+```
+
+Render as a collapsible panel below the policy: "Challenge Report — 4 issues found." Expandable. Each item shows severity badge, section reference, issue, recommendation. User can mark each as resolved or accepted risk.
+
+### Policy Simulation
+Triggered post-generation. User clicks "Simulate Scenario."
+
+Scenario types: Ransomware Attack, Data Breach, Regulatory Audit, Vendor Failure, Key Person Departure, System Outage.
+
+Claude receives: full policy text + scenario type + org context
+Returns structured walkthrough:
+
+```
+SCENARIO: Ransomware Attack — 2:00 AM
+
+Step 1: Incident detected by monitoring system.
+Policy says: Security Lead notified within 15 minutes.
+Issue: Policy does not define backup contact if Security Lead unavailable.
+Gap: Single point of failure in notification chain.
+
+Step 2: Incident Response Team convened.
+Policy says: IRT convened within 1 hour.
+Status: No gap detected.
+
+Step 3: Executive notification.
+Policy says: CEO notified within 4 hours.
+Issue: No board notification protocol defined for ransomware events.
+Gap: Regulatory bodies may require notification. Policy is silent.
+
+Gaps Identified: 2
+Highest Risk Gap: Single point of failure in notification chain.
+```
+
+Render as a timeline view. Each step shows status: pass / gap. Gaps highlighted. Exportable as a test report.
+
+### Clause Library Rebuild
+Current: long list of clauses in a sidebar, filtered by group and framework.
+New: AI-recommended clause cards.
+
+On policy intake completion, before generation, Claude receives: policy type + domain + applicable regulations.
+Returns: 6-8 recommended clauses from the existing clause library, ranked by relevance.
+
+Render as compact cards:
+- Clause title
+- One-line description
+- Framework tag (ISO 27001, DPDP, SOC 2)
+- "Insert" button
+- Expand arrow to see full clause text
+
+Full clause library remains accessible via "Browse all clauses" — but the default view is AI-recommended. Never show the full list first.
+
+### Edit Window Rebuild
+Current: small window rendering raw markdown (`**bold**` instead of bold).
+New: proper rich text editor.
+
+Use `Quill.js` or `TipTap`. Rendered formatting — bold is bold, headers are headers, tables are tables. Full width. Not a sidebar panel.
+
+The edit window is where Anmol will spend most of his time. It must feel like a document editor, not a code window.
+
+### Diagram Generation
+After policy content is generated, Claude produces SVG diagrams embedded in the document:
+- RACI matrix (who is Responsible, Accountable, Consulted, Informed for each policy function)
+- Escalation tree (who gets notified at each severity level)
+- Approval flow (draft → review → approval → publish)
+- Policy lifecycle (effective → review → update → reapprove)
+
+Diagrams use actual names and roles from org Layer 0. Not placeholder text.
+
+SVG validation step: before embedding, validate SVG output is well-formed. If malformed, skip diagram and log error. Do not break document render.
+
+Diagrams are embedded inline in the policy document and included in export.
+
+---
+
+## Phase 5 — Policy Library, Version Control, Export
+
+### Policy Library
+Screen listing all policies across the organisation.
+
+Columns: Policy Name | Domain | Owner | Status | Version | Last Review | Next Review Due | Maturity
+
+Status options: Draft | Under Review | Approved | Expired | Superseded
+
+Filters: Domain, Status, Owner, Regulation, Maturity
+
+Sort by: Next Review Due (default), Risk Priority, Alphabetical
+
+### Version Control
+Every save creates a new version record. Fields: version number, saved by, saved at, change summary (AI-generated one-line diff description).
+
+Version history accessible from policy detail view. Previous versions viewable but not editable. Restore to previous version available.
+
+### Export
+
+**PDF:** Server-side via Puppeteer. Renders the full policy HTML including diagrams, RACI, formatted text. Applies global config: company logo, primary font, brand colour, header and footer with policy name, version number, effective date, and "CONFIDENTIAL" classification. Output is print-quality. Not a browser screenshot.
+
+**DOCX:** Via `docx` npm library. Structured sections, heading styles, table for RACI, paragraph styles for body text. Logo in header. Version and date in footer. SVG diagrams converted to PNG for DOCX embedding.
+
+Both export options available from the policy editor and from the Policy Library list view.
+
+---
+
+## Phase 6 — Future-State Intelligence
+
+Scheduled weekly inference call per organisation.
+
+Claude receives:
+- Current governance state (domain maturity scores, gap list)
+- Org trajectory signals from global config (certifications in progress, headcount, US customers, remote %)
+- Recent changes (new policies created, new risks added, new controls implemented)
+
+Returns: list of predicted governance needs within 3 and 6 months with rationale.
+
+Displayed on Governance Map as a dedicated panel: "Coming Requirements — Next 6 Months"
+
+Also triggers in-app notification when a high-priority future requirement is detected.
+
+---
+
+## API Routes Summary
+
+```
+POST /api/policy/generate          — Orchestrator. Runs full multi-agent pipeline.
+POST /api/policy/simulate          — Policy Simulation. Accepts policy_id + scenario_type.
+POST /api/documents/ingest         — Document upload, chunking, embedding, storage.
+GET  /api/governance/map           — Returns full governance map data for org.
+POST /api/governance/coverage      — Generates Coverage Score for a single domain.
+POST /api/governance/gaps          — Generates contextual gap recommendations.
+POST /api/governance/future        — Generates future-state recommendations.
+GET  /api/policy/library           — Returns policy library with filters.
+POST /api/policy/export/pdf        — Puppeteer PDF export.
+POST /api/policy/export/docx       — DOCX export.
+```
+
+---
+
+## UI Design Direction
+
+Navis serves CISOs, board members, and diligence teams. The visual register is institutional, not startup-playful.
+
+Palette: Deep navy (#0a1628) primary. White (#ffffff) content surfaces. Electric blue (#2563eb) for interactive elements and maturity indicators. Amber (#f59e0b) for warnings. Red (#dc2626) for critical gaps. Green (#16a34a) for strong/approved status.
+
+Typography: Display — `IBM Plex Serif` for headings and domain titles (authoritative, not corporate-generic). Body — `Inter` for all UI text, data, and labels. Mono — `IBM Plex Mono` for control IDs, version numbers, technical strings.
+
+Governance Map tiles: clean cards on dark navy background. Status communicated by colour and icon, not text alone. Domain name in Plex Serif. Maturity indicator as a colour-coded left border — green / amber / red / critical. Expand on click, no page navigation.
+
+Edit window: white surface, full width, document feel. Tiptap editor. Toolbar with essential formatting only — H1/H2, bold, italic, bullet list, numbered list, table insert. No clutter.
+
+Challenge Report panel: appears below editor in a collapsible card. Severity badges: red for High, amber for Medium, grey for Low. Clear typography hierarchy: issue in bold, recommendation in regular weight below.
+
+Progress states during generation: full-width status bar below the intake form with step labels. Not a spinner. Each step lights up as it completes: "Analysing context ✓ — Building structure ✓ — Generating content... — Running compliance check"
+
+---
+
+## Build Sequence
+
+Build in this order. Do not start the next phase until the current phase is complete and tested.
+
+1. Layer 0 schema and Global Config UI
+2. Governance Map — Universe View and Domain Expansion
+3. Coverage Score with reasoning engine
+4. Gap identification — contextual recommendations
+5. Document Ingestion Engine — activate RAG
+6. Policy Studio rebuild — Intake Screen, Multi-Agent Pipeline, Challenge Mode
+7. Clause Library rebuild
+8. Edit Window rebuild
+9. Simulation
+10. Diagram generation
+11. Policy Library and Version Control
+12. Export — PDF then DOCX
+13. Future-State Intelligence
+
+At each phase, test with Trackier's actual data. Anmol is the acceptance test for all policy-related features. A board member profile is the acceptance test for Governance Map.
+
+---
+
+## Success Criteria
+
+Phase 1 complete: Global config saved. Org structure, risks, controls, regulations, vendors entered for Trackier. Layer 0 graph queryable.
+
+Phase 2 complete: Open Governance Map. See Trackier's domain coverage. Click Third Party Risk. See accurate node expansion with Trackier's actual vendors, controls, KRIs. Coverage Score reasoning is specific to Trackier, not generic.
+
+Phase 3 complete: Upload Trackier's ISMS. Ask a question about it. Get a contextually accurate answer drawn from the document.
+
+Phase 4 complete: Generate Vendor Management Policy for Trackier. Policy references actual Trackier roles, systems, vendors. Challenge Mode identifies real gaps. Simulation runs a vendor failure scenario coherently.
+
+Phase 5 complete: Export the Vendor Management Policy as PDF. Open it. It looks like a document Trackier would present in an ISO audit — not a markdown dump with a logo.
+
+Phase 6 complete: Future-state panel correctly predicts at least two governance requirements Trackier will face in the next 6 months based on their current trajectory.
+
+---
+
+*Brief version 1.0 | Navis v0.4 | June 2026*
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-24T10:39:56+05:30.
+</ADDITIONAL_METADATA>
