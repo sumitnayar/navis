@@ -822,20 +822,30 @@ export class StorageService {
     if (isCloudMode) {
       try {
         const orgId = await this.getActiveOrgId();
+        console.log('[StorageService] getGlobalConfig fetching for orgId:', orgId);
+        
         const { data, error } = await supabaseClient
           .from('org_global_config')
           .select('*')
           .eq('organization_id', orgId);
         
-        if (error) throw error;
+        if (error) {
+          console.error('[StorageService] Supabase getGlobalConfig error:', error);
+          throw error;
+        }
+        
         if (data && data.length > 0) {
+          console.log('[StorageService] getGlobalConfig found record:', data[0].id);
           return data[0];
+        } else {
+          console.log('[StorageService] getGlobalConfig found NO record for orgId:', orgId);
         }
       } catch (e) {
-        console.warn("Failed to fetch global config from Supabase, falling back to local:", e);
+        console.warn("[StorageService] Failed to fetch global config from Supabase, falling back to local:", e);
       }
     }
     
+    console.log('[StorageService] getGlobalConfig falling back to local storage.');
     // Fallback to local storage if not in cloud mode or fetch fails
     const local = localStorage.getItem('navis_layer0_global_config');
     return local ? JSON.parse(local) : {
@@ -857,12 +867,29 @@ export class StorageService {
     if (isCloudMode) {
       try {
         const orgId = await this.getActiveOrgId();
+        console.log('[StorageService] saveGlobalConfig writing to orgId:', orgId, 'Payload:', config);
+
+        // Ensure the organization exists first to prevent foreign key constraint violations
+        if (orgId !== '00000000-0000-0000-0000-000000000000') {
+          const { error: orgError } = await supabaseClient
+            .from('organizations')
+            .upsert({ id: orgId, name: config.company_name || 'My Organization' })
+            .select('id');
+            
+          if (orgError) {
+             console.warn('[StorageService] Could not ensure org exists (might already exist or permission issue):', orgError);
+          }
+        }
         
         // Check if config exists for upsert behavior logic
-        const { data: existingData } = await supabaseClient
+        const { data: existingData, error: existError } = await supabaseClient
           .from('org_global_config')
           .select('id')
           .eq('organization_id', orgId);
+          
+        if (existError) {
+          console.error('[StorageService] Error checking existing config:', existError);
+        }
           
         const dbPayload = {
           organization_id: orgId,
@@ -872,16 +899,26 @@ export class StorageService {
         
         if (existingData && existingData.length > 0) {
           dbPayload.id = existingData[0].id;
+          console.log('[StorageService] Updating existing config with ID:', dbPayload.id);
+        } else {
+          console.log('[StorageService] Inserting new global config record for orgId:', orgId);
         }
 
         const { error } = await supabaseClient
           .from('org_global_config')
           .upsert(dbPayload);
           
-        if (error) throw error;
+        if (error) {
+          console.error('[StorageService] Supabase upsert error:', error);
+          throw error;
+        } else {
+          console.log('[StorageService] Supabase save successful.');
+        }
       } catch (e) {
-        console.warn("Failed to save global config to Supabase, saving locally:", e);
+        console.warn("[StorageService] Failed to save global config to Supabase, saving locally:", e);
       }
+    } else {
+      console.log('[StorageService] saveGlobalConfig running in Local Mode');
     }
     
     localStorage.setItem('navis_layer0_global_config', JSON.stringify(config));
@@ -892,19 +929,30 @@ export class StorageService {
     if (isCloudMode) {
       try {
         const orgId = await this.getActiveOrgId();
+        console.log('[StorageService] getOrgIdentity fetching for orgId:', orgId);
+        
         const { data, error } = await supabaseClient
           .from('org_identity')
           .select('*')
           .eq('organization_id', orgId);
         
-        if (error) throw error;
+        if (error) {
+          console.error('[StorageService] Supabase getOrgIdentity error:', error);
+          throw error;
+        }
+        
         if (data && data.length > 0) {
+          console.log('[StorageService] getOrgIdentity found record:', data[0].id);
           return data[0];
+        } else {
+          console.log('[StorageService] getOrgIdentity found NO record for orgId:', orgId);
         }
       } catch (e) {
-        console.warn("Failed to fetch org identity from Supabase, falling back to local:", e);
+        console.warn("[StorageService] Failed to fetch org identity from Supabase, falling back to local:", e);
       }
     }
+    
+    console.log('[StorageService] getOrgIdentity falling back to local storage.');
     
     // Fallback to local storage
     const local = localStorage.getItem('navis_layer0_org_identity');
@@ -933,11 +981,28 @@ export class StorageService {
     if (isCloudMode) {
       try {
         const orgId = await this.getActiveOrgId();
+        console.log('[StorageService] saveOrgIdentity writing to orgId:', orgId, 'Payload:', identity);
         
-        const { data: existingData } = await supabaseClient
+        // Ensure the organization exists first to prevent foreign key constraint violations
+        if (orgId !== '00000000-0000-0000-0000-000000000000') {
+          const { error: orgError } = await supabaseClient
+            .from('organizations')
+            .upsert({ id: orgId, name: 'My Organization' })
+            .select('id');
+            
+          if (orgError) {
+             console.warn('[StorageService] Could not ensure org exists (might already exist or permission issue):', orgError);
+          }
+        }
+        
+        const { data: existingData, error: existError } = await supabaseClient
           .from('org_identity')
           .select('id')
           .eq('organization_id', orgId);
+          
+        if (existError) {
+          console.error('[StorageService] Error checking existing org_identity:', existError);
+        }
           
         const dbPayload = {
           organization_id: orgId,
@@ -947,16 +1012,26 @@ export class StorageService {
         
         if (existingData && existingData.length > 0) {
           dbPayload.id = existingData[0].id;
+          console.log('[StorageService] Updating existing org_identity with ID:', dbPayload.id);
+        } else {
+          console.log('[StorageService] Inserting new org_identity record for orgId:', orgId);
         }
 
         const { error } = await supabaseClient
           .from('org_identity')
           .upsert(dbPayload);
           
-        if (error) throw error;
+        if (error) {
+          console.error('[StorageService] Supabase upsert org_identity error:', error);
+          throw error;
+        } else {
+          console.log('[StorageService] Supabase org_identity save successful.');
+        }
       } catch (e) {
-        console.warn("Failed to save org identity to Supabase, saving locally:", e);
+        console.warn("[StorageService] Failed to save org identity to Supabase, saving locally:", e);
       }
+    } else {
+      console.log('[StorageService] saveOrgIdentity running in Local Mode');
     }
     
     localStorage.setItem('navis_layer0_org_identity', JSON.stringify(identity));

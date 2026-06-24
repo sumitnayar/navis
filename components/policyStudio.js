@@ -342,268 +342,82 @@ export class PolicyStudioComponent {
 
   // ─── TAB 1: GENERATOR & LIBRARY ──────────────────────────────────────────
   renderGeneratorTab() {
-    const domains = PolicyTemplateService.getDomains();
-    const activeDomain = domains[this.genDomain];
-    const subPolicies = activeDomain ? activeDomain.templates : {};
-    const clauses = PolicyTemplateService.getClauseLibrary();
-
-    const groupsList = ["Purpose", "Scope", "Definitions", "Roles and Responsibilities", "Consent", "DSAR", "Retention", "Incident Response", "Third Party Management", "Cross-Border Transfers", "Audit Rights", "Training", "Review Frequency"];
-    const frameworksList = ["ISO 27001", "ISO 27701", "SOC 2", "DPDPA", "GDPR", "NIST CSF"];
-
-    // Filter logic for Clause Library
-    let filteredClauses = clauses;
-    if (this.clauseGroupFilter !== 'all') {
-      filteredClauses = filteredClauses.filter(c => c.group === this.clauseGroupFilter);
-    }
-    if (this.clauseFwFilter !== 'all') {
-      filteredClauses = filteredClauses.filter(c => {
-        const alias = this.clauseFwFilter === 'DPDPA' ? 'DPDP' : this.clauseFwFilter;
-        return c.frameworks.includes(this.clauseFwFilter) || c.frameworks.includes(alias);
-      });
-    }
+    const domains = [
+      { id: 'privacy', name: 'Privacy & Data Protection' },
+      { id: 'security', name: 'Information Security' },
+      { id: 'governance', name: 'Corporate Governance' }
+    ];
 
     return `
       <div class="register-layout">
-        
-        <!-- LEFT: SELECTION & COMPANY PROFILE -->
-        <div class="details-panel" style="flex: 1 1 340px;">
-          
-          <!-- SELECTION BOX -->
+        <div class="details-panel" style="flex: 1 1 500px; max-width: 800px; margin: 0 auto;">
           <div class="glass-panel">
-            <h3 class="dashboard-card-title">Selection</h3>
+            <h3 class="dashboard-card-title">Intake Screen</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Configure policy parameters before initiating the multi-agent generation pipeline.</p>
             
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <form id="intake-form" onsubmit="return false;">
               <div class="form-group">
-                <label>Domain</label>
-                <select class="form-control" id="gen-domain-select">
-                  ${Object.entries(domains).map(([k, d]) => `
-                    <option value="${k}" ${this.genDomain === k ? 'selected' : ''}>${d.name}</option>
-                  `).join('')}
-                </select>
+                <label>Policy Name</label>
+                <input type="text" class="form-control" id="intake-policy-name" value="${this.genTitle || ''}" placeholder="e.g. Vendor Management Policy" required />
               </div>
 
-              <div class="form-group">
-                <label>Template</label>
-                <select class="form-control" id="gen-template-select">
-                  ${Object.entries(subPolicies).map(([k, t]) => `
-                    <option value="${k}" ${this.genTemplate === k ? 'selected' : ''}>${t.title}</option>
-                  `).join('')}
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-top:12px;">
-              <label style="margin-bottom: 6px; display:block;">Target Frameworks</label>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:11px;">
-                ${frameworksList.map(fw => {
-                  const checked = this.selectedFrameworks.includes(fw) ? 'checked' : '';
-                  return `
-                    <label style="display:flex;align-items:center;gap:6px;font-weight:normal;cursor:pointer;user-select:none;">
-                      <input type="checkbox" class="gen-fw-checkbox" value="${fw}" ${checked} />
-                      ${fw}
-                    </label>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-          </div>
-
-          <!-- COMPANY PROFILE BOX -->
-          <div class="glass-panel" style="margin-top:16px;">
-            <h3 class="dashboard-card-title">Organization Context</h3>
-            
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Company Name</label>
-                <input type="text" class="form-control profile-field" data-key="companyName" value="${this.genProfile.companyName || ''}" />
-              </div>
-              <div class="form-group">
-                <label>Processing Role</label>
-                <select class="form-control profile-field" data-key="processingRole">
-                  <option value="Data Controller" ${this.genProfile.processingRole === 'Data Controller' ? 'selected' : ''}>Data Controller</option>
-                  <option value="Data Processor" ${this.genProfile.processingRole === 'Data Processor' ? 'selected' : ''}>Data Processor</option>
-                  <option value="Joint Controller" ${this.genProfile.processingRole === 'Joint Controller' ? 'selected' : ''}>Joint Controller</option>
-                  <option value="Processor & Controller" ${this.genProfile.processingRole === 'Processor & Controller' ? 'selected' : ''}>Processor & Controller</option>
-                </select>
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Business Model</label>
-                <select class="form-control profile-field" data-key="b2bB2c">
-                  <option value="B2B" ${this.genProfile.b2bB2c === 'B2B' ? 'selected' : ''}>B2B</option>
-                  <option value="B2C" ${this.genProfile.b2bB2c === 'B2C' ? 'selected' : ''}>B2C</option>
-                  <option value="Marketplace" ${this.genProfile.b2bB2c === 'Marketplace' ? 'selected' : ''}>Marketplace</option>
-                  <option value="Hybrid" ${this.genProfile.b2bB2c === 'Hybrid' ? 'selected' : ''}>Hybrid</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Customer Geographies</label>
-                <input type="text" class="form-control profile-field" data-key="customerGeography" placeholder="e.g. India, EU, USA" value="${this.genProfile.customerGeography || ''}" />
-              </div>
-            </div>
-            
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Data Subjects</label>
-                <input type="text" class="form-control profile-field" data-key="dataSubjects" placeholder="e.g. Customers, Employees" value="${this.genProfile.dataSubjects || ''}" />
-              </div>
-              <div class="form-group">
-                <label>Special Categories</label>
-                <input type="text" class="form-control profile-field" data-key="specialCategories" placeholder="e.g. Health Data, Financial" value="${this.genProfile.specialCategories || ''}" />
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Technology Stack</label>
-                <input type="text" class="form-control profile-field" data-key="cloudProvider" placeholder="e.g. AWS, Azure, GCP" value="${this.genProfile.cloudProvider || ''}" />
-              </div>
-              <div class="form-group">
-                <label>Hosting Region</label>
-                <input type="text" class="form-control profile-field" data-key="hostingRegion" placeholder="e.g. ap-south-1" value="${this.genProfile.hostingRegion || ''}" />
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Subprocessors</label>
-                <input type="text" class="form-control profile-field" data-key="subprocessors" placeholder="e.g. Stripe, Twilio" value="${this.genProfile.subprocessors || ''}" />
-              </div>
-              <div class="form-group">
-                <label>Intl. Transfers</label>
-                <input type="text" class="form-control profile-field" data-key="internationalTransfers" placeholder="e.g. SCCs, BCRs" value="${this.genProfile.internationalTransfers || ''}" />
-              </div>
-            </div>
-
-            <h4 style="margin-top:12px; margin-bottom:8px; font-size:10px; color:var(--text-muted); text-transform:uppercase;">Governance Roles</h4>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>DPO Name</label>
-                <input type="text" class="form-control profile-field" data-key="dpoOfficer" value="${this.genProfile.dpoOfficer || ''}" />
-              </div>
-              <div class="form-group">
-                <label>Grievance Officer Name</label>
-                <input type="text" class="form-control profile-field" data-key="grievanceOfficer" value="${this.genProfile.grievanceOfficer || ''}" />
-              </div>
-              <div class="form-group">
-                <label>CISO Name</label>
-                <input type="text" class="form-control profile-field" data-key="cisoOfficer" value="${this.genProfile.cisoOfficer || ''}" />
-              </div>
-              <div class="form-group">
-                <label>CRO Name</label>
-                <input type="text" class="form-control profile-field" data-key="croOfficer" value="${this.genProfile.croOfficer || ''}" />
-              </div>
-            </div>
-          </div>
-
-          <!-- CLAUSE LIBRARY BOX -->
-          <div class="glass-panel" style="margin-top:16px;">
-            <h3 class="dashboard-card-title">Clause Library</h3>
-            <p style="font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:12px;">
-              Consultant-grade building blocks. Use filters to browse clauses.
-            </p>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-              <div>
-                <label style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">Group</label>
-                <select class="form-control" id="clause-group-filter" style="font-size:11px;padding:4px 8px;height:auto;">
-                  <option value="all" ${this.clauseGroupFilter === 'all' ? 'selected' : ''}>All Groups</option>
-                  ${groupsList.map(g => `<option value="${g}" ${this.clauseGroupFilter === g ? 'selected' : ''}>${g}</option>`).join('')}
-                </select>
-              </div>
-              <div>
-                <label style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">Framework</label>
-                <select class="form-control" id="clause-fw-filter" style="font-size:11px;padding:4px 8px;height:auto;">
-                  <option value="all" ${this.clauseFwFilter === 'all' ? 'selected' : ''}>All Frameworks</option>
-                  ${frameworksList.map(f => `<option value="${f}" ${this.clauseFwFilter === f ? 'selected' : ''}>${f}</option>`).join('')}
-                </select>
-              </div>
-            </div>
-
-            <div style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;padding-right:4px;" id="clause-list-container">
-              ${filteredClauses.length === 0 ? `
-                <div style="text-align:center;padding:20px 0;color:var(--text-muted);font-size:11px;">No matching clauses.</div>
-              ` : filteredClauses.map(c => `
-                <div class="clause-item" style="padding:8px;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center;">
-                  <div style="flex-grow:1;margin-right:8px;overflow:hidden;">
-                    <strong style="color:var(--text-primary);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name}</strong>
-                    <span style="font-size:9px;color:var(--text-muted);">${c.group} | ${c.maturity || 'Consultant-Grade'}</span>
-                  </div>
-                  <button class="btn btn-secondary btn-small btn-view-clause-details" style="font-size:9px;padding:2px 6px;flex-shrink:0;height:22px;" data-clause-id="${c.id}">
-                    View details
-                  </button>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Domain</label>
+                  <select class="form-control" id="intake-domain">
+                    ${domains.map(d => `<option value="${d.id}" ${this.genDomain === d.id ? 'selected' : ''}>${d.name}</option>`).join('')}
+                  </select>
                 </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-
-        <!-- RIGHT: PROMPT INPUT & GENERATED DRAFT -->
-        <div class="details-panel" style="flex: 2 1 500px;">
-          <div class="glass-panel" style="min-height:580px;display:flex;flex-direction:column;justify-content:space-between;">
-            
-            <div>
-              <h3 class="dashboard-card-title">Drafting</h3>
-              
-              <div class="form-group">
-                <label>Custom Prompt Directives</label>
-                <textarea class="form-control" id="gen-prompt-input" rows="3" placeholder="e.g. Include specific guidelines for Indian data residency and ISO 27001 logging controls..." style="font-size:11px;">${this.genPrompt}</textarea>
+                <div class="form-group">
+                  <label>Effective Date</label>
+                  <input type="date" class="form-control" id="intake-effective-date" required />
+                </div>
               </div>
 
-              <div style="margin-top:12px;">
-                <button class="btn btn-primary" id="btn-generate-policy" style="width:100%;justify-content:center;height:36px;" ${this.isGenerating ? 'disabled' : ''}>
-                  ${this.isGenerating ? 'Drafting Policy Document...' : 'Generate Board-Quality Draft'}
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                  <label>Policy Owner</label>
+                  <input type="text" class="form-control" id="intake-owner" placeholder="e.g. Chief Information Security Officer" required />
+                </div>
+                <div class="form-group">
+                  <label>Approver</label>
+                  <input type="text" class="form-control" id="intake-approver" placeholder="e.g. Risk Committee" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Regulations & Frameworks</label>
+                <input type="text" class="form-control" id="intake-regulations" value="${this.selectedFrameworks.join(', ')}" placeholder="e.g. ISO 27001, SOC 2, DPDP Act" required />
+              </div>
+
+              <div class="form-group">
+                <label>Scope Definition</label>
+                <textarea class="form-control" id="intake-scope" rows="3" placeholder="Define what systems, users, and data this policy applies to..." required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Custom Instructions for AI</label>
+                <textarea class="form-control" id="intake-instructions" rows="2" placeholder="e.g. Ensure strict vendor offboarding timeline of 48 hours...">${this.genPrompt || ''}</textarea>
+              </div>
+
+              <div class="form-actions" style="margin-top: 24px;">
+                <button class="btn btn-primary" id="btn-generate-policy" style="width:100%;justify-content:center;height:40px;" ${this.isGenerating ? 'disabled' : ''}>
+                  ${this.isGenerating ? '<span class="spinner"></span> Orchestrating Generation Pipeline...' : 'Generate Policy'}
                 </button>
               </div>
-            </div>
-
-            <!-- RESULT AREA -->
-            <div style="flex-grow:1;margin-top:20px;display:flex;flex-direction:column;">
-              <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:8px;margin-bottom:10px;">
-                <h4 style="font-size:12px;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;">
-                  Draft Preview: <span style="color:var(--text-primary);font-weight:700;">${this.genTitle}</span>
-                </h4>
-                ${this.genResultText ? `
-                  <div style="display:flex;gap:6px;align-items:center;">
-                    <button class="btn btn-secondary btn-small" id="btn-download-draft" style="font-size:10px;display:flex;align-items:center;">
-                      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                      </svg>
-                      Download PDF
-                    </button>
-                    <button class="btn btn-secondary btn-small" id="btn-refine-draft" style="font-size:10px;border-color:var(--color-indigo);color:var(--color-indigo);">Refine Language</button>
-                    <button class="btn btn-secondary btn-small" id="btn-save-draft-to-vault" style="font-size:10px;">Save Draft to Vault</button>
-                  </div>
-                ` : ''}
-              </div>
-
-              <div id="gen-result-container" style="flex-grow:1;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:8px;padding:16px;font-family:var(--font-body);font-size:12px;line-height:1.6;color:var(--text-primary);overflow-y:auto;max-height:460px;white-space:pre-wrap;">
-                ${this.isGenerating ? `
-                  <div style="text-align:center;padding:120px 0;color:var(--text-muted);">
-                    <svg class="spinner" viewBox="0 0 50 50" style="width:36px;height:36px;margin:0 auto 12px;animation:spin 1s linear infinite;">
-                      <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4" stroke="var(--color-indigo)"></circle>
-                    </svg>
-                    Executing real-time analysis & drafting...
-                  </div>
-                ` : this.genResultText ? this.genResultText : `
-                  <div style="text-align:center;padding:120px 0;color:var(--text-muted);">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" style="width:40px;height:40px;margin:0 auto 12px;opacity:0.3;">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                    </svg>
-                    Configure selections and company profile on the left, then click Generate.
-                  </div>
-                `}
-              </div>
-
-              ${this.genResultText && this.completenessResult ? this._renderCompletenessPanel() : ''}
-
-            </div>
-
+            </form>
+          </div>
+          
+          <div id="generation-progress" style="display: ${this.isGenerating ? 'block' : 'none'}; margin-top: 20px; padding: 20px; background: var(--color-bg-elevated); border: 1px solid var(--border-color); border-radius: 8px;">
+             <h4 style="margin:0 0 10px 0; font-size: 14px;">Pipeline Progress</h4>
+             <ul id="progress-steps" style="list-style: none; padding: 0; margin: 0; font-size: 13px; color: var(--text-secondary);">
+                <li id="step-structure">⏳ Generating structural skeleton...</li>
+                <li id="step-content">⏳ Drafting substantive content...</li>
+                <li id="step-compliance">⏳ Running compliance challenge...</li>
+                <li id="step-clauses">⏳ Recommending clauses...</li>
+             </ul>
           </div>
         </div>
-
       </div>
     `;
   }
@@ -1697,124 +1511,103 @@ export class PolicyStudioComponent {
       });
 
       // Click Generate Policy
-      container.querySelector('#btn-generate-policy')?.addEventListener('click', async () => {
+      container.querySelector('#btn-generate-policy')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const form = container.querySelector('#intake-form');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
         this.isGenerating = true;
+        this.genTitle = container.querySelector('#intake-policy-name').value;
         this.renderSubTabContent(container.querySelector('#tab-body-container'));
 
+        const intakeData = {
+          title: this.genTitle,
+          domain: container.querySelector('#intake-domain').value,
+          effectiveDate: container.querySelector('#intake-effective-date').value,
+          owner: container.querySelector('#intake-owner').value,
+          approver: container.querySelector('#intake-approver').value,
+          regulations: container.querySelector('#intake-regulations').value,
+          scope: container.querySelector('#intake-scope').value,
+          instructions: container.querySelector('#intake-instructions').value
+        };
+
+        const progressContainer = container.querySelector('#generation-progress');
+        if (progressContainer) progressContainer.style.display = 'block';
+
+        const setStepStatus = (stepId, text) => {
+          const step = container.querySelector('#' + stepId);
+          if (step) step.innerHTML = text;
+        };
+
         try {
-          const apiKey = this.state.settings?.geminiApiKey || localStorage.getItem('navis_v3_gemini_api_key') || '';
+          const [globalConfig, orgIdentity] = await Promise.all([
+             StorageService.getGlobalConfig(),
+             StorageService.getOrgIdentity()
+          ]);
           
-          const domains = PolicyTemplateService.getDomains();
-          const contextNarrative = OrganizationContextService.generateNarrative(this.genProfile, this.selectedFrameworks);
-          
-          const systemPrompt = `You are an institutional-quality governance document author operating at the standard of a Big 4 consulting firm (KPMG, PwC, Deloitte, EY). Your output must be indistinguishable from a document produced by an experienced governance consulting team.
+          const orgContext = { globalConfig, orgIdentity };
 
-Generate a complete, board-ready governance document for: '${this.genTitle}' under the domain of '${domains[this.genDomain]?.name}'.
+          // Step 1: Structure Agent
+          setStepStatus('step-structure', '🔄 Generating structural skeleton...');
+          const structureRes = await fetch('/api/policy/generate/structure', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ intakeData, orgContext })
+          });
+          const structureData = await structureRes.json();
+          if (!structureRes.ok) throw new Error(structureData.error);
+          setStepStatus('step-structure', '✅ Structure skeleton completed');
 
-The document must align with the following compliance frameworks: ${this.selectedFrameworks.join(', ') || 'General Best Practices'}.
+          // Parallel Step: Clauses
+          setStepStatus('step-clauses', '🔄 Recommending clauses...');
+          const clausePromise = fetch('/api/policy/recommend-clauses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ intakeData })
+          });
 
-## COMPANY CONTEXT (Mandatory — use these values throughout; never use generic placeholders)
-${contextNarrative}
+          // Step 2: Content Agent
+          setStepStatus('step-content', '🔄 Drafting substantive content...');
+          const contentRes = await fetch('/api/policy/generate/content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skeleton: structureData.skeleton, intakeData, orgContext })
+          });
+          const contentData = await contentRes.json();
+          if (!contentRes.ok) throw new Error(contentData.error);
+          this.genResultText = contentData.policyDraft;
+          setStepStatus('step-content', '✅ Content drafting completed');
 
-- Organization Name: ${this.genProfile.companyName}
-- Industry Sector: ${this.genProfile.industry}
-- Headquarters Jurisdiction: ${this.genProfile.country}
-- Customer Geographies: ${this.genProfile.customerGeography}
-- Employee Count: ${this.genProfile.employeeCount}
-- Business Model: ${this.genProfile.b2bB2c}
-- Processing Role: ${this.genProfile.processingRole}
-- Posture: ${this.genProfile.controllerProcessor}
-- Data Subjects: ${this.genProfile.dataSubjects}
-- Special Categories of Data: ${this.genProfile.specialCategories}
-- Primary Cloud Infrastructure: ${this.genProfile.cloudProvider}
-- Hosting Region: ${this.genProfile.hostingRegion}
-- Subprocessors: ${this.genProfile.subprocessors}
-- International Transfers: ${this.genProfile.internationalTransfers}
-- Data Protection Officer (DPO): ${this.genProfile.dpoOfficer}
-- Designated Grievance Officer: ${this.genProfile.grievanceOfficer}
-- CISO: ${this.genProfile.cisoOfficer}
-- CRO: ${this.genProfile.croOfficer}
-- Core Processing Purpose: ${this.genProfile.processingPurpose}
+          // Step 3: Compliance Agent
+          setStepStatus('step-compliance', '🔄 Running compliance challenge...');
+          const complianceRes = await fetch('/api/policy/generate/compliance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ draft: this.genResultText, orgContext })
+          });
+          const complianceData = await complianceRes.json();
+          if (!complianceRes.ok) throw new Error(complianceData.error);
+          this.challengeReport = complianceData.challengeReport;
+          setStepStatus('step-compliance', '✅ Compliance challenge completed');
 
-## MANDATORY 12-SECTION GOVERNANCE STRUCTURE
-The document MUST contain ALL of the following sections, numbered sequentially:
+          // Resolve Parallel Clauses
+          const clauseRes = await clausePromise;
+          const clauseData = await clauseRes.json();
+          this.recommendedClauses = clauseData.recommended_clauses || [];
+          setStepStatus('step-clauses', '✅ Clauses recommended');
 
-1. OBJECTIVE — Define what this policy achieves.
-2. PURPOSE — Explain why this policy exists and the risks it mitigates.
-3. SCOPE — Define systems, processes, data, and environments governed.
-4. POLICY HIERARCHY — Specify how this document relates to other standards and procedures.
-5. APPLICABILITY — Specify employees, contractors, third parties, processors, sub-processors.
-6. DEFINITIONS — Include precise regulatory definitions for all key terms (Personal Data, Processing, Data Subject, Controller, Processor, Consent, Incident, Breach, etc.) with regulatory article references.
-7. ROLES & RESPONSIBILITIES — Assign Policy Owner, Control Owner, Review Owner, DPO, CISO, Grievance Officer, Department Heads. Include Approval Authority.
-8. POLICY REQUIREMENTS — The substantive regulatory and operational requirements. Be specific, actionable, and cite framework controls.
-9. EXCEPTIONS — Define exception request process, risk acceptance criteria, temporary exemption protocol, documentation requirements.
-10. NON-COMPLIANCE & ENFORCEMENT — Specify disciplinary escalation matrix, regulatory reporting obligations, contractual enforcement.
-11. MONITORING & COMPLIANCE — Define internal audit procedures, KPIs, compliance verification methods, self-assessment programs.
-12. REVIEW & MAINTENANCE — Specify annual/semi-annual review protocol, amendment process, stakeholder consultation, continuous improvement.
-
-## MANDATORY APPENDICES
-You must include the following appendices at the end of the document:
-- APPENDIX A — RELATED GOVERNANCE DOCUMENTS
-- APPENDIX B — VERSION CONTROL
-- APPENDIX C — FRAMEWORK MAPPING
-- APPENDIX D — RACI MATRIX
-- APPENDIX E — ACRONYMS & DEFINITIONS
-
-## METADATA BLOCK (Must appear at the top of the document as a Markdown Table)
-| Property | Value |
-| --- | --- |
-| Document Title | [Full title] |
-| Document ID | [Organization abbreviation]-POL-[domain code]-[number] |
-| Version | v1.0 |
-| Status | Draft (Pending Board Approval) |
-| Classification | Confidential — Internal Use Only |
-| Applicable Frameworks | [List selected frameworks] |
-| Jurisdictions | [Customer geographies] |
-| Policy Owner | [Specify from company context] |
-| Control Owner | [CISO or DPO based on domain] |
-| Approval Authority | Board of Directors / Executive Committee |
-| Effective Date | [Use current date] |
-| Review Frequency | Annual (12-month cycle) |
-
-## LANGUAGE STANDARDS (Big 4 Tone — Mandatory)
-- Use ONLY: shall, must, required, responsible, accountable
-- NEVER use: should, may, attempt to, where possible, try to, is expected to
-- Write in third-person institutional voice ("The Organization shall...", "The Data Protection Officer shall...")
-- No first-person ("we", "our") — use the organization name or "The Organization"
-- Randomize sentence starters to avoid repetitive "The Organization shall" structures.
-
-## CRITICAL RULES
-- ZERO unresolved placeholders: No {{COMPANY_NAME}}, {{DPO}}, {{COUNTRY}}, etc.
-- Every reference to the organization, people, systems, and jurisdictions must use the actual values from the Company Context above.
-- Ensure the Governance Roles provided in the context are mentioned by name and role where appropriate.
-- Include specific regulatory article citations.
-- Include non-compliance consequences.
-
-## CUSTOM DIRECTIVES
-${this.genPrompt || 'None provided.'}
-
-Output ONLY the complete governance document. No conversational introductions. No conversational conclusions.`;
-            
-            const liveResult = await AIService.queryGemini(systemPrompt, apiKey);
-            this.genResultText = liveResult || PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
-          } catch (err) {
-          console.error("Drafting failed:", err);
-          this.genResultText = PolicyTemplateService.generateSimulatedDraft(this.genDomain, this.genTemplate, this.selectedFrameworks, this.genProfile);
+          // Switch to Editor View
+          this.activeSubTab = 'refinement';
+        } catch (err) {
+          console.error("Pipeline Error:", err);
+          alert('Generation failed: ' + err.message);
         } finally {
           this.isGenerating = false;
-
-          // Auto-run completeness evaluation (Wave 3.6)
-          if (this.genResultText) {
-            try {
-              this.completenessResult = PolicyCompletenessService.evaluateCompleteness(this.genResultText);
-            } catch (evalErr) {
-              console.error('Completeness evaluation failed:', evalErr);
-              this.completenessResult = null;
-            }
-          }
-
           this.renderSubTabContent(container.querySelector('#tab-body-container'));
-          this.bindEvents(container);
         }
       });
 
