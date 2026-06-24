@@ -763,7 +763,7 @@ class RiskOSApplication {
 
     const navContainer = document.getElementById('top-nav-modules');
     if (navContainer) {
-      const primaryTabs = ['dashboard', 'policyStudio', 'scenario', 'boardQA', 'boardPack'];
+      const primaryTabs = ['dashboard', 'governanceMap', 'policyStudio', 'scenario', 'boardQA', 'boardPack'];
       const secondaryTabs = ['objectives', 'intelligencePolicy', 'portfolio', 'network', 'settings'];
 
       let html = primaryTabs.map(tabId => `
